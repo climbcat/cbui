@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.13.0)
-project(geometry VERSION 0.2.0)
-set(NAME_EXE geometry)
+project(cbui VERSION 0.3.0)
 
 
 # linux:
@@ -13,32 +12,29 @@ find_package(glfw3 3.3 REQUIRED)
 
 include_directories(${OPENGL_INCLUDE_DIRS})
 
-add_executable(geometry main_geom.cpp)
+add_executable(${PROJECT_NAME} main.cpp)
 
-target_link_libraries(geometry ${OPENGL_LIBRARIES})
-target_link_libraries(geometry ${GLEW_LIBRARIES})
-target_link_libraries(geometry glfw)
+target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${GLEW_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} glfw)
 
 
 # Windows:
 else()
 message("WIN32 configuration")
+set(DIR_C_LIBS "lib")
 
-set( DIR_SCANNER_LIBS $ENV{PRESCANNING_LIBS_DIR} )
+# glfw / glew
+include_directories(${DIR_C_LIBS}/glfw/include/)
+link_directories(${DIR_C_LIBS}/glfw/lib/)
+include_directories(${DIR_C_LIBS}/glew/include/)
+link_directories(${DIR_C_LIBS}/glew/lib/)
 
-# glfw
-include_directories(${DIR_SCANNER_LIBS}/glfw/include/)
-link_directories(${DIR_SCANNER_LIBS}/glfw/lib/)
-
-# glew
-include_directories(${DIR_SCANNER_LIBS}/glew/include/)
-link_directories(${DIR_SCANNER_LIBS}/glew/lib/)
-
-add_executable( ${PROJECT_NAME} main_geom.cpp )
+add_executable(${PROJECT_NAME} main.cpp)
 
 # link
-target_link_libraries(${NAME_EXE} glfw3)
-target_link_libraries(${NAME_EXE} glew32)
-target_link_libraries(${NAME_EXE} OpenGL32)
+target_link_libraries(${PROJECT_NAME} glfw3)
+target_link_libraries(${PROJECT_NAME} glew32)
+target_link_libraries(${PROJECT_NAME} OpenGL32)
 
 endif()
