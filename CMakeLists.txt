@@ -22,7 +22,7 @@ target_link_libraries(${PROJECT_NAME} glfw)
 # Windows:
 else()
 message("WIN32 configuration")
-set(DIR_C_LIBS "lib")
+set(DIR_C_LIBS "lib_win")
 
 # glfw / glew
 include_directories(${DIR_C_LIBS}/glfw/include/)
