@@ -18,6 +18,7 @@ This project depends on my baselayer repository; https://github.com/climbcat/bas
 Also depends on two minimalist OpenGL and OS wrapper libraries; glew and glfw.
 
 <pre>
+sudo apt install cmake
 sudo apt install libglew-dev
 sudo apt install libglfw3-dev
 </pre>
