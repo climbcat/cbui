@@ -31,7 +31,7 @@ git clone https://github.com/climbcat/cbui/
 cd cbui/build
 cmake ..
 make
-./graphics
+./cbui
 </pre>
 
 ## Windows
