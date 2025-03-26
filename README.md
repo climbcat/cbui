@@ -6,10 +6,9 @@ Written in C-style C++:
 
 - Vector & matrix 3D math
 - Software 2D Renderer and immediate-mode UI
-- Text font atlas generation
-- Text layout for the renderer
+- Font atlas generation & text layout
 - Software 3D Renderer which handles dots and lines
-- Algorithms: Octree, Index sets, Tokenizer
+- Algorithms: Octree, Index sets, etc.
 
 ## Linux
 
