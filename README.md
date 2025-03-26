@@ -12,7 +12,8 @@ Written in C-style C++:
 
 ## Linux
 
-This project depends on my baselayer repository; https://github.com/climbcat/baselayer
+This project depends on my baselayer; https://github.com/climbcat/baselayer 
+It and cbui must occupy the same root folder.
 
 Also depends on two minimalist OpenGL and OS wrapper libraries; glew and glfw.
 
