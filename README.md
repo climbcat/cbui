@@ -8,7 +8,7 @@ Written in C-style C++:
 - Software 2D Renderer and immediate-mode UI
 - Font atlas generation & text layout
 - Software 3D Renderer which handles dots and lines
-- Algorithms: Octree, Index sets, etc.
+- Algorithms: Octree, Index sets
 
 ## Linux
 
