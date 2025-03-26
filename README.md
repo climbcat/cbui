@@ -42,7 +42,7 @@ Extract the file 'lib_win.zip' (right click -> "Extract All ..." -> press Enter)
 
 CMake for windows is downloaded from https://cmake.org/download/.
 
-The windows c++ libraries are installed using the Visual Studio Installer, e.g. "Desktop sevelopment with C++".
+The windows c++ libraries are installed using the Visual Studio Installer, e.g. "Desktop development with C++".
 
 If you are natively a linux enjoyer, I recommend the alternative terminal 'w64devkit'
 available via https://www.mingw-w64.org/downloads/.
