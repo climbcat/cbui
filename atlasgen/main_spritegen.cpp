@@ -62,7 +62,7 @@ List<Sprite> CreateGridSprites(MArena *a_dest, u8* data, s32 nx, s32 ny, s32 spr
 }
 
 
-void ExtractAliens() {
+void RotatingBoxes() {
     MContext *ctx = InitBaselayer();
 
     s32 bitmap_w_01;
@@ -141,6 +141,6 @@ int main (int argc, char **argv) {
         Test();
     }
     else {
-        ExtractAliens();
+        RotatingBoxes();
     }
 }

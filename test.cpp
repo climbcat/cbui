@@ -604,7 +604,7 @@ void TestResourceLoad() {
     printf("TestResourceLoad\n");
 
     MContext *ctx = InitBaselayer();
-    ResourceStreamHandle hdl = ResourceStreamLoadAndOpen(ctx->a_tmp, ctx->a_life, "alt.res");
+    ResourceStreamHandle hdl = ResourceStreamLoadAndOpen(ctx->a_tmp, ctx->a_life, "all.res");
 
     for (u32 i = 0; i < RST_CNT; ++i) {
         printf("names (%u):\n", i);
@@ -792,9 +792,10 @@ void TestLayoutPanels() {
 void Test() {
     //TestRandomPCWithNormals();
     //TestVGROcTree(); // TODO: fix
+    
     //TestQuaternionRotMult(); // TODO: fix
     //TestSlerpAndMat2Quat();
-    //TestPointCloudsBoxesAndSceneGraph();
+    TestPointCloudsBoxesAndSceneGraph();
     //TestIndexSetOperations();
     //TestLayoutGlyphQuads();
     //TestBrownianGlyphs();

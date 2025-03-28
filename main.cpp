@@ -3,8 +3,8 @@
 #include "test.cpp"
 
 
-void ExtractAliens() {
-    printf("Soft rendering demo ...\n");
+void RotatingBoxes() {
+    printf("Orbitcam and Boxes demo ...\n");
 
     GameLoopOne *loop = InitGameLoopOne();
     SwRenderer *r = loop->GetRenderer();
@@ -45,7 +45,7 @@ int main (int argc, char **argv) {
         Test();
     }
     else {
-        ExtractAliens();
+        RotatingBoxes();
     }
 
     return 0;
