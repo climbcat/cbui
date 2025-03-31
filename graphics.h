@@ -10,6 +10,7 @@
 #include "geometry.h"
 
 #include "ui.h"
+#include "camera.h"
 
 #include "resource.h"
 #include "sprite.h"

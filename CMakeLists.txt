@@ -13,10 +13,14 @@ find_package(glfw3 3.3 REQUIRED)
 include_directories(${OPENGL_INCLUDE_DIRS})
 
 add_executable(${PROJECT_NAME} main.cpp)
-
 target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} ${GLEW_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} glfw)
+
+add_executable(wireframe main_wireframe.cpp)
+target_link_libraries(wireframe ${OPENGL_LIBRARIES})
+target_link_libraries(wireframe ${GLEW_LIBRARIES})
+target_link_libraries(wireframe glfw)
 
 
 # Windows:
