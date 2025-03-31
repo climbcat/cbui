@@ -25,18 +25,19 @@ struct Scroll {
 };
 
 struct AsciiKeys {
-    char keys[32]; // max 32 keystrokes per frame ...
     u8 keys_cnt;
     u8 keys_idx;
+    char keys[32]; // max 32 keystrokes per frame ...
 
     void Put(char c) {
         if (keys_cnt < 16) {
             keys[keys_cnt++] = c;
         }
     }
-    char Get() {
+    char Get(s32 *mods = NULL) {
         if (keys_cnt && (keys_idx < keys_cnt)) {
-            return keys[keys_idx++];
+            char c = keys[keys_idx++];
+            return c;
         }
         else {
             return 0;
@@ -44,16 +45,27 @@ struct AsciiKeys {
     }
 };
 
+struct ActionKeys {
+    bool esc;
+    bool enter;
+    bool backspace;
+    bool del;
+    u8 fkey; 
+};
+
 struct PlafGlfw {
     GLFWwindow* window;
+
     Button left;
     Button right;
+    Scroll scroll;
+    AsciiKeys keys;
+    ActionKeys akeys;
+
     f64 mouse_x_f64;
     f64 mouse_y_f64;
     s32 mouse_x;
     s32 mouse_y;
-    Scroll scroll;
-    AsciiKeys keys;
 };
 
 inline PlafGlfw *_GlfwWindowToUserPtr(GLFWwindow* window) {
@@ -61,8 +73,7 @@ inline PlafGlfw *_GlfwWindowToUserPtr(GLFWwindow* window) {
     return plaf;
 }
 
-void MouseButtonCallBack(GLFWwindow* window, int button, int action, int mods)
-{
+void MouseButtonCallBack(GLFWwindow* window, int button, int action, int mods) {
     PlafGlfw *plaf = _GlfwWindowToUserPtr(window);
 
     // get button
@@ -83,8 +94,7 @@ void MouseButtonCallBack(GLFWwindow* window, int button, int action, int mods)
         btn->pushes++;
     }
 }
-void MouseScrollCallBack(GLFWwindow* window, double xoffset, double yoffset)
-{
+void MouseScrollCallBack(GLFWwindow* window, double xoffset, double yoffset) {
     PlafGlfw *plaf = _GlfwWindowToUserPtr(window);
     plaf->scroll.yoffset_acc += yoffset;
     if (yoffset > 0) {
@@ -94,35 +104,45 @@ void MouseScrollCallBack(GLFWwindow* window, double xoffset, double yoffset)
         plaf->scroll.steps_down++;
     }
 }
-void KeyCallBack(GLFWwindow* window, int key, int scancode, int action, int mods) {
+void CharCallBack(GLFWwindow* window, u32 codepoint) {
     PlafGlfw *plf = _GlfwWindowToUserPtr(window);
-    bool db_print = false;
 
-    // key is basically ascii for the common characters
-    char c = 0;
-    if (key >= 0 && key <= 255) {
-        c = (char) key;
+    if (codepoint >= 0 && codepoint < 128) {
+        char c = (u8) codepoint;
+        plf->keys.Put(c);
     }
-    if (mods != GLFW_MOD_SHIFT) {
-        if (db_print) printf("shift-");
-        c += 32;
-    }
-    else if (mods == GLFW_MOD_CONTROL) {
-        if (db_print) printf("control-");
-    }
+}
+void KeyCallBack(GLFWwindow* window,  int key, int scancode, int action, int mods) {
+    PlafGlfw *plf = _GlfwWindowToUserPtr(window);
 
     if (action == GLFW_PRESS) {
-        if (db_print) printf("press: ");
-    }
-    else if (action == GLFW_RELEASE) {
-        if (db_print) printf("relase: ");
-    }
-    else if (action == GLFW_REPEAT) {
-        if (db_print) printf("repeat: ");
-    }
-    if (db_print) printf("%c \n", c);
+        if (key == 256) {
+            plf->akeys.esc = true;
+        }
+        else if (key == 257) {
+            plf->akeys.enter = true;
+        }
+        else if (key == 259) {
+            plf->akeys.backspace = true;
+        }
+        else if (key == 261) {
+            plf->akeys.del = true;
+        }
+        else if (key >= 290 && key <= 301) {
+            // 290-301: F1 through F12
+            plf->akeys.fkey = key - 289;
+        }
 
-    plf->keys.Put(c);
+        else if (key == 'C' && mods == GLFW_MOD_CONTROL) {
+            printf("ctr-C\n");
+        }
+        else if (key == 'X' && mods == GLFW_MOD_CONTROL) {
+            printf("ctr-X\n");
+        }
+        else if (key == 'Z' && mods == GLFW_MOD_CONTROL) {
+            printf("ctr-Z\n");
+        }
+    }
 }
 
 
@@ -148,6 +168,7 @@ PlafGlfw* PlafGlfwInit() {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
 
+    glfwSetCharCallback(g_plaf_glfw.window, CharCallBack); // NOTE: potentially use glfwSetCharModsCallback to additionally get the mods
     glfwSetKeyCallback(g_plaf_glfw.window, KeyCallBack);
     glfwSetMouseButtonCallback(g_plaf_glfw.window, MouseButtonCallBack);
     glfwSetScrollCallback(g_plaf_glfw.window, MouseScrollCallBack);
@@ -164,6 +185,7 @@ void PlafGlfwUpdate(PlafGlfw* plf) {
     plf->right = {};
     plf->scroll = {};
     plf->keys = {};
+    plf->akeys = {};
 
     plf->left.ended_down = (glfwGetMouseButton(plf->window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS);
     plf->right.ended_down = (glfwGetMouseButton(plf->window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS);
@@ -184,14 +206,37 @@ Button MouseRight() {
     Button right = g_plaf_glfw.right;
     return right;
 }
-Scroll MouseScrollConsume() {
+Scroll MouseScroll() {
     Scroll result = g_plaf_glfw.scroll;
-    g_plaf_glfw.scroll = {};
     return result;
 }
 char GetChar() {
     char c = g_plaf_glfw.keys.Get();
     return c;
+}
+bool GetEscape() {
+    bool was = g_plaf_glfw.akeys.esc;
+    return was;
+}
+bool GetEnter() {
+    bool was = g_plaf_glfw.akeys.enter;
+    return was;
+}
+bool GetBackspace() {
+    bool was = g_plaf_glfw.akeys.backspace;
+    return was;
+}
+bool GetFKey(u32 *fval) {
+    assert(fval != NULL);
+
+    u8 fkey = g_plaf_glfw.akeys.fkey;
+    if (fkey == 0) {
+        return false;
+    }
+    else {
+        *fval = fkey;
+        return true;
+    }
 }
 
 
@@ -212,7 +257,7 @@ void RunWireframeProgram() {
         if (MouseRight().pushed) {
             printf("right\n");
         }
-        if (MouseScrollConsume().yoffset_acc != 0) {
+        if (MouseScroll().yoffset_acc != 0) {
             printf("scroll\n");
         }
 
@@ -220,8 +265,18 @@ void RunWireframeProgram() {
         while(c = GetChar()) {
             printf("%c", c);
         }
-        fflush(stdout);
+        if (GetEnter()) {
+            printf("\n");
+        }
+        else {
+            fflush(stdout);
+        }
+        u32 fkey;
+        if (GetFKey(&fkey)) {
+            printf("F%d\n", fkey);
+        }
 
+        running = running && !GetEscape();
         PlafGlfwUpdate(plf);
         XSleep(10);
     }
