@@ -314,6 +314,8 @@ void TestPointCloudsBoxesAndSceneGraph() {
 }
 
 
+
+
 void _PrintIndices(const char *prefix, List<u32> idxs) {
     printf("%s", prefix);
     for (u32 i = 0; i < idxs.len; ++i) {
@@ -789,13 +791,44 @@ void TestLayoutPanels() {
 }
 
 
+void TestRotatingBoxes() {
+    printf("TestRotatingBoxes\n");
+
+    GameLoopOne *loop = InitGameLoopOne();
+    SwRenderer *r = loop->GetRenderer();
+    EntitySystem *es = InitEntitySystem();
+
+    Entity *cyl1 = EntityCylinderVertical(es, NULL, { -0.3f, 1.0f, 1.0f }, 0.2f, 0.2f, r);
+
+    Entity *axes = EntityCoordAxes(es, NULL, r);
+    Entity *box = EntityAABox(es, NULL, { 0.3f, 0.0f, 0.7f }, 0.2f, r);
+    box->tpe = ET_LINES_ROT;
+    Entity *box2 = EntityAABox(es, NULL, { 0.3f, 0.0f, -0.7f }, 0.2f, r);
+    box2->tpe = ET_LINES_ROT;
+    Entity *box3 = EntityAABox(es, NULL, { -0.7f, 0.0f, 0.0f }, 0.2f, r);
+    box3->tpe = ET_LINES_ROT;
+    EntitySystemPrint(es);
+
+
+    while (loop->GameLoopRunning()) {
+        // E.g.: update entity transforms
+        // E.g.: update debug UI
+        // E.g.: run simulations
+        // E.g.: pull worker thread statuses
+
+        loop->CycleFrame(es);
+    }
+    loop->Terminate();
+}
+
+
 void Test() {
     //TestRandomPCWithNormals();
-    //TestVGROcTree(); // TODO: fix
+    //TestVGROcTree();
     
     //TestQuaternionRotMult(); // TODO: fix
     //TestSlerpAndMat2Quat();
-    TestPointCloudsBoxesAndSceneGraph();
+    //TestPointCloudsBoxesAndSceneGraph();
     //TestIndexSetOperations();
     //TestLayoutGlyphQuads();
     //TestBrownianGlyphs();
@@ -804,4 +837,5 @@ void Test() {
     //TestResourceLoad();
     //TestRenderSprites();
     TestLayoutPanels();
+    TestRotatingBoxes();
 }
