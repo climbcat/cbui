@@ -2,10 +2,10 @@
 #define __SWRENDER_H__
 
 
-#include "../baselayer/baselayer.h"
-#include "geometry.h"
+#include "../../../baselayer/baselayer.h"
+#include "../geometry/geometry.h"
 #include "entity.h"
-#include "shaders.h"
+#include "../imui/shaders.h"
 
 
 //

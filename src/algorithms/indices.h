@@ -2,8 +2,8 @@
 #define __INDICES_H__
 
 
-#include "../../baselayer/baselayer.h"
-#include "../geometry.h"
+#include "../../../baselayer/baselayer.h"
+#include "../geometry/geometry.h"
 
 
 //

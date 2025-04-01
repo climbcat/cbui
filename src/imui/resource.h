@@ -2,7 +2,7 @@
 #define __RESOURCE_H__
 
 
-#include "../baselayer/baselayer.h"
+#include "../../../baselayer/baselayer.h"
 
 
 enum ResourceType {

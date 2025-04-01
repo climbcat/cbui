@@ -1,26 +1,26 @@
-#ifndef __GRAPHICS_H__
-#define __GRAPHICS_H__
+#ifndef __INIT_H__
+#define __INIT_H__
 
 
 #include <math.h>
 #include <assert.h>
 
-#include "gtypes.h"
+#include "../geometry/gtypes.h"
 #include "entity.h"
-#include "geometry.h"
+#include "../geometry/geometry.h"
 
 #include "ui.h"
-#include "camera.h"
+#include "../geometry/camera.h"
 
-#include "resource.h"
-#include "sprite.h"
-#include "font.h"
+#include "../imui/resource.h"
+#include "../imui/sprite.h"
+#include "../imui/font.h"
 
-#include "imui.h"
+#include "../imui/imui.h"
 
-#include "shaders.h"
-#include "swrender.h"
-#include "gameloop.h"
+#include "../imui/shaders.h"
+#include "../archive/swrender.h"
+#include "../archive/gameloop.h"
 
 
 GameLoopOne *InitGraphics(MContext *ctx, u32 width = 1280, u32 height = 800, const char *window_title = "") {

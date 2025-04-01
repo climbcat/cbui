@@ -5,10 +5,10 @@
 #include <GLFW/glfw3.h>
 #include <signal.h>
 #include <assert.h>
-#include "geometry.h"
+#include "../geometry/geometry.h"
 #include "ui.h"
-#include "camera.h"
-#include "sprite.h"
+#include "../geometry/camera.h"
+#include "../imui/sprite.h"
 #include "swrender.h"
 
 

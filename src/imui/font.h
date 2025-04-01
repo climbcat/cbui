@@ -2,8 +2,6 @@
 #define __FONT_H__
 
 
-#include "geometry.h"
-#include "gtypes.h"
 #include "sprite.h"
 #include "resource.h"
 

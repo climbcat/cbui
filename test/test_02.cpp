@@ -1,18 +1,13 @@
+#include "../../baselayer/baselayer.h"
+#include "../src/platform/platform_glfw.h"
 
 
-#include "../baselayer/baselayer.h"
-
-#include "src/geometry/wireframe.h"
-#include "src/platform/platform_glfw.h"
-
-#include "test/test_02.cpp"
-
-
-void RunWireframe() {
-    printf("Running wireframe program ...\n");
+void TestPlatformGlfw() {
+    printf("TestPlatformGlfw\n");
 
     MContext *ctx = InitBaselayer();
     PlafGlfw *plf = PlafGlfwInit();
+
 
     bool running = true;
     while (running) {
@@ -52,20 +47,6 @@ void RunWireframe() {
     PlafGlfwTerminate(plf);
 }
 
-
-int main (int argc, char **argv) {
-    TimeProgram;
-
-    if (CLAContainsArg("--help", argc, argv) || CLAContainsArg("-h", argc, argv)) {
-        printf("--help:          display help (this text)\n");
-        printf("--test:          run available test functions\n");
-    }
-    else if (CLAContainsArg("--test", argc, argv)) {
-        Test();
-    }
-    else {
-        RunWireframe();
-    }
-
-    return 0;
+void Test() {
+    TestPlatformGlfw();
 }

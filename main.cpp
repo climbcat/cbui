@@ -1,6 +1,6 @@
 #include "../baselayer/baselayer.h"
-#include "graphics.h"
-#include "test.cpp"
+#include "src/archive/init.h"
+#include "test/test_01.cpp"
 
 
 void BoxesAndPointClouds() {
@@ -84,6 +84,7 @@ int main (int argc, char **argv) {
 
     if (CLAContainsArg("--help", argc, argv) || CLAContainsArg("-h", argc, argv)) {
         printf("--help:          display help (this text)\n");
+        printf("--test:          run available test functions\n");
     }
     else if (CLAContainsArg("--test", argc, argv) || force_testing) {
         Test();

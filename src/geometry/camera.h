@@ -2,8 +2,6 @@
 #define __CAMERA_H__
 
 
-#include "ui.h"
-
 struct OrbitCamera {
     PerspectiveFrustum frustum;
     Vector3f center;

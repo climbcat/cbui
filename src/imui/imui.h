@@ -2,8 +2,6 @@
 #define __IMUI_H__
 
 
-#include "ui.h"
-
 
 //
 //  UI Panel quad layout

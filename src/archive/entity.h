@@ -2,9 +2,9 @@
 #define __ENTITYSYSTEM_H__
 
 
-#include "../baselayer/baselayer.h"
-#include "gtypes.h"
-#include "geometry.h"
+#include "../../../baselayer/baselayer.h"
+#include "../geometry/gtypes.h"
+#include "../geometry/geometry.h"
 
 
 //
