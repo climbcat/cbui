@@ -292,8 +292,8 @@ struct SwRenderer {
     List<ScreenAnchor> screen_buffer;
     u8 *image_buffer;
 
-    // shader
-    ScreenQuadTextureProgram screen;
+    // OGL texture projector
+    ScreenProgram screen;
 
     ImageRGBA GetImageAsRGBA() {
         ImageRGBA img;
@@ -321,9 +321,9 @@ SwRenderer InitRenderer(u32 width = 1280, u32 height = 800) {
     rend.screen_buffer = InitList<ScreenAnchor>(rend.a, 1024 * 8);
 
     // shader
-    ScreenQuadTextureProgram p;
+    ScreenProgram p;
     rend.screen = p;
-    rend.screen.Init(rend.image_buffer, width, height);
+    rend.screen = ScreenProgramInit(rend.image_buffer, width, height);
     rend.initialized = true;
 
     return rend;

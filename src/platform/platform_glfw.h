@@ -68,13 +68,14 @@ struct PlafGlfw {
     s32 mouse_x;
     s32 mouse_y;
 
-    ScreenQuadTextureProgram screen;
+    ScreenProgram screen;
     u32 width;
     u32 height;
     u32 max_width;
     u32 max_height;
     u8 *image_buffer;
 };
+
 
 inline PlafGlfw *_GlfwWindowToUserPtr(GLFWwindow* window) {
     PlafGlfw *plaf = (PlafGlfw*) glfwGetWindowUserPointer(window);
@@ -102,6 +103,7 @@ void MouseButtonCallBack(GLFWwindow* window, int button, int action, int mods) {
         btn->pushes++;
     }
 }
+
 void MouseScrollCallBack(GLFWwindow* window, double xoffset, double yoffset) {
     PlafGlfw *plaf = _GlfwWindowToUserPtr(window);
     plaf->scroll.yoffset_acc += yoffset;
@@ -112,6 +114,7 @@ void MouseScrollCallBack(GLFWwindow* window, double xoffset, double yoffset) {
         plaf->scroll.steps_down++;
     }
 }
+
 void CharCallBack(GLFWwindow* window, u32 codepoint) {
     PlafGlfw *plf = _GlfwWindowToUserPtr(window);
 
@@ -120,6 +123,7 @@ void CharCallBack(GLFWwindow* window, u32 codepoint) {
         plf->keys.Put(c);
     }
 }
+
 void KeyCallBack(GLFWwindow* window,  int key, int scancode, int action, int mods) {
     PlafGlfw *plf = _GlfwWindowToUserPtr(window);
 
@@ -152,6 +156,7 @@ void KeyCallBack(GLFWwindow* window,  int key, int scancode, int action, int mod
         }
     }
 }
+
 void WindowResizeCallBack(GLFWwindow* window, int width, int height) {
     PlafGlfw *plf = _GlfwWindowToUserPtr(window);
 
@@ -199,7 +204,7 @@ PlafGlfw* PlafGlfwInit(MArena *a_dest, u32 window_width = 640, u32 window_height
     // shader
     plf->image_buffer = (u8*) ArenaAlloc(a_dest, 4 * plf->max_width * plf->max_height);
     memset(plf->image_buffer, 255, 4 * plf->max_width * plf->max_height);
-    plf->screen.Init(plf->image_buffer, plf->width, plf->height);
+    plf->screen = ScreenProgramInit(plf->image_buffer, plf->width, plf->height);
 
     return plf;
 }
@@ -253,30 +258,37 @@ Button MouseLeft() {
     Button left = g_plaf_glfw.left;
     return left;
 }
+
 Button MouseRight() {
     Button right = g_plaf_glfw.right;
     return right;
 }
+
 Scroll MouseScroll() {
     Scroll result = g_plaf_glfw.scroll;
     return result;
 }
+
 char GetChar() {
     char c = g_plaf_glfw.keys.Get();
     return c;
 }
+
 bool GetEscape() {
     bool was = g_plaf_glfw.akeys.esc;
     return was;
 }
+
 bool GetEnter() {
     bool was = g_plaf_glfw.akeys.enter;
     return was;
 }
+
 bool GetBackspace() {
     bool was = g_plaf_glfw.akeys.backspace;
     return was;
 }
+
 bool GetFKey(u32 *fval) {
     assert(fval != NULL);
 

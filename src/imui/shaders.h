@@ -48,13 +48,12 @@ void ShaderProgramLink(GLuint *program, const GLchar *vsh_src, const GLchar *fsh
 }
 
 
-// TODO: don't put shaders as default values, we will want to zero-init struct
-struct ScreenQuadTextureProgram {
-    // draws a frame buffer / texture to the screen
-    GLuint program = 0;
-    GLuint vao = 0;
-    GLuint vbo = 0;
-    GLuint texture_id = 0;
+struct ScreenProgram {
+    // draws a texture to the screen
+    GLuint program;
+    GLuint vao;
+    GLuint vbo;
+    GLuint texture_id;
 
     const GLchar* vert_src = R"glsl(
         #version 330 core
@@ -82,50 +81,6 @@ struct ScreenQuadTextureProgram {
         }
     )glsl";
 
-    void Init(u8* imgbuffer, u32 width, u32 height) {
-        float sqreen_quad_verts[] = {
-            1.0f,  1.0f, 1.0f, 0.0f,
-            -1.0f,  1.0f, 0.0f, 0.0f,
-            1.0f, -1.0f, 1.0f, 1.0f,
-            -1.0f, -1.0f, 0.0f, 1.0f
-        };
-
-        ShaderProgramLink(&program, vert_src, frag_src);
-
-        glGenVertexArrays(1, &vao);
-        glBindVertexArray(vao);
-
-        // texture
-        glGenTextures(1, &texture_id);
-        glBindTexture(GL_TEXTURE_2D, texture_id);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        glUseProgram(program);
-        glBindVertexArray(vao);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        SetSize(imgbuffer, width, height);
-
-        // quad
-        u32 stride = 4;
-        u32 nverts = 4;
-        glGenBuffers(1, &vbo);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * stride * nverts, &sqreen_quad_verts, GL_STATIC_DRAW);
-
-        GLint pos_attr = glGetAttribLocation(program, "position");
-        glVertexAttribPointer(pos_attr, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), 0);
-        glEnableVertexAttribArray(pos_attr);
-        GLint tex_attr = glGetAttribLocation(program, "tex_coord");
-        glVertexAttribPointer(tex_attr, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*) (2 * sizeof(float)));
-        glEnableVertexAttribArray(tex_attr);
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
-    }
-
     void SetSize(u8* imgbuffer, u32 width, u32 height) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgbuffer);
         glViewport(0, 0, width, height);
@@ -147,6 +102,53 @@ struct ScreenQuadTextureProgram {
         glBindVertexArray(0);
     }
 };
+
+
+ScreenProgram ScreenProgramInit(u8* imgbuffer, u32 width, u32 height) {
+    ScreenProgram prog = {};
+
+    ShaderProgramLink(&prog.program, prog.vert_src, prog.frag_src);
+    glGenVertexArrays(1, &prog.vao);
+    glBindVertexArray(prog.vao);
+
+    // texture
+    glGenTextures(1, &prog.texture_id);
+    glBindTexture(GL_TEXTURE_2D, prog.texture_id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glUseProgram(prog.program);
+    glBindVertexArray(prog.vao);
+    glBindBuffer(GL_ARRAY_BUFFER, prog.vbo);
+    prog.SetSize(imgbuffer, width, height);
+
+    // quad
+    float sqreen_quad_verts[] = {
+        1.0f,  1.0f, 1.0f, 0.0f,
+        -1.0f,  1.0f, 0.0f, 0.0f,
+        1.0f, -1.0f, 1.0f, 1.0f,
+        -1.0f, -1.0f, 0.0f, 1.0f
+    };
+    u32 stride = 4;
+    u32 nverts = 4;
+    glGenBuffers(1, &prog.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, prog.vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * stride * nverts, &sqreen_quad_verts, GL_STATIC_DRAW);
+
+    GLint pos_attr = glGetAttribLocation(prog.program, "position");
+    glVertexAttribPointer(pos_attr, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), 0);
+    glEnableVertexAttribArray(pos_attr);
+    GLint tex_attr = glGetAttribLocation(prog.program, "tex_coord");
+    glVertexAttribPointer(tex_attr, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*) (2 * sizeof(float)));
+    glEnableVertexAttribArray(tex_attr);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    return prog;
+}
 
 
 #endif
