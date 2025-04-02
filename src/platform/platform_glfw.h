@@ -55,6 +55,7 @@ struct ActionKeys {
 
 struct PlafGlfw {
     GLFWwindow* window;
+    bool fullscreen;
 
     Button left;
     Button right;
@@ -209,6 +210,25 @@ void PlafGlfwTerminate(PlafGlfw* plf) {
 }
 
 void PlafGlfwUpdate(PlafGlfw* plf) {
+    if (plf->akeys.fkey == 10) {
+        const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+
+        printf("F10 pressed\n");
+
+        plf->fullscreen = !plf->fullscreen;
+
+        GLFWmonitor *monitor = NULL;
+        if (plf->fullscreen) {
+            monitor = glfwGetWindowMonitor(plf->window);
+
+            plf->width = mode->width;
+            plf->height = mode->height;
+        }
+
+        glfwSetWindowMonitor(plf->window, monitor, 0, 0, plf->width, plf->height, GLFW_DONT_CARE);
+        plf->screen.SetSize(plf->image_buffer, plf->width, plf->height);
+    }
+
     plf->screen.Draw(plf->image_buffer, plf->width, plf->height);
     glfwSwapBuffers(plf->window);
 
