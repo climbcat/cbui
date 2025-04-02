@@ -236,6 +236,7 @@ GameLoopOne *InitGameLoopOne(u32 width = 1280, u32 height = 800, const char *win
     g_gameloop->frameno = 0;
     g_gameloop->window = InitGLFW(width, height, window_title, false);
     g_gameloop->renderer = InitRenderer(width, height);
+
     g_gameloop->cam = InitOrbitCamera(g_gameloop->renderer.aspect);
 
     double xpos, ypos;
@@ -252,7 +253,6 @@ GameLoopOne *InitGameLoopOne(u32 width = 1280, u32 height = 800, const char *win
     glfwSetWindowUserPointer(g_gameloop->window, g_gameloop);
 
     g_mouse = g_gameloop->GetMouseTrap();
-
     return g_gameloop;
 }
 MouseTrap *GetMouse() {

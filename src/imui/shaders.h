@@ -54,8 +54,7 @@ struct ScreenQuadTextureProgram {
     GLuint program = 0;
     GLuint vao = 0;
     GLuint vbo = 0;
-    GLuint tex = 0;
-    u32 nverts = 0;
+    GLuint texture_id = 0;
 
     const GLchar* vert_src = R"glsl(
         #version 330 core
@@ -92,15 +91,13 @@ struct ScreenQuadTextureProgram {
         };
 
         ShaderProgramLink(&program, vert_src, frag_src);
-        u32 stride = 4;
-        nverts = 4;
 
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
 
         // texture
-        glGenTextures(1, &tex);
-        glBindTexture(GL_TEXTURE_2D, tex);
+        glGenTextures(1, &texture_id);
+        glBindTexture(GL_TEXTURE_2D, texture_id);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -109,9 +106,11 @@ struct ScreenQuadTextureProgram {
         glUseProgram(program);
         glBindVertexArray(vao);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgbuffer);
+        SetSize(imgbuffer, width, height);
 
         // quad
+        u32 stride = 4;
+        u32 nverts = 4;
         glGenBuffers(1, &vbo);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(GL_ARRAY_BUFFER, sizeof(float) * stride * nverts, &sqreen_quad_verts, GL_STATIC_DRAW);
@@ -127,6 +126,11 @@ struct ScreenQuadTextureProgram {
         glBindVertexArray(0);
     }
 
+    void SetSize(u8* imgbuffer, u32 width, u32 height) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgbuffer);
+        glViewport(0, 0, width, height);
+    }
+
     void Draw(u8* imgbuffer, u32 width, u32 height) {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f );
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -135,9 +139,10 @@ struct ScreenQuadTextureProgram {
         glBindVertexArray(vao);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-        glBindTexture(GL_TEXTURE_2D, tex);
+        glBindTexture(GL_TEXTURE_2D, texture_id);
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, imgbuffer);
 
+        u32 nverts = 4;
         glDrawArrays(GL_TRIANGLE_STRIP, 0, nverts);
         glBindVertexArray(0);
     }

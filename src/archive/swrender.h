@@ -304,8 +304,7 @@ struct SwRenderer {
     }
 };
 SwRenderer InitRenderer(u32 width = 1280, u32 height = 800) {
-    SwRenderer rend;
-    _memzero(&rend, sizeof(rend));
+    SwRenderer rend = {};
     rend.w = width;
     rend.h = height;
     rend.aspect = (float) width / height;

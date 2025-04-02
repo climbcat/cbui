@@ -8,6 +8,8 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include "../imui/shaders.h"
+
 
 struct Button {
     bool pushed;
@@ -64,6 +66,13 @@ struct PlafGlfw {
     f64 mouse_y_f64;
     s32 mouse_x;
     s32 mouse_y;
+
+    ScreenQuadTextureProgram screen;
+    u32 width;
+    u32 height;
+    u32 max_width;
+    u32 max_height;
+    u8 *image_buffer;
 };
 
 inline PlafGlfw *_GlfwWindowToUserPtr(GLFWwindow* window) {
@@ -142,21 +151,31 @@ void KeyCallBack(GLFWwindow* window,  int key, int scancode, int action, int mod
         }
     }
 }
+void WindowResizeCallBack(GLFWwindow* window, int width, int height) {
+    PlafGlfw *plf = _GlfwWindowToUserPtr(window);
+
+    plf->width = width;
+    plf->height = height;
+    plf->screen.SetSize(plf->image_buffer, width, height);
+}
 
 
 static PlafGlfw g_plaf_glfw;
-PlafGlfw* PlafGlfwInit() {
-    int width = 140;
-    int height = 80;
-    const char *title = "glew_flfw_window_title";
+PlafGlfw* PlafGlfwInit(MArena *a_dest, u32 window_width = 640, u32 window_height = 480, bool start_in_fullscreen = false) {
+    g_plaf_glfw = {};
+    PlafGlfw *plf = &g_plaf_glfw;
+    plf->width = window_width;
+    plf->height = window_height;
+    plf->max_width = 3840;
+    plf->max_height = 2160;
 
     glfwInit();
 
     // opengl window & context
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    g_plaf_glfw.window = glfwCreateWindow(width, height, title, NULL, NULL);
-    glfwMakeContextCurrent(g_plaf_glfw.window);
+    plf->window = glfwCreateWindow(plf->width, plf->height, "glew_flfw_window_title", NULL, NULL);
+    glfwMakeContextCurrent(plf->window);
 
     // glew
     glewExperimental = GL_TRUE;
@@ -166,19 +185,33 @@ PlafGlfw* PlafGlfwInit() {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
 
-    glfwSetCharCallback(g_plaf_glfw.window, CharCallBack); // NOTE: potentially use glfwSetCharModsCallback to additionally get the mods
-    glfwSetKeyCallback(g_plaf_glfw.window, KeyCallBack);
-    glfwSetMouseButtonCallback(g_plaf_glfw.window, MouseButtonCallBack);
-    glfwSetScrollCallback(g_plaf_glfw.window, MouseScrollCallBack);
-    glfwSetWindowUserPointer(g_plaf_glfw.window, &g_plaf_glfw);
+    // input
+    glfwSetCharCallback(plf->window, CharCallBack); // NOTE: potentially use glfwSetCharModsCallback to additionally get the mods
+    glfwSetKeyCallback(plf->window, KeyCallBack);
+    glfwSetMouseButtonCallback(plf->window, MouseButtonCallBack);
+    glfwSetScrollCallback(plf->window, MouseScrollCallBack);
+    glfwSetWindowUserPointer(plf->window, plf);
 
-    return &g_plaf_glfw;
+    // window resize
+    glfwSetFramebufferSizeCallback(g_plaf_glfw.window, WindowResizeCallBack);
+
+    // shader
+    plf->image_buffer = (u8*) ArenaAlloc(a_dest, 4 * plf->max_width * plf->max_height);
+    memset(plf->image_buffer, 255, 4 * plf->max_width * plf->max_height);
+    plf->screen.Init(plf->image_buffer, plf->width, plf->height);
+
+    return plf;
 }
+
 void PlafGlfwTerminate(PlafGlfw* plf) {
     glfwDestroyWindow(plf->window);
     glfwTerminate();
 }
+
 void PlafGlfwUpdate(PlafGlfw* plf) {
+    plf->screen.Draw(plf->image_buffer, plf->width, plf->height);
+    glfwSwapBuffers(plf->window);
+
     plf->left = {};
     plf->right = {};
     plf->scroll = {};

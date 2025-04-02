@@ -12,7 +12,7 @@ void RunWireframe() {
     printf("Running wireframe program ...\n");
 
     MContext *ctx = InitBaselayer();
-    PlafGlfw *plf = PlafGlfwInit();
+    PlafGlfw *plf = PlafGlfwInit(ctx->a_life);
 
     bool running = true;
     while (running) {
