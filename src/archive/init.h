@@ -18,7 +18,7 @@
 
 #include "../imui/imui.h"
 
-#include "../imui/shaders.h"
+#include "../platform/shaders.h"
 #include "../archive/swrender.h"
 #include "../archive/gameloop.h"
 

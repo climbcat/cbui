@@ -8,7 +8,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include "../imui/shaders.h"
+#include "shaders.h"
 
 
 struct Button {
