@@ -65,12 +65,11 @@ void RunWireframe() {
     printf("Running wireframe program ...\n");
 
     MContext *ctx = InitBaselayer();
-    PlafGlfw *plf = PlafGlfwInit(ctx->a_life);
-
+    ImageBufferCreate(ctx->a_life);
+    PlafGlfw *plf = PlafGlfwInit();
 
     OrbitCamera cam = InitOrbitCamera( PlafGlfwGetAspect(plf) );
     Array<Wireframe> objs = CreateSceneObjects(ctx->a_life);
-
 
     bool running = true;
     while (running) {
@@ -78,6 +77,7 @@ void RunWireframe() {
 
 
         // TODO: render the segments using cam.vp
+        ImageBufferClear(plf->width, plf->height);
 
 
         // usr frame end
@@ -89,7 +89,6 @@ void RunWireframe() {
         ArenaClear(ctx->a_tmp);
         XSleep(1);
     }
-
 
     PlafGlfwTerminate(plf);
 }

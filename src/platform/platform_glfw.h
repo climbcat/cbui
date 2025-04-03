@@ -58,6 +58,7 @@ struct ActionKeys {
     u8 fkey; 
 };
 
+
 struct PlafGlfw {
     u64 frame_no;
     GLFWwindow* window;
@@ -74,8 +75,10 @@ struct PlafGlfw {
     ScreenProgram screen;
     u32 width;
     u32 height;
-    u32 max_width;
-    u32 max_height;
+    u32 width_cache;
+    u32 height_cache;
+    s32 window_xpos;
+    s32 window_ypos;
     u8 *image_buffer;
 };
 
@@ -175,14 +178,29 @@ void WindowResizeCallBack(GLFWwindow* window, int width, int height) {
 }
 
 
+static u8 *g_image_buffer;
+#define IMG_BUFF_CHANNELS 4
+#define IMG_BUFF_MAX_WIDTH 3840
+#define IMG_BUFF_MAX_HEIGHT 2160
+u8* ImageBufferGet() {
+    return g_image_buffer;
+}
+void ImageBufferCreate(MArena *a_dest) {
+    g_image_buffer = (u8*) ArenaAlloc(a_dest, IMG_BUFF_CHANNELS * IMG_BUFF_MAX_WIDTH * IMG_BUFF_MAX_HEIGHT);
+}
+void ImageBufferClear(u32 width, u32 height) {
+    if (g_image_buffer) {
+        memset(g_image_buffer, 255, IMG_BUFF_CHANNELS * width * height);
+    }
+}
+
+
 static PlafGlfw g_plaf_glfw;
-PlafGlfw* PlafGlfwInit(MArena *a_dest, u32 window_width = 640, u32 window_height = 480, bool start_in_fullscreen = false) {
+PlafGlfw* PlafGlfwInit(u32 window_width = 640, u32 window_height = 480) {
     g_plaf_glfw = {};
     PlafGlfw *plf = &g_plaf_glfw;
     plf->width = window_width;
     plf->height = window_height;
-    plf->max_width = 3840;
-    plf->max_height = 2160;
 
     glfwInit();
 
@@ -211,8 +229,7 @@ PlafGlfw* PlafGlfwInit(MArena *a_dest, u32 window_width = 640, u32 window_height
     glfwSetFramebufferSizeCallback(g_plaf_glfw.window, WindowResizeCallBack);
 
     // shader
-    plf->image_buffer = (u8*) ArenaAlloc(a_dest, 4 * plf->max_width * plf->max_height);
-    memset(plf->image_buffer, 255, 4 * plf->max_width * plf->max_height);
+    plf->image_buffer = ImageBufferGet();
     plf->screen = ScreenProgramInit(plf->image_buffer, plf->width, plf->height);
 
     // initialize mouse position values (dx and dy are initialized to zero)
@@ -232,21 +249,42 @@ void PlafGlfwTerminate(PlafGlfw* plf) {
 
 void PlafGlfwUpdate(PlafGlfw* plf) {
     if (plf->akeys.fkey == 10) {
-        const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-
-        printf("F10 pressed\n");
+        // toggle fullscreen
 
         plf->fullscreen = !plf->fullscreen;
-
-        GLFWmonitor *monitor = NULL;
         if (plf->fullscreen) {
-            monitor = glfwGetWindowMonitor(plf->window);
+            assert(plf->width_cache == 0);
+            assert(plf->height_cache == 0);
 
+            plf->width_cache = plf->width;
+            plf->height_cache = plf->height;
+            glfwGetWindowPos(plf->window, &plf->window_xpos, &plf->window_ypos);
+
+            GLFWmonitor *monitor = glfwGetWindowMonitor(plf->window);
+
+            const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
             plf->width = mode->width;
             plf->height = mode->height;
+
+            glfwSetWindowMonitor(plf->window, monitor, 0, 0, plf->width, plf->height, GLFW_DONT_CARE);
+        }
+        else {
+            plf->width = plf->width_cache;
+            plf->height = plf->height_cache;
+
+            plf->width_cache = 0;
+            plf->height_cache = 0;
+
+            // doesn't get us back into windowed
+            //glfwSetWindowMonitor(plf->window, NULL, 0, 0, 0, 0, GLFW_DONT_CARE);
+            // TODO: try creating a "windowed full screen" mode switch
+
+            // destroy and re-create everything (!?!)
+            glfwDestroyWindow(plf->window);
+            glfwTerminate();
+            plf = PlafGlfwInit(plf->width, plf->height);
         }
 
-        glfwSetWindowMonitor(plf->window, monitor, 0, 0, plf->width, plf->height, GLFW_DONT_CARE);
         plf->screen.SetSize(plf->image_buffer, plf->width, plf->height);
     }
 
