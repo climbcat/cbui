@@ -56,10 +56,6 @@ List<Vector3f> UpdateLineSegments(MArena *a_dest, Array<Wireframe> objs) {
 }
 
 
-void CreateScene() {
-    // TODO: we need a view matrix
-}
-
 
 void RunWireframe() {
     printf("Running wireframe program ...\n");
@@ -84,7 +80,7 @@ void RunWireframe() {
         cam.Update(plf->cursorpos.dx, plf->cursorpos.dy, plf->left.ended_down, plf->right.ended_down, plf->scroll.yoffset_acc);
 
         // system frame end
-        running = running && !GetEscape();
+        running = running && !GetEscape() && !GetWindowShouldClose(plf);
         PlafGlfwUpdate(plf);
         ArenaClear(ctx->a_tmp);
         XSleep(1);

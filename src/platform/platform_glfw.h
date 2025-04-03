@@ -363,5 +363,9 @@ bool GetFKey(u32 *fval) {
     }
 }
 
+bool GetWindowShouldClose(PlafGlfw *plf) {
+    return glfwWindowShouldClose(plf->window);
+}
+
 
 #endif
