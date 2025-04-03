@@ -284,15 +284,4 @@ MouseTrap InitMouseTrap(int mouse_x, int mouse_y) {
 }
 
 
-inline f32 PositiveSqrtMultiplier(f32 value) {
-    if (value == 0) {
-        value = 1;
-    }
-    else if (value < 0) {
-        value = -1 * value;
-    }
-    return sqrt(value);
-}
-
-
 #endif

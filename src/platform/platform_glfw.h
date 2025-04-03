@@ -2,14 +2,19 @@
 #define __PLATFORM_GLFW_H__
 
 
-#include <math.h>
-
 #include <assert.h>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
 #include "shaders.h"
 
+
+struct MousePosition {
+    f32 x;
+    f32 y;
+    f32 dx;
+    f32 dy;
+};
 
 struct Button {
     bool pushed;
@@ -54,6 +59,7 @@ struct ActionKeys {
 };
 
 struct PlafGlfw {
+    u64 frame_no;
     GLFWwindow* window;
     bool fullscreen;
 
@@ -63,10 +69,7 @@ struct PlafGlfw {
     AsciiKeys keys;
     ActionKeys akeys;
 
-    f64 mouse_x_f64;
-    f64 mouse_y_f64;
-    s32 mouse_x;
-    s32 mouse_y;
+    MousePosition cursorpos;
 
     ScreenProgram screen;
     u32 width;
@@ -75,6 +78,12 @@ struct PlafGlfw {
     u32 max_height;
     u8 *image_buffer;
 };
+
+
+f32 PlafGlfwGetAspect(PlafGlfw *plf) {
+    f32 aspect = ((f32) plf->width) / ((f32) plf->height);
+    return aspect;
+}
 
 
 inline PlafGlfw *_GlfwWindowToUserPtr(GLFWwindow* window) {
@@ -206,6 +215,13 @@ PlafGlfw* PlafGlfwInit(MArena *a_dest, u32 window_width = 640, u32 window_height
     memset(plf->image_buffer, 255, 4 * plf->max_width * plf->max_height);
     plf->screen = ScreenProgramInit(plf->image_buffer, plf->width, plf->height);
 
+    // initialize mouse position values (dx and dy are initialized to zero)
+    f64 mouse_x;
+    f64 mouse_y;
+    glfwGetCursorPos(plf->window, &mouse_x, &mouse_y);
+    plf->cursorpos.x = (f32) mouse_x;
+    plf->cursorpos.y = (f32) mouse_y;
+
     return plf;
 }
 
@@ -246,11 +262,18 @@ void PlafGlfwUpdate(PlafGlfw* plf) {
     plf->left.ended_down = (glfwGetMouseButton(plf->window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS);
     plf->right.ended_down = (glfwGetMouseButton(plf->window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS);
 
-    glfwGetCursorPos(plf->window, &plf->mouse_x_f64, &plf->mouse_y_f64);
-    plf->mouse_x = (s32) floor(plf->mouse_x_f64);
-    plf->mouse_y = (s32) floor(plf->mouse_y_f64);
+    f64 mouse_x;
+    f64 mouse_y;
+    glfwGetCursorPos(plf->window, &mouse_x, &mouse_y);
+    
+    plf->cursorpos.dx = (f32) mouse_x - plf->cursorpos.x;
+    plf->cursorpos.dy = (f32) mouse_y - plf->cursorpos.y;
+    plf->cursorpos.x = (f32) mouse_x;
+    plf->cursorpos.y = (f32) mouse_y;
 
     glfwPollEvents();
+
+    plf->frame_no++;
 }
 
 
