@@ -130,7 +130,7 @@ struct GameLoopOne {
 
     // TODO: Rename to GameLoopFrameEnd()
     void CycleFrame(EntitySystem *es) {
-        
+
         cam.Update(mouse.dx, mouse.dy, mouse.l, mouse.r, mouse.mwheel_y_delta);
         mouse.FrameEnd(frameno);
 

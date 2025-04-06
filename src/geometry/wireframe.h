@@ -16,10 +16,6 @@ enum WireFrameType {
     WFT_COUNT,
 };
 
-
-// things we can make a list out of
-
-
 struct Wireframe {
     Matrix4f transform;
     Vector3f dimensions;
@@ -28,24 +24,19 @@ struct Wireframe {
 };
 
 
-
-// where we can process wireframe things into a list of vectors for representation
-
-
-
 Array<Vector3f> WireframeLineSegments(MArena *dest, Wireframe wf, Matrix4f vp) {
+    Matrix4f mvp = vp * wf.transform;
     Array<Vector3f> segments = {};
     Vector3f sz = wf.dimensions;
     u32 points_per_line_segment = 2;
 
     if (wf.type == WFT_AXIS) {
         segments = InitArray<Vector3f>(dest, 3 * points_per_line_segment);
-        Matrix4f mvp = Matrix4f_Multiply(&vp, &wf.transform);
 
-        Vector3f origo = TransformPoint(mvp, {0.0f, 0.0f, 0.0f} );
-        Vector3f x = TransformPoint(mvp, {sz.x, 0.0f, 0.0f} );
-        Vector3f y = TransformPoint(mvp, {0.0f, sz.y, 0.0f} );
-        Vector3f z = TransformPoint(mvp, {0.0f, 0.0f, sz.z} );
+        Vector3f origo = TransformPerspective(mvp, {0.0f, 0.0f, 0.0f} );
+        Vector3f x = TransformPerspective(mvp, {sz.x, 0.0f, 0.0f} );
+        Vector3f y = TransformPerspective(mvp, {0.0f, sz.y, 0.0f} );
+        Vector3f z = TransformPerspective(mvp, {0.0f, 0.0f, sz.z} );
 
         segments.Add(origo);
         segments.Add(x);
@@ -57,16 +48,15 @@ Array<Vector3f> WireframeLineSegments(MArena *dest, Wireframe wf, Matrix4f vp) {
 
     else if (wf.type == WFT_BOX) {
         segments = InitArray<Vector3f>(dest, 12 * points_per_line_segment);
-        Matrix4f mvp = Matrix4f_Multiply(&vp, &wf.transform);
 
-        Vector3f ppp = TransformPoint(mvp, { sz.x, sz.y, sz.z } );
-        Vector3f ppm = TransformPoint(mvp, { sz.x, sz.y, -sz.z } );
-        Vector3f pmp = TransformPoint(mvp, { sz.x, -sz.y, sz.z } );
-        Vector3f pmm = TransformPoint(mvp, { sz.x, -sz.y, -sz.z } );
-        Vector3f mpp = TransformPoint(mvp, { -sz.x, sz.y, sz.z } );
-        Vector3f mpm = TransformPoint(mvp, { -sz.x, sz.y, -sz.z } );
-        Vector3f mmp = TransformPoint(mvp, { -sz.x, -sz.y, sz.z } );
-        Vector3f mmm = TransformPoint(mvp, { -sz.x, -sz.y, -sz.z } );
+        Vector3f ppp = TransformPerspective(mvp, { sz.x, sz.y, sz.z } );
+        Vector3f ppm = TransformPerspective(mvp, { sz.x, sz.y, -sz.z } );
+        Vector3f pmp = TransformPerspective(mvp, { sz.x, -sz.y, sz.z } );
+        Vector3f pmm = TransformPerspective(mvp, { sz.x, -sz.y, -sz.z } );
+        Vector3f mpp = TransformPerspective(mvp, { -sz.x, sz.y, sz.z } );
+        Vector3f mpm = TransformPerspective(mvp, { -sz.x, sz.y, -sz.z } );
+        Vector3f mmp = TransformPerspective(mvp, { -sz.x, -sz.y, sz.z } );
+        Vector3f mmm = TransformPerspective(mvp, { -sz.x, -sz.y, -sz.z } );
 
         segments.Add(ppp);
         segments.Add(ppm);
