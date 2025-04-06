@@ -1,5 +1,3 @@
-
-
 #include "../baselayer/baselayer.h"
 
 #include "src/geometry/wireframe.h"
@@ -32,29 +30,128 @@ Wireframe CreateAAAxes(f32 len = 1.0f) {
     return axis;
 }
 
-
-
 Array<Wireframe> CreateSceneObjects(MArena *a_dest) {
-
     Array<Wireframe> objs = InitArray<Wireframe>(a_dest, 2);
-    objs.Add(CreateAAAxes());
+    //objs.Add(CreateAAAxes());
     objs.Add(CreateAABox(0.5, 0.5, 0.5));
 
     return objs;
 }
 
-
-List<Vector3f> UpdateLineSegments(MArena *a_dest, Array<Wireframe> objs) {
+List<Vector3f> UpdateLineSegments(MArena *a_dest, Array<Wireframe> objs, Matrix4f vp) {
     List<Vector3f> segments = InitList<Vector3f>(a_dest, 0);
 
     for (u32 i = 0; i < objs.len; ++i) {
-        Array<Vector3f> wf_segs = WireframeLineSegments(a_dest, objs.arr[i]);
+        Array<Vector3f> wf_segs = WireframeLineSegments(a_dest, objs.arr[i], vp);
         segments.len += wf_segs.len;
     }
 
     return segments;
 }
 
+inline
+Vector2_s16 NDC2Screen(u32 w, u32 h, Vector3f ndc) {
+    Vector2_s16 pos;
+
+    pos.x = (s16) ((ndc.x + 1) / 2 * w);
+    pos.y = (s16) ((ndc.y + 1) / 2 * h);
+
+    return pos;
+}
+
+List<Vector2_s16> LineSegmentsToScreenCoords(MArena *a_dest, List<Vector3f> segments_ndc, u32 w, u32 h) {
+
+    List<Vector2_s16> segments_screen = InitList<Vector2_s16>(a_dest, segments_ndc.len);
+
+    for (u32 i = 0; i < segments_ndc.len; ++i) {
+        Vector2_s16 sc = NDC2Screen(w, h, segments_ndc.lst[i]);
+        segments_screen.Add(sc);
+    }
+    return segments_screen;
+}
+
+inline
+bool CullScreenCoords(u32 pos_x, u32 pos_y, u32 w, u32 h) {
+    bool not_result = pos_x >= 0 && pos_x < w && pos_y >= 0 && pos_y < h;
+    return !not_result;
+}
+
+void RenderLineRGBA(u8* image_buffer, u16 w, u16 h, s16 ax, s16 ay, s16 bx, s16 by, Color color) {
+
+    // initially working from a to b
+    // there are four cases:
+    // 1: slope <= 1, ax < bx
+    // 2: slope <= 1, ax > bx 
+    // 3: slope > 1, ay < by
+    // 4: slope > 1, ay > by 
+
+    f32 slope_ab = (f32) (by - ay) / (bx - ax);
+
+    if (abs(slope_ab) <= 1) {
+        // draw by x
+        f32 slope = slope_ab;
+
+        // swap?
+        if (ax > bx) {
+            u16 swapx = ax;
+            u16 swapy = ay;
+
+            ax = bx;
+            ay = by;
+            bx = swapx;
+            by = swapy;
+        }
+
+        s16 x, y;
+        u32 pix_idx;
+        for (s32 i = 0; i <= bx - ax; ++i) {
+            x = ax + i;
+            y = ay + (s16) floor(slope * i);
+
+            if (CullScreenCoords(x, y, w, h)) {
+                continue;
+            }
+
+            pix_idx = x + y*w;
+            image_buffer[4 * pix_idx + 0] = color.r;
+            image_buffer[4 * pix_idx + 1] = color.g;
+            image_buffer[4 * pix_idx + 2] = color.b;
+            image_buffer[4 * pix_idx + 3] = color.a;
+        }
+    }
+    else {
+        // draw by y
+        float slope_inv = 1 / slope_ab;
+
+        // swap a & b ?
+        if (ay > by) {
+            u16 swapx = ax;
+            u16 swapy = ay;
+
+            ax = bx;
+            ay = by;
+            bx = swapx;
+            by = swapy;
+        }
+
+        s16 x, y;
+        u32 pix_idx;
+        for (u16 i = 0; i <= by - ay; ++i) {
+            y = ay + i;
+            x = ax + (s16) floor(slope_inv * i);
+
+            if (CullScreenCoords(x, y, w, h)) {
+                continue;
+            }
+
+            pix_idx = x + y*w;
+            image_buffer[4 * pix_idx + 0] = color.r;
+            image_buffer[4 * pix_idx + 1] = color.g;
+            image_buffer[4 * pix_idx + 2] = color.b;
+            image_buffer[4 * pix_idx + 3] = color.a;
+        }
+    }
+}
 
 
 void RunWireframe() {
@@ -69,11 +166,16 @@ void RunWireframe() {
 
     bool running = true;
     while (running) {
-        List<Vector3f> segments_all = UpdateLineSegments(ctx->a_tmp, objs);
+        List<Vector3f> segments_ndc = UpdateLineSegments(ctx->a_tmp, objs, cam.vp);
+        List<Vector2_s16> segments_screen = LineSegmentsToScreenCoords(ctx->a_tmp, segments_ndc, plf->width, plf->height);
 
 
-        // TODO: render the segments using cam.vp
         ImageBufferClear(plf->width, plf->height);
+        for (u32 i = 0; i < segments_screen.len / 2; ++i) {
+            Vector2_s16 a = segments_screen.lst[2*i];
+            Vector2_s16 b = segments_screen.lst[2*i + 1];
+            RenderLineRGBA(plf->image_buffer, plf->width, plf->height, a.x, a.y, b.x, b.y, ColorBlue());
+        }
 
 
         // usr frame end

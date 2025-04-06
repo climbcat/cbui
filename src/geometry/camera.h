@@ -73,49 +73,6 @@ struct OrbitCamera {
         view = TransformBuildOrbitCam(center, theta, phi, radius);
         vp = TransformBuildViewProj(view, proj);
     }
-    /*
-    void Update(MouseTrap m) {
-        f32 sign_x = 1;
-
-        // why
-        bool invert_x = true;
-        if (invert_x) {
-            sign_x = - 1;
-        }
-
-        if (m.l) {
-            // orbit
-            theta = OrbitCamera::ClampTheta(theta - m.dy * mouse2rot);
-            phi += sign_x * m.dx * mouse2rot;
-        }
-        else if (m.mwheel_y_delta < 0) {
-            // zoom in
-            f32 mult = PositiveSqrtMultiplier((f32) m.mwheel_y_delta);
-            radius *= 1.1f * mult;
-        }
-        else if (m.mwheel_y_delta > 0) {
-            // zoom out
-            f32 mult = PositiveSqrtMultiplier((f32) m.mwheel_y_delta);
-            radius /= 1.1f * mult;
-        }
-        else if (m.r) {
-            // pan
-            Vector3f forward = - SphericalCoordsY(theta*deg2rad, phi*deg2rad, radius);
-            forward.Normalize();
-            Vector3f left = y_hat.Cross(forward);
-            left.Normalize();
-            Vector3f right = - left;
-            Vector3f up = forward.Cross(left);
-            up.Normalize();
-            center = center + mouse2pan * m.dx * right;
-            center = center + mouse2pan * m.dy * up;
-        }
-
-        // build orbit transform
-        view = TransformBuildOrbitCam(center, theta, phi, radius);
-        vp = TransformBuildViewProj(view, proj);
-    }
-    */
     Vector3f Forward() {
         Vector3f forward = - SphericalCoordsY(theta*deg2rad, phi*deg2rad, radius);
         return forward;

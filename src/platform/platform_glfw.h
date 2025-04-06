@@ -118,6 +118,7 @@ void MouseButtonCallBack(GLFWwindow* window, int button, int action, int mods) {
 
 void MouseScrollCallBack(GLFWwindow* window, double xoffset, double yoffset) {
     PlafGlfw *plaf = _GlfwWindowToUserPtr(window);
+
     plaf->scroll.yoffset_acc += yoffset;
     if (yoffset > 0) {
         plaf->scroll.steps_up++;

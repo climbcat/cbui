@@ -131,8 +131,7 @@ struct GameLoopOne {
     // TODO: Rename to GameLoopFrameEnd()
     void CycleFrame(EntitySystem *es) {
         
-        // TODO: fix
-        //cam.Update(mouse);
+        cam.Update(mouse.dx, mouse.dy, mouse.l, mouse.r, mouse.mwheel_y_delta);
         mouse.FrameEnd(frameno);
 
         SwRenderFrame(&renderer, es, &cam.vp, frameno);
