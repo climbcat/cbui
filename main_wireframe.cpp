@@ -23,7 +23,7 @@ Wireframe CreateAABox(f32 w, f32 h, f32 d) {
 Wireframe CreateAAAxes(f32 len = 1.0f) {
     Wireframe axis = {};
     axis.transform = Matrix4f_Identity();
-    axis.type = WFT_BOX;
+    axis.type = WFT_AXIS;
     axis.dimensions = { len, len, len };
     axis.color = COLOR_RED;
 
@@ -32,40 +32,19 @@ Wireframe CreateAAAxes(f32 len = 1.0f) {
 
 Array<Wireframe> CreateSceneObjects(MArena *a_dest) {
     Array<Wireframe> objs = InitArray<Wireframe>(a_dest, 2);
-    //objs.Add(CreateAAAxes());
+    objs.Add(CreateAAAxes());
     objs.Add(CreateAABox(0.5, 0.5, 0.5));
 
     return objs;
 }
 
 
-inline
-Vector2_s16 NDC2Screen(u32 w, u32 h, Vector3f ndc) {
-    Vector2_s16 pos;
-
-    pos.x = (s16) ((ndc.x + 1) / 2 * w);
-    pos.y = (s16) ((ndc.y + 1) / 2 * h);
-
-    return pos;
-}
-
-Array<Vector2_s16> LineSegmentsToScreenCoords(MArena *a_dest, Array<Vector3f> segments_ndc, u32 w, u32 h) {
-    Array<Vector2_s16> segments_screen = InitArray<Vector2_s16>(a_dest, segments_ndc.len);
-
-    for (u32 i = 0; i < segments_ndc.len; ++i) {
-        Vector2_s16 sc = NDC2Screen(w, h, segments_ndc.arr[i]);
-        segments_screen.Add(sc);
-    }
-
-    return segments_screen;
-}
 
 inline
 bool CullScreenCoords(u32 pos_x, u32 pos_y, u32 w, u32 h) {
     bool not_result = pos_x >= 0 && pos_x < w && pos_y >= 0 && pos_y < h;
     return !not_result;
 }
-
 void RenderLineRGBA(u8* image_buffer, u16 w, u16 h, s16 ax, s16 ay, s16 bx, s16 by, Color color) {
 
     // initially working from a to b
@@ -144,6 +123,21 @@ void RenderLineRGBA(u8* image_buffer, u16 w, u16 h, s16 ax, s16 ay, s16 bx, s16 
 }
 
 
+void RenderLineSegments(u8 *image_buffer, Array<Vector3f> segments_ndc, u32 w, u32 h) {
+    for (u32 i = 0; i < segments_ndc.len / 2; ++i) {
+
+        Vector2f a = {};
+        a.x = (segments_ndc.arr[2*i].x + 1) / 2 * w;
+        a.y = (segments_ndc.arr[2*i].y + 1) / 2 * h;
+        Vector2f b = {};
+        b.x = (segments_ndc.arr[2*i + 1].x + 1) / 2 * w;
+        b.y = (segments_ndc.arr[2*i + 1].y + 1) / 2 * h;
+
+        RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, ColorBlue());
+    }
+}
+
+
 void RunWireframe() {
     printf("Running wireframe program ...\n");
 
@@ -156,17 +150,11 @@ void RunWireframe() {
 
     bool running = true;
     while (running) {
+
+        // updat and rende wireframe objects
         Array<Vector3f> segments_ndc = WireframeLineSegments(ctx->a_tmp, objs, cam.vp);
-        Array<Vector2_s16> segments_screen = LineSegmentsToScreenCoords(ctx->a_tmp, segments_ndc, plf->width, plf->height);
-
-
         ImageBufferClear(plf->width, plf->height);
-        for (u32 i = 0; i < segments_screen.len / 2; ++i) {
-            Vector2_s16 a = segments_screen.arr[2*i];
-            Vector2_s16 b = segments_screen.arr[2*i + 1];
-            RenderLineRGBA(plf->image_buffer, plf->width, plf->height, a.x, a.y, b.x, b.y, ColorBlue());
-        }
-
+        RenderLineSegments(plf->image_buffer, segments_ndc, plf->width, plf->height);
 
         // usr frame end
         cam.Update(plf->cursorpos.dx, plf->cursorpos.dy, plf->left.ended_down, plf->right.ended_down, plf->scroll.yoffset_acc);
