@@ -38,16 +38,6 @@ Array<Wireframe> CreateSceneObjects(MArena *a_dest) {
     return objs;
 }
 
-List<Vector3f> UpdateLineSegments(MArena *a_dest, Array<Wireframe> objs, Matrix4f vp) {
-    List<Vector3f> segments = InitList<Vector3f>(a_dest, 0);
-
-    for (u32 i = 0; i < objs.len; ++i) {
-        Array<Vector3f> wf_segs = WireframeLineSegments(a_dest, objs.arr[i], vp);
-        segments.len += wf_segs.len;
-    }
-
-    return segments;
-}
 
 inline
 Vector2_s16 NDC2Screen(u32 w, u32 h, Vector3f ndc) {
@@ -59,14 +49,14 @@ Vector2_s16 NDC2Screen(u32 w, u32 h, Vector3f ndc) {
     return pos;
 }
 
-List<Vector2_s16> LineSegmentsToScreenCoords(MArena *a_dest, List<Vector3f> segments_ndc, u32 w, u32 h) {
-
-    List<Vector2_s16> segments_screen = InitList<Vector2_s16>(a_dest, segments_ndc.len);
+Array<Vector2_s16> LineSegmentsToScreenCoords(MArena *a_dest, Array<Vector3f> segments_ndc, u32 w, u32 h) {
+    Array<Vector2_s16> segments_screen = InitArray<Vector2_s16>(a_dest, segments_ndc.len);
 
     for (u32 i = 0; i < segments_ndc.len; ++i) {
-        Vector2_s16 sc = NDC2Screen(w, h, segments_ndc.lst[i]);
+        Vector2_s16 sc = NDC2Screen(w, h, segments_ndc.arr[i]);
         segments_screen.Add(sc);
     }
+
     return segments_screen;
 }
 
@@ -166,14 +156,14 @@ void RunWireframe() {
 
     bool running = true;
     while (running) {
-        List<Vector3f> segments_ndc = UpdateLineSegments(ctx->a_tmp, objs, cam.vp);
-        List<Vector2_s16> segments_screen = LineSegmentsToScreenCoords(ctx->a_tmp, segments_ndc, plf->width, plf->height);
+        Array<Vector3f> segments_ndc = WireframeLineSegments(ctx->a_tmp, objs, cam.vp);
+        Array<Vector2_s16> segments_screen = LineSegmentsToScreenCoords(ctx->a_tmp, segments_ndc, plf->width, plf->height);
 
 
         ImageBufferClear(plf->width, plf->height);
         for (u32 i = 0; i < segments_screen.len / 2; ++i) {
-            Vector2_s16 a = segments_screen.lst[2*i];
-            Vector2_s16 b = segments_screen.lst[2*i + 1];
+            Vector2_s16 a = segments_screen.arr[2*i];
+            Vector2_s16 b = segments_screen.arr[2*i + 1];
             RenderLineRGBA(plf->image_buffer, plf->width, plf->height, a.x, a.y, b.x, b.y, ColorBlue());
         }
 
