@@ -245,8 +245,8 @@ PlafGlfw* PlafGlfwInit(u32 window_width = 640, u32 window_height = 480) {
     glfwGetCursorPos(plf->window, &mouse_x, &mouse_y);
     plf->cursorpos.x = (f32) mouse_x;
     plf->cursorpos.y = (f32) mouse_y;
-    plf->cursorpos.x_frac = ((f32) mouse_x - plf->width * 0.5f) / plf->width;
-    plf->cursorpos.y_frac = ((f32) mouse_y - plf->height * 0.5f) / plf->height;
+    plf->cursorpos.x_frac = ((f32) mouse_x - (plf->width * 0.5f)) / plf->width;
+    plf->cursorpos.y_frac = ((f32) mouse_y - (plf->height * 0.5f)) / plf->height;
 
     return plf;
 }

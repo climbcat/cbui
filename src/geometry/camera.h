@@ -26,19 +26,19 @@ struct OrbitCamera {
     Ray GetRay(f32 x_frac, f32 y_frac) {
         // get the shoot-ray from the camera in world coordinates
 
-        f32 fov = deg2rad * frustum.fov;;
-        f32 angle_x = x_frac * fov;
-        f32 angle_y = - y_frac * fov;
-
         // TODO: we shouldn't need to have a factor -1 here, in front of the x component.
         //      Check the signs of the projection and all this, comparing to the OGL convention
-        f32 x = - sin(angle_x);
-        f32 y = sin(angle_y);
-        f32 z = sqrt(1 - x*x - y*y);
+
+        f32 fov2 = sin(deg2rad * frustum.fov * 0.5f);
+        Vector3f dir = {};
+        dir.x = - 2.0f * fov2 * x_frac;
+        dir.y = - 2.0f * fov2 / frustum.aspect * y_frac;
+        dir.z = 1;
+        dir.Normalize();
 
         Ray shoot = {};
         shoot.position = TransformPoint(view, Vector3f_Zero());
-        shoot.direction = TransformDirection(view, { x, y, z });
+        shoot.direction = TransformDirection(view, dir);
 
         return shoot;
     }
