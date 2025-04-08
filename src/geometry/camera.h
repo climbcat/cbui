@@ -22,6 +22,7 @@ struct OrbitCamera {
             proj = PerspectiveMatrixOpenGL(frustum, false, true, false);
         }
     }
+
     Ray GetRay(f32 x_frac, f32 y_frac) {
         // get the shoot-ray from the camera in world coordinates
 
@@ -41,6 +42,7 @@ struct OrbitCamera {
 
         return shoot;
     }
+
     Ray CameraRay() {
         Ray forward = GetRay(0.0f, 0.0f);
         return forward;

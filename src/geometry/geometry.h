@@ -525,6 +525,23 @@ Vector3f TransformInversePoint(Matrix4f *a, Vector3f *v) {
     return r;
 }
 inline
+Vector3f TransformInversePoint(Matrix4f a, Vector3f v) {
+    Vector3f r;
+    Vector3f tmp;
+
+    // translate back
+    tmp.x = v.x - a.m[0][3];
+    tmp.y = v.y - a.m[1][3];
+    tmp.z = v.z - a.m[2][3];
+
+    // rotate back (transpose)
+    r.x = a.m[0][0]*tmp.x + a.m[1][0]*tmp.y + a.m[2][0]*tmp.z;
+    r.y = a.m[0][1]*tmp.x + a.m[1][1]*tmp.y + a.m[2][1]*tmp.z;
+    r.z = a.m[0][2]*tmp.x + a.m[1][2]*tmp.y + a.m[2][2]*tmp.z;
+
+    return r;
+}
+inline
 Vector3f TransformDirection(Matrix4f *a, Vector3f *d) {
     Vector3f result;
 
@@ -554,6 +571,18 @@ Vector3f TransformInverseDirection(Matrix4f *a, Vector3f *d) {
     result.x = a->m[0][0]*d->x + a->m[1][0]*d->y + a->m[2][0]*d->z;
     result.y = a->m[0][1]*d->x + a->m[1][1]*d->y + a->m[2][1]*d->z;
     result.z = a->m[0][2]*d->x + a->m[1][2]*d->y + a->m[2][2]*d->z;
+
+    // TODO: scale back
+    return result;
+}
+inline
+Vector3f TransformInverseDirection(Matrix4f a, Vector3f d) {
+    Vector3f result;
+
+    // rotate back
+    result.x = a.m[0][0]*d.x + a.m[1][0]*d.y + a.m[2][0]*d.z;
+    result.y = a.m[0][1]*d.x + a.m[1][1]*d.y + a.m[2][1]*d.z;
+    result.z = a.m[0][2]*d.x + a.m[1][2]*d.y + a.m[2][2]*d.z;
 
     // TODO: scale back
     return result;
@@ -807,6 +836,14 @@ struct Ray {
 };
 Ray TransformRay(Matrix4f *a, Ray *r) {
     return Ray { TransformPoint(a, &r->position), TransformDirection(a, &r->direction) };
+}
+inline
+Ray TransformRay(Matrix4f a, Ray r) {
+    return Ray { TransformPoint(a, r.position), TransformDirection(a, r.direction) };
+}
+inline
+Ray TransformInverseRay(Matrix4f a, Ray r) {
+    return Ray { TransformInversePoint(a, r.position), TransformInverseDirection(a, r.direction) };
 }
 
 

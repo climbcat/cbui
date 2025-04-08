@@ -7,14 +7,6 @@
 #include "test/test_02.cpp"
 
 
-Array<Wireframe> CreateSceneObjects(MArena *a_dest) {
-    Array<Wireframe> objs = InitArray<Wireframe>(a_dest, 2);
-    objs.Add(CreateAAAxes());
-    objs.Add(CreateAABox(0.5, 0.5, 0.5));
-
-    return objs;
-}
-
 
 inline
 bool CullScreenCoords(u32 pos_x, u32 pos_y, u32 w, u32 h) {
@@ -149,44 +141,42 @@ void RunWireframe() {
     PlafGlfw *plf = PlafGlfwInit();
 
     OrbitCamera cam = OrbitCameraInit( PlafGlfwGetAspect(plf) );
-    Array<Wireframe> objs = CreateSceneObjects(ctx->a_life);
+
+    Array<Wireframe> objs = InitArray<Wireframe>(ctx->a_pers, 2);
+    objs.Add(CreateAAAxes());
+    objs.Add(CreateAABox(0.5, 0.5, 0.5));
+
 
     bool shoot_enabled = true;
     Ray shoot = {};
-
-
-    shoot = cam.GetRay(plf->cursorpos.x_frac, plf->cursorpos.y_frac);
-    printf("shoot! %f %f %f %f %f %f\n", shoot.position.x, shoot.position.y, shoot.position.z, shoot.direction.x, shoot.direction.y, shoot.direction.z);
 
     bool running = true;
     while (running) {
         ImageBufferClear(plf->width, plf->height);
 
 
-        if (GetSpace()) {
+        if(shoot_enabled) {
             shoot = cam.GetRay(plf->cursorpos.x_frac, plf->cursorpos.y_frac);
 
-            printf("shoot! %f %f %f %f %f %f\n", shoot.position.x, shoot.position.y, shoot.position.z, shoot.direction.x, shoot.direction.y, shoot.direction.z);
+            Wireframe *box = objs.arr + 1;
+            if (WireFrameCollide(shoot, *box)) {
+                box->color = COLOR_BLACK;
+            }
+            else {
+                box->color = COLOR_BLUE;
+            }
         }
 
-
-        if (shoot_enabled) {
-            // visualize the shot's position
-            RenderLineSegment(
-                plf->image_buffer,
-                TransformPerspective(cam.vp, Vector3f{ 0, 0, 0 }),
-                TransformPerspective(cam.vp, shoot.position),
-                plf->width,
-                plf->height,
-                COLOR_RED);
+        if (true) {
             // visualize the shot's direction
             RenderLineSegment(
                 plf->image_buffer,
                 TransformPerspective(cam.vp, shoot.position),
-                TransformPerspective(cam.vp, shoot.position + shoot.direction),
+                TransformPerspective(cam.vp, shoot.position + 10.0f * shoot.direction),
                 plf->width,
                 plf->height,
-                COLOR_BLUE);
+                COLOR_RED
+            );
         }
 
         if (GetFKey(3)) {

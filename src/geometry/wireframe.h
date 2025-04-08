@@ -54,6 +54,51 @@ Wireframe CreateAAAxes(f32 len = 1.0f) {
 }
 
 
+bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit = NULL) {
+    if (hit) {
+        *hit = Vector3f_Zero();
+    }
+
+    if (wf.type == WFT_BOX) {
+        Ray local = TransformInverseRay(wf.transform, global);
+
+        Vector3f o = local.position;
+        Vector3f d = local.direction;
+
+        f32 l_x = - wf.dimensions.x;
+        f32 h_x = wf.dimensions.x;
+        f32 l_y = - wf.dimensions.y;
+        f32 h_y = wf.dimensions.y;
+        f32 l_z = - wf.dimensions.z;
+        f32 h_z = wf.dimensions.z;
+
+        f32 tl_x = (l_x - o.x) / d.x;
+        f32 th_x = (h_x - o.x) / d.x;
+        f32 tl_y = (l_y - o.y) / d.y;
+        f32 th_y = (h_y - o.y) / d.y;
+        f32 tl_z = (l_z - o.z) / d.z;
+        f32 th_z = (h_z - o.z) / d.z;
+
+        f32 t_cls_x = MinF32(tl_x, th_x);
+        f32 t_far_x = MaxF32(tl_x, th_x);
+        f32 t_cls_y = MinF32(tl_y, th_y);
+        f32 t_far_y = MaxF32(tl_y, th_y);
+        f32 t_cls_z = MinF32(tl_z, th_z);
+        f32 t_far_z = MaxF32(tl_z, th_z);
+
+        f32 t_cls = MaxF32(MaxF32(t_cls_x, t_cls_y), t_cls_z);
+        f32 t_far = MinF32(MinF32(t_far_x, t_far_y), t_far_z);
+
+        bool intersect = t_cls <= t_far;
+        return intersect;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+
 Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wf_lst, Matrix4f vp) {
 
     List<Vector3f> segments = {};
