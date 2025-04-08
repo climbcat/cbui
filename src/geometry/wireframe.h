@@ -11,6 +11,7 @@
 #define COLOR_BLUE (( Color {  0, 0, 255, 255 } ))
 #define COLOR_BLACK (( Color { 0, 0, 0, 255 } ))
 #define COLOR_WHITE (( Color { 255, 255, 255, 255 } ))
+#define COLOR_GRAY (( Color { 128, 128, 128, 255 } ))
 
 
 enum WireFrameType {

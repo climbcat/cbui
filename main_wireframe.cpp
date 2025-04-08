@@ -99,6 +99,17 @@ void RenderLineRGBA(u8* image_buffer, u16 w, u16 h, s16 ax, s16 ay, s16 bx, s16 
 }
 
 
+void RenderLineSegment(u8 *image_buffer, Vector3f anchor_a, Vector3f anchor_b, u32 w, u32 h, Color color = COLOR_RED) {
+    Vector2f a = {};
+    a.x = (anchor_a.x + 1) / 2 * w;
+    a.y = (anchor_a.y + 1) / 2 * h;
+    Vector2f b = {};
+    b.x = (anchor_b.x + 1) / 2 * w;
+    b.y = (anchor_b.y + 1) / 2 * h;
+
+    RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, color);
+}
+
 void RenderLineSegments(u8 *image_buffer, Array<Wireframe> wireframes, Array<Vector3f> segments_ndc, u32 w, u32 h) {
 
     u32 wf_segs_idx = 0;
@@ -134,23 +145,63 @@ void RunWireframe() {
     printf("Running wireframe program ...\n");
 
     MContext *ctx = InitBaselayer();
-    ImageBufferCreate(ctx->a_life);
+    ImageBufferInit(ctx->a_life);
     PlafGlfw *plf = PlafGlfwInit();
 
-    OrbitCamera cam = InitOrbitCamera( PlafGlfwGetAspect(plf) );
+    OrbitCamera cam = OrbitCameraInit( PlafGlfwGetAspect(plf) );
     Array<Wireframe> objs = CreateSceneObjects(ctx->a_life);
+
+    bool shoot_enabled = true;
+    Ray shoot = {};
+
+
+    shoot = cam.GetRay(plf->cursorpos.x_frac, plf->cursorpos.y_frac);
+    printf("shoot! %f %f %f %f %f %f\n", shoot.position.x, shoot.position.y, shoot.position.z, shoot.direction.x, shoot.direction.y, shoot.direction.z);
 
     bool running = true;
     while (running) {
-
-        // updat and rende wireframe objects
-        Array<Vector3f> segments_ndc = WireframeLineSegments(ctx->a_tmp, objs, cam.vp);
         ImageBufferClear(plf->width, plf->height);
+
+
+        if (GetSpace()) {
+            shoot = cam.GetRay(plf->cursorpos.x_frac, plf->cursorpos.y_frac);
+
+            printf("shoot! %f %f %f %f %f %f\n", shoot.position.x, shoot.position.y, shoot.position.z, shoot.direction.x, shoot.direction.y, shoot.direction.z);
+        }
+
+
+        if (shoot_enabled) {
+            // visualize the shot's position
+            RenderLineSegment(
+                plf->image_buffer,
+                TransformPerspective(cam.vp, Vector3f{ 0, 0, 0 }),
+                TransformPerspective(cam.vp, shoot.position),
+                plf->width,
+                plf->height,
+                COLOR_RED);
+            // visualize the shot's direction
+            RenderLineSegment(
+                plf->image_buffer,
+                TransformPerspective(cam.vp, shoot.position),
+                TransformPerspective(cam.vp, shoot.position + shoot.direction),
+                plf->width,
+                plf->height,
+                COLOR_BLUE);
+        }
+
+        if (GetFKey(3)) {
+            shoot_enabled = !shoot_enabled;
+        }
+
+
+
+        // update and render wireframe objects
+        Array<Vector3f> segments_ndc = WireframeLineSegments(ctx->a_tmp, objs, cam.vp);
         RenderLineSegments(plf->image_buffer, objs, segments_ndc, plf->width, plf->height);
 
         // usr frame end
         cam.SetAspect(plf->width, plf->height);
-        cam.Update(plf->cursorpos.dx, plf->cursorpos.dy, plf->left.ended_down, plf->right.ended_down, plf->scroll.yoffset_acc);
+        OrbitCameraUpdate(&cam, plf->cursorpos.dx, plf->cursorpos.dy, plf->left.ended_down, plf->right.ended_down, plf->scroll.yoffset_acc);
 
         // system frame end
         running = running && !GetEscape() && !GetWindowShouldClose(plf);

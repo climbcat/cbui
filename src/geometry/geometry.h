@@ -95,6 +95,15 @@ struct Vector3f {
         z *= f;
     }
     inline
+    Vector3f Unit() {
+        float f = 1 / Norm();
+        Vector3f unit = {};
+        unit.x = x * f;
+        unit.y = y * f;
+        unit.z = z * f;
+        return unit;
+    }
+    inline
     void Invert() {
         x *= -1;
         y *= -1;

@@ -12,6 +12,8 @@
 struct MousePosition {
     f32 x;
     f32 y;
+    f32 x_frac; // [-1, 1]
+    f32 y_frac; // [-1, 1]
     f32 dx;
     f32 dy;
 };
@@ -55,6 +57,7 @@ struct ActionKeys {
     bool enter;
     bool backspace;
     bool del;
+    bool space;
     u8 fkey; 
 };
 
@@ -111,7 +114,7 @@ void MouseButtonCallBack(GLFWwindow* window, int button, int action, int mods) {
         btn->pushed = true;
     }
     else if (action == GLFW_RELEASE) {
-        btn->pushed = true;
+        btn->released = true;
         btn->pushes++;
     }
 }
@@ -153,6 +156,9 @@ void KeyCallBack(GLFWwindow* window,  int key, int scancode, int action, int mod
         else if (key == 261) {
             plf->akeys.del = true;
         }
+        else if (key == ' ') {
+            plf->akeys.space = true;
+        }
         else if (key >= 290 && key <= 301) {
             // 290-301: F1 through F12
             plf->akeys.fkey = key - 289;
@@ -186,7 +192,7 @@ static u8 *g_image_buffer;
 u8* ImageBufferGet() {
     return g_image_buffer;
 }
-void ImageBufferCreate(MArena *a_dest) {
+void ImageBufferInit(MArena *a_dest) {
     g_image_buffer = (u8*) ArenaAlloc(a_dest, IMG_BUFF_CHANNELS * IMG_BUFF_MAX_WIDTH * IMG_BUFF_MAX_HEIGHT);
 }
 void ImageBufferClear(u32 width, u32 height) {
@@ -239,6 +245,8 @@ PlafGlfw* PlafGlfwInit(u32 window_width = 640, u32 window_height = 480) {
     glfwGetCursorPos(plf->window, &mouse_x, &mouse_y);
     plf->cursorpos.x = (f32) mouse_x;
     plf->cursorpos.y = (f32) mouse_y;
+    plf->cursorpos.x_frac = ((f32) mouse_x - plf->width * 0.5f) / plf->width;
+    plf->cursorpos.y_frac = ((f32) mouse_y - plf->height * 0.5f) / plf->height;
 
     return plf;
 }
@@ -309,6 +317,8 @@ void PlafGlfwUpdate(PlafGlfw* plf) {
     plf->cursorpos.dy = (f32) mouse_y - plf->cursorpos.y;
     plf->cursorpos.x = (f32) mouse_x;
     plf->cursorpos.y = (f32) mouse_y;
+    plf->cursorpos.x_frac = ((f32) mouse_x - plf->width * 0.5f) / plf->width;
+    plf->cursorpos.y_frac = ((f32) mouse_y - plf->height * 0.5f) / plf->height;
 
     glfwPollEvents();
 
@@ -346,6 +356,11 @@ bool GetEnter() {
     return was;
 }
 
+bool GetSpace() {
+    bool was = g_plaf_glfw.akeys.space;
+    return was;
+}
+
 bool GetBackspace() {
     bool was = g_plaf_glfw.akeys.backspace;
     return was;
@@ -361,6 +376,15 @@ bool GetFKey(u32 *fval) {
     else {
         *fval = fkey;
         return true;
+    }
+}
+
+bool GetFKey(u32 fval) {
+    if (g_plaf_glfw.akeys.fkey == fval) {
+        return true;
+    }
+    else {
+        return false;
     }
 }
 
