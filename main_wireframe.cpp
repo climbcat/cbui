@@ -7,29 +7,6 @@
 #include "test/test_02.cpp"
 
 
-#define COLOR_RED (( Color { RGBA_RED } ))
-
-
-Wireframe CreateAABox(f32 w, f32 h, f32 d) {
-    Wireframe box = {};
-    box.transform = Matrix4f_Identity();
-    box.type = WFT_BOX;
-    box.dimensions = { 0.5f*w, 0.5f*h, 0.5f*d };
-    box.color = COLOR_RED;
-
-    return box;
-}
-
-Wireframe CreateAAAxes(f32 len = 1.0f) {
-    Wireframe axis = {};
-    axis.transform = Matrix4f_Identity();
-    axis.type = WFT_AXIS;
-    axis.dimensions = { len, len, len };
-    axis.color = COLOR_RED;
-
-    return axis;
-}
-
 Array<Wireframe> CreateSceneObjects(MArena *a_dest) {
     Array<Wireframe> objs = InitArray<Wireframe>(a_dest, 2);
     objs.Add(CreateAAAxes());
@@ -37,7 +14,6 @@ Array<Wireframe> CreateSceneObjects(MArena *a_dest) {
 
     return objs;
 }
-
 
 
 inline
@@ -123,7 +99,13 @@ void RenderLineRGBA(u8* image_buffer, u16 w, u16 h, s16 ax, s16 ay, s16 bx, s16 
 }
 
 
-void RenderLineSegments(u8 *image_buffer, Array<Vector3f> segments_ndc, u32 w, u32 h) {
+void RenderLineSegments(u8 *image_buffer, Array<Wireframe> wireframes, Array<Vector3f> segments_ndc, u32 w, u32 h) {
+
+    u32 wf_segs_idx = 0;
+    u32 wf_idx = 0;
+    Color wf_color = wireframes.arr[wf_idx].color;
+    u32 wf_nsegments = wireframes.arr[wf_idx].nsegments;
+
     for (u32 i = 0; i < segments_ndc.len / 2; ++i) {
 
         Vector2f a = {};
@@ -132,8 +114,18 @@ void RenderLineSegments(u8 *image_buffer, Array<Vector3f> segments_ndc, u32 w, u
         Vector2f b = {};
         b.x = (segments_ndc.arr[2*i + 1].x + 1) / 2 * w;
         b.y = (segments_ndc.arr[2*i + 1].y + 1) / 2 * h;
+        RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, wf_color);
 
-        RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, ColorBlue());
+
+        // update color to match the current wireframe
+        wf_segs_idx++;
+        if (wf_segs_idx == wf_nsegments) {
+            wf_segs_idx = 0;
+            wf_idx++;
+
+            wf_nsegments = wireframes.arr[wf_idx].nsegments;
+            wf_color = wireframes.arr[wf_idx].color;
+        }
     }
 }
 
@@ -154,9 +146,10 @@ void RunWireframe() {
         // updat and rende wireframe objects
         Array<Vector3f> segments_ndc = WireframeLineSegments(ctx->a_tmp, objs, cam.vp);
         ImageBufferClear(plf->width, plf->height);
-        RenderLineSegments(plf->image_buffer, segments_ndc, plf->width, plf->height);
+        RenderLineSegments(plf->image_buffer, objs, segments_ndc, plf->width, plf->height);
 
         // usr frame end
+        cam.SetAspect(plf->width, plf->height);
         cam.Update(plf->cursorpos.dx, plf->cursorpos.dy, plf->left.ended_down, plf->right.ended_down, plf->scroll.yoffset_acc);
 
         // system frame end

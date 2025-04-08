@@ -87,6 +87,13 @@ struct OrbitCamera {
         Ray camray { position, forward };
         return camray;
     }
+    void SetAspect(u32 width, u32 height) {
+        f32 aspect_new = width / (f32) height;
+        if (aspect_new != frustum.aspect) {
+            frustum.aspect = aspect_new;
+            proj = PerspectiveMatrixOpenGL(frustum, false, true, false);
+        }
+    }
 };
 OrbitCamera InitOrbitCamera(float aspect) {
     OrbitCamera cam = {};

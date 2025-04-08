@@ -6,6 +6,13 @@
 #include "../geometry/gtypes.h"
 
 
+#define COLOR_RED (( Color { 255, 0, 0, 255 } ))
+#define COLOR_GREEN (( Color { 0, 255, 0, 255 } ))
+#define COLOR_BLUE (( Color {  0, 0, 255, 255 } ))
+#define COLOR_BLACK (( Color { 0, 0, 0, 255 } ))
+#define COLOR_WHITE (( Color { 255, 255, 255, 255 } ))
+
+
 enum WireFrameType {
     WFT_AXIS,
     WFT_BOX,
@@ -21,7 +28,29 @@ struct Wireframe {
     Vector3f dimensions;
     WireFrameType type;
     Color color;
+    u32 nsegments;
 };
+
+
+Wireframe CreateAABox(f32 w, f32 h, f32 d) {
+    Wireframe box = {};
+    box.transform = Matrix4f_Identity();
+    box.type = WFT_BOX;
+    box.dimensions = { 0.5f*w, 0.5f*h, 0.5f*d };
+    box.color = COLOR_BLUE;
+
+    return box;
+}
+
+Wireframe CreateAAAxes(f32 len = 1.0f) {
+    Wireframe axis = {};
+    axis.transform = Matrix4f_Identity();
+    axis.type = WFT_AXIS;
+    axis.dimensions = { len, len, len };
+    axis.color = COLOR_BLACK;
+
+    return axis;
+}
 
 
 Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wf_lst, Matrix4f vp) {
@@ -31,12 +60,13 @@ Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wf_lst, M
 
     for (u32 j = 0; j < wf_lst.len; ++j) {
 
-        Wireframe wf = wf_lst.arr[j];
-        Matrix4f mvp = vp * wf.transform;
-        Vector3f sz = wf.dimensions;
+        Wireframe *wf = wf_lst.arr + j;
+        Matrix4f mvp = vp * wf->transform;
+        Vector3f sz = wf->dimensions;
         u32 points_per_line_segment = 2;
 
-        if (wf.type == WFT_AXIS) {
+        if (wf->type == WFT_AXIS) {
+            wf->nsegments = 3;
 
             Vector3f origo = TransformPerspective(mvp, {0.0f, 0.0f, 0.0f} );
             Vector3f x = TransformPerspective(mvp, {sz.x, 0.0f, 0.0f} );
@@ -51,7 +81,8 @@ Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wf_lst, M
             segments.Add(z);
         }
 
-        else if (wf.type == WFT_BOX) {
+        else if (wf->type == WFT_BOX) {
+            wf->nsegments = 12;
 
             Vector3f ppp = TransformPerspective(mvp, { sz.x, sz.y, sz.z } );
             Vector3f ppm = TransformPerspective(mvp, { sz.x, sz.y, -sz.z } );
