@@ -18,7 +18,7 @@ struct ScreenAnchor {
     Color c;
 };
 inline
-bool CullScreenCoords(u32 pos_x, u32 pos_y, u32 w, u32 h) {
+bool _CullScreenCoords(u32 pos_x, u32 pos_y, u32 w, u32 h) {
     bool not_result = pos_x >= 0 && pos_x < w && pos_y >= 0 && pos_y < h;
     return !not_result;
 }
@@ -43,7 +43,7 @@ u16 LinesToScreenCoords(u32 w, u32 h, List<ScreenAnchor> *dest_screen_buffer, Li
         Vector2_s16 a = NDC2Screen(w, h, ndc_buffer->lst[line.x]);
         Vector2_s16 b = NDC2Screen(w, h, ndc_buffer->lst[line.y]);
 
-        if (CullScreenCoords(a.x, a.y, w, h) && CullScreenCoords(b.x, b.y, w, h)) {
+        if (_CullScreenCoords(a.x, a.y, w, h) && _CullScreenCoords(b.x, b.y, w, h)) {
             continue;
         }
 
@@ -107,7 +107,7 @@ void RenderLineRGBA(u8* image_buffer, u16 w, u16 h, s16 ax, s16 ay, s16 bx, s16 
             x = ax + i;
             y = ay + (s16) floor(slope * i);
 
-            if (CullScreenCoords(x, y, w, h)) {
+            if (_CullScreenCoords(x, y, w, h)) {
                 continue;
             }
 
@@ -139,7 +139,7 @@ void RenderLineRGBA(u8* image_buffer, u16 w, u16 h, s16 ax, s16 ay, s16 bx, s16 
             y = ay + i;
             x = ax + (s16) floor(slope_inv * i);
 
-            if (CullScreenCoords(x, y, w, h)) {
+            if (_CullScreenCoords(x, y, w, h)) {
                 continue;
             }
 
@@ -168,7 +168,7 @@ void RenderPointCloud(u8* image_buffer, u16 w, u16 h, Matrix4f *mvp, List<Vector
             c = colors.lst[i];
             p_ndc = TransformPerspective( *mvp, p );
             p_screen = NDC2Screen(w, h, p_ndc);
-            if (CullScreenCoords(p_screen.x, p_screen.y, w, h) ) {
+            if (_CullScreenCoords(p_screen.x, p_screen.y, w, h) ) {
                 continue;
             }
             pix_idx = ScreenCoordsPosition2Idx(p_screen.x, p_screen.y, w);
@@ -183,7 +183,7 @@ void RenderPointCloud(u8* image_buffer, u16 w, u16 h, Matrix4f *mvp, List<Vector
             p = points.lst[i];
             p_ndc = TransformPerspective( *mvp, p );
             p_screen = NDC2Screen(w, h, p_ndc);
-            if (CullScreenCoords(p_screen.x, p_screen.y, w, h) ) {
+            if (_CullScreenCoords(p_screen.x, p_screen.y, w, h) ) {
                 continue;
             }
             pix_idx = ScreenCoordsPosition2Idx(p_screen.x, p_screen.y, w);
@@ -207,7 +207,7 @@ void RenderPointCloudWithNormals(u8* image_buffer, u16 w, u16 h, Matrix4f *mvp, 
         p = points.lst[i];
         p_ndc = TransformPerspective( *mvp, p );
         p_screen = NDC2Screen(w, h, p_ndc);
-        if (CullScreenCoords(p_screen.x, p_screen.y, w, h) ) {
+        if (_CullScreenCoords(p_screen.x, p_screen.y, w, h) ) {
             continue;
         }
 

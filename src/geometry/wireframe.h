@@ -54,10 +54,7 @@ Wireframe CreateAAAxes(f32 len = 1.0f) {
 }
 
 
-bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit = NULL) {
-    if (hit) {
-        *hit = Vector3f_Zero();
-    }
+bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3f *hit_out = NULL) {
 
     if (wf.type == WFT_BOX) {
         Ray local = TransformInverseRay(wf.transform, global);
@@ -83,6 +80,13 @@ bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit = NULL) {
         f32 t_far = MinF32(MinF32(t_far_x, t_far_y), t_far_z);
 
         bool intersect = t_cls <= t_far;
+        if (intersect && hit_in) {
+            *hit_in = TransformInversePoint(wf.transform, local.position + t_cls * local.direction);
+        }
+        if (intersect && hit_out) {
+            *hit_out = TransformInversePoint(wf.transform, local.position + t_far * local.direction);
+        }
+
         return intersect;
     }
     else
@@ -93,7 +97,6 @@ bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit = NULL) {
 
 
 Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wf_lst, Matrix4f vp) {
-
     List<Vector3f> segments = {};
     segments.lst = (Vector3f*) ArenaOpen(a_dest);
 
