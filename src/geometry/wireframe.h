@@ -65,19 +65,12 @@ bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit = NULL) {
         Vector3f o = local.position;
         Vector3f d = local.direction;
 
-        f32 l_x = - wf.dimensions.x;
-        f32 h_x = wf.dimensions.x;
-        f32 l_y = - wf.dimensions.y;
-        f32 h_y = wf.dimensions.y;
-        f32 l_z = - wf.dimensions.z;
-        f32 h_z = wf.dimensions.z;
-
-        f32 tl_x = (l_x - o.x) / d.x;
-        f32 th_x = (h_x - o.x) / d.x;
-        f32 tl_y = (l_y - o.y) / d.y;
-        f32 th_y = (h_y - o.y) / d.y;
-        f32 tl_z = (l_z - o.z) / d.z;
-        f32 th_z = (h_z - o.z) / d.z;
+        f32 tl_x = (-wf.dimensions.x - o.x) / d.x;
+        f32 th_x = (wf.dimensions.x - o.x) / d.x;
+        f32 tl_y = (- wf.dimensions.y - o.y) / d.y;
+        f32 th_y = (wf.dimensions.y - o.y) / d.y;
+        f32 tl_z = (- wf.dimensions.z - o.z) / d.z;
+        f32 th_z = (wf.dimensions.z - o.z) / d.z;
 
         f32 t_cls_x = MinF32(tl_x, th_x);
         f32 t_far_x = MaxF32(tl_x, th_x);
