@@ -119,8 +119,8 @@ void RenderFat3x3(u8 *image_buffer, Vector3f point, u32 w, u32 h, Color color = 
     }
 }
 
-
-void RenderLineSegment(u8 *image_buffer, Vector3f anchor_a, Vector3f anchor_b, u32 w, u32 h, Color color = COLOR_RED) {
+inline
+void RenderLineSegment(u8 *image_buffer, Vector3f anchor_a, Vector3f anchor_b, u32 w, u32 h, Color color) {
     Vector2f a = {};
     a.x = (anchor_a.x + 1) / 2 * w;
     a.y = (anchor_a.y + 1) / 2 * h;
@@ -131,21 +131,14 @@ void RenderLineSegment(u8 *image_buffer, Vector3f anchor_a, Vector3f anchor_b, u
     RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, color);
 }
 
-void RenderLineSegments(u8 *image_buffer, Array<Wireframe> wireframes, Array<Vector3f> segments_ndc, u32 w, u32 h) {
+void RenderLineSegmentList(u8 *image_buffer, Array<Wireframe> wireframes, Array<Vector3f> segments_ndc, u32 w, u32 h) {
     u32 wf_segs_idx = 0;
     u32 wf_idx = 0;
     Color wf_color = wireframes.arr[wf_idx].color;
     u32 wf_nsegments = wireframes.arr[wf_idx].nsegments;
 
     for (u32 i = 0; i < segments_ndc.len / 2; ++i) {
-
-        Vector2f a = {};
-        a.x = (segments_ndc.arr[2*i].x + 1) / 2 * w;
-        a.y = (segments_ndc.arr[2*i].y + 1) / 2 * h;
-        Vector2f b = {};
-        b.x = (segments_ndc.arr[2*i + 1].x + 1) / 2 * w;
-        b.y = (segments_ndc.arr[2*i + 1].y + 1) / 2 * h;
-        RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, wf_color);
+        RenderLineSegment(image_buffer, segments_ndc.arr[2*i], segments_ndc.arr[2*i + 1], w, h, wf_color);
 
         // update color to match the current wireframe
         wf_segs_idx++;
@@ -189,9 +182,7 @@ void RunWireframe() {
             if (WireFrameCollide(shoot, *box, &hit)) {
                 box->color = COLOR_BLACK;
                 Vector3f hit_ndc = TransformPerspective(cam.vp, hit);
-                //RenderPoint(plf->image_buffer, hit_ndc, plf->width, plf->height);
                 RenderFat3x3(plf->image_buffer, hit_ndc, plf->width, plf->height);
-                
             }
             else {
                 box->color = COLOR_BLUE;
@@ -201,7 +192,7 @@ void RunWireframe() {
 
         // update and render wireframe objects
         Array<Vector3f> segments_ndc = WireframeLineSegments(ctx->a_tmp, objs, cam.vp);
-        RenderLineSegments(plf->image_buffer, objs, segments_ndc, plf->width, plf->height);
+        RenderLineSegmentList(plf->image_buffer, objs, segments_ndc, plf->width, plf->height);
 
         // usr frame end
         cam.SetAspect(plf->width, plf->height);
