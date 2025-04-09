@@ -135,10 +135,28 @@ void RenderLineSegmentList(u8 *image_buffer, Array<Wireframe> wireframes, Array<
     u32 wf_segs_idx = 0;
     u32 wf_idx = 0;
     Color wf_color = wireframes.arr[wf_idx].color;
+    WireFrameRenderStyle wf_style = wireframes.arr[wf_idx].style;
     u32 wf_nsegments = wireframes.arr[wf_idx].nsegments;
 
     for (u32 i = 0; i < segments_ndc.len / 2; ++i) {
-        RenderLineSegment(image_buffer, segments_ndc.arr[2*i], segments_ndc.arr[2*i + 1], w, h, wf_color);
+
+        if (wf_style == WFR_SLIM) {
+            RenderLineSegment(image_buffer, segments_ndc.arr[2*i], segments_ndc.arr[2*i + 1], w, h, wf_color);
+        }
+        else if (wf_style == WFR_FAT) {
+            Vector3f anchor_a = segments_ndc.arr[2*i];
+            Vector3f anchor_b = segments_ndc.arr[2*i + 1];
+            Vector2f a = {};
+            a.x = (anchor_a.x + 1) / 2 * w;
+            a.y = (anchor_a.y + 1) / 2 * h;
+            Vector2f b = {};
+            b.x = (anchor_b.x + 1) / 2 * w;
+            b.y = (anchor_b.y + 1) / 2 * h;
+
+            RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, wf_color);
+            RenderLineRGBA(image_buffer, w, h, a.x + 1, a.y, b.x + 1, b.y, wf_color);
+            RenderLineRGBA(image_buffer, w, h, a.x, a.y + 1, b.x, b.y + 1, wf_color);
+        }
 
         // update color to match the current wireframe
         wf_segs_idx++;
@@ -148,6 +166,7 @@ void RenderLineSegmentList(u8 *image_buffer, Array<Wireframe> wireframes, Array<
 
             wf_nsegments = wireframes.arr[wf_idx].nsegments;
             wf_color = wireframes.arr[wf_idx].color;
+            wf_style = wireframes.arr[wf_idx].style;
         }
     }
 }
@@ -166,7 +185,8 @@ void RunWireframe() {
     Array<Wireframe> objs = InitArray<Wireframe>(ctx->a_pers, 2);
     objs.Add(CreateAAAxes());
     objs.Add(CreateAABox(0.5, 0.5, 0.5));
-
+    Wireframe *selected = NULL;
+    Wireframe *selected_prev = NULL;
 
     bool running = true;
     while (running) {
@@ -175,20 +195,38 @@ void RunWireframe() {
 
         Ray shoot = cam.GetRay(plf->cursorpos.x_frac, plf->cursorpos.y_frac);
         Vector3f first;
+        bool missed = true;
         for (u32 i = 0; i < objs.len; ++i) {
             Wireframe *box = objs.arr + i;
 
             Vector3f hit;
             if (WireFrameCollide(shoot, *box, &hit)) {
-                box->color = COLOR_BLACK;
+                missed = false;
+
+                if (MouseLeft().pushed) {
+                    selected = box;
+                }
+
                 Vector3f hit_ndc = TransformPerspective(cam.vp, hit);
                 RenderFat3x3(plf->image_buffer, hit_ndc, plf->width, plf->height);
             }
-            else {
-                box->color = COLOR_BLUE;
-            }
+        }
+        if (missed && MouseLeft().pushed) {
+            selected = NULL;
         }
 
+        if (selected != selected_prev) {
+            if (selected) {
+                selected->style = WFR_FAT;
+
+                selected_prev = selected;
+            }
+            else {
+                selected_prev->style = WFR_SLIM;
+
+                selected_prev = NULL;
+            }
+        }
 
         // update and render wireframe objects
         Array<Vector3f> segments_ndc = WireframeLineSegments(ctx->a_tmp, objs, cam.vp);

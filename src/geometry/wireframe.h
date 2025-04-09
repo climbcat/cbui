@@ -24,10 +24,16 @@ enum WireFrameType {
     WFT_COUNT,
 };
 
+enum WireFrameRenderStyle {
+    WFR_SLIM,
+    WFR_FAT,
+};
+
 struct Wireframe {
     Matrix4f transform;
     Vector3f dimensions;
     WireFrameType type;
+    WireFrameRenderStyle style;
     Color color;
     u32 nsegments;
 };
