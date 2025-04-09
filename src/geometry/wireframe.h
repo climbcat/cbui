@@ -63,6 +63,8 @@ Wireframe CreateAAAxes(f32 len = 1.0f) {
 bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3f *hit_out = NULL) {
 
     if (wf.type == WFT_BOX) {
+        // TODO: slab method; handle axis-aligned rays
+
         Ray local = TransformInverseRay(wf.transform, global);
 
         Vector3f o = local.position;

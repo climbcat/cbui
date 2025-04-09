@@ -49,7 +49,9 @@ inline
 Vector2f operator+(Vector2f u, Vector2f v) {
     return Vector2f::Add(&u, &v);
 }
-
+Vector2f Vector2f_Zero() {
+    return {};
+}
 
 struct Matrix4f {
     float m[4][4];

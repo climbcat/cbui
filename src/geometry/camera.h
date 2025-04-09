@@ -2,6 +2,20 @@
 #define __CAMERA_H__
 
 
+Vector3f RayPlaneIntersect(Ray ray, Vector3f plane_origo, Vector3f plane_normal) {
+    f32 dot = plane_normal.Dot(ray.direction);
+    if (abs(dot) > 0.0001f) {
+        f32 t = (plane_origo - ray.position).Dot(plane_normal) / dot;
+
+        Vector3f result = ray.position + t * ray.direction;
+        return result;
+    }
+    else {
+        return {};
+    }
+}
+
+
 struct OrbitCamera {
     PerspectiveFrustum frustum;
     Vector3f center;
@@ -46,6 +60,15 @@ struct OrbitCamera {
     Ray CameraRay() {
         Ray forward = GetRay(0.0f, 0.0f);
         return forward;
+    }
+
+    Vector3f GetPointAtDepth(f32 x_frac, f32 y_frac, Vector3f at_depth) {
+        f32 depth_loc = TransformInversePoint(view, at_depth).z;
+        Vector3f plane_origo = { 0.0f, 0.0f, depth_loc };
+        Vector3f plane_normal = { 0.0f, 0.0f, 1.0f };
+
+        Vector3f its_world = RayPlaneIntersect(GetRay(x_frac, y_frac), TransformPoint(view, plane_origo), TransformPoint(view, plane_normal));
+        return its_world;
     }
 };
 

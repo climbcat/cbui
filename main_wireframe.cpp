@@ -92,19 +92,19 @@ void RenderLineRGBA(u8* image_buffer, u16 w, u16 h, s16 ax, s16 ay, s16 bx, s16 
 
 inline
 u32 GetXYIdx(f32 x, f32 y, u32 stride) {
-    u32 idx = x + stride * y;
+    u32 idx = floor(x) + stride * floor(y);
     return idx;
 }
 
-void RenderPoint(u8 *image_buffer, Vector3f point, u32 w, u32 h, Color color = COLOR_RED) {
-    f32 x = (point.x + 1) / 2 * w;
-    f32 y = (point.y + 1) / 2 * h;
+void RenderPoint(u8 *image_buffer, Vector3f point_ndc, u32 w, u32 h, Color color = COLOR_RED) {
+    f32 x = (point_ndc.x + 1) / 2 * w;
+    f32 y = (point_ndc.y + 1) / 2 * h;
     ((Color*) image_buffer)[ GetXYIdx(x, y, w) ] = color;
 }
 
-void RenderFat3x3(u8 *image_buffer, Vector3f point, u32 w, u32 h, Color color = COLOR_RED) {
-    f32 x = (point.x + 1) / 2 * w;
-    f32 y = (point.y + 1) / 2 * h;
+void RenderFat3x3(u8 *image_buffer, Vector3f point_ndc, u32 w, u32 h, Color color = COLOR_RED) {
+    f32 x = (point_ndc.x + 1) / 2 * w;
+    f32 y = (point_ndc.y + 1) / 2 * h;
 
     for (s32 i = -1; i < 2; ++i) {
         for (s32 j = -1; j < 2; ++j) {
@@ -172,6 +172,13 @@ void RenderLineSegmentList(u8 *image_buffer, Array<Wireframe> wireframes, Array<
 }
 
 
+Vector3f Vector3fProjectToPlane(Vector3f point, Vector3f plane_origo, Vector3f plane_normal) {
+    Vector3f delta = point - plane_origo;
+    f32 dot = delta.Dot(plane_normal);
+    Vector3f result = point - dot * plane_normal;
+    return result;
+}
+
 
 void RunWireframe() {
     printf("Running wireframe program ...\n");
@@ -187,6 +194,9 @@ void RunWireframe() {
     objs.Add(CreateAABox(0.5, 0.5, 0.5));
     Wireframe *selected = NULL;
     Wireframe *selected_prev = NULL;
+    bool drag_enabled = false;
+    Vector3f drag = {};
+    Vector3f drag_nxt = {};
 
     bool running = true;
     while (running) {
@@ -194,27 +204,51 @@ void RunWireframe() {
 
 
         Ray shoot = cam.GetRay(plf->cursorpos.x_frac, plf->cursorpos.y_frac);
-        Vector3f first;
-        bool missed = true;
+        bool collided = false;
         for (u32 i = 0; i < objs.len; ++i) {
             Wireframe *box = objs.arr + i;
 
             Vector3f hit;
+            drag_enabled = false;
             if (WireFrameCollide(shoot, *box, &hit)) {
-                missed = false;
+                collided = true;
 
                 if (MouseLeft().pushed) {
                     selected = box;
+                    drag_enabled = true;
+                    drag = hit;
                 }
+                else if (MouseLeft().ended_down) {
+                    drag_enabled = true;
 
-                Vector3f hit_ndc = TransformPerspective(cam.vp, hit);
-                RenderFat3x3(plf->image_buffer, hit_ndc, plf->width, plf->height);
+                    drag_nxt = Vector3fProjectToPlane(hit, drag, cam.CameraRay().direction);
+
+                    Vector3f delta = drag - drag_nxt;
+                    Vector3f pos = TransformGetTranslation(box->transform);
+
+
+                    //box->transform.m[0][3] += delta.x;
+                    //box->transform.m[1][3] += delta.y;
+                    //box->transform.m[2][3] += delta.z;
+                    
+                    //drag = drag_nxt;
+                }
+                else {
+                    //drag = Vector3f_Zero();
+                }
+                //RenderFat3x3(plf->image_buffer, TransformPerspective(cam.vp, hit), plf->width, plf->height);
             }
         }
-        if (missed && MouseLeft().pushed) {
+
+        if (collided == false && MouseLeft().pushed) {
             selected = NULL;
         }
+        RenderFat3x3(plf->image_buffer, TransformPerspective(cam.vp, drag), plf->width, plf->height, COLOR_BLACK);
+        RenderFat3x3(plf->image_buffer, TransformPerspective(cam.vp, drag_nxt), plf->width, plf->height, COLOR_BLACK);
+        RenderLineSegment(plf->image_buffer, TransformPerspective(cam.vp, drag_nxt), TransformPerspective(cam.vp, drag), plf->width, plf->height, COLOR_BLACK);
 
+
+        printf("%f %f %f %d\n", drag.x, drag.y, drag.z, collided);
         if (selected != selected_prev) {
             if (selected) {
                 selected->style = WFR_FAT;
@@ -234,7 +268,10 @@ void RunWireframe() {
 
         // usr frame end
         cam.SetAspect(plf->width, plf->height);
-        OrbitCameraUpdate(&cam, plf->cursorpos.dx, plf->cursorpos.dy, plf->left.ended_down, plf->right.ended_down, plf->scroll.yoffset_acc);
+
+        if (drag_enabled == false) {
+            OrbitCameraUpdate(&cam, plf->cursorpos.dx, plf->cursorpos.dy, plf->left.ended_down, plf->right.ended_down, plf->scroll.yoffset_acc);
+        }
 
         // system frame end
         running = running && !GetEscape() && !GetWindowShouldClose(plf);

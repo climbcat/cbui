@@ -12,10 +12,12 @@
 struct MousePosition {
     f32 x;
     f32 y;
-    f32 x_frac; // [-1, 1]
-    f32 y_frac; // [-1, 1]
     f32 dx;
     f32 dy;
+    f32 x_frac; // [-1, 1]
+    f32 y_frac; // [-1, 1]
+    f32 dx_frac;
+    f32 dy_frac;
 };
 
 struct Button {
@@ -317,8 +319,13 @@ void PlafGlfwUpdate(PlafGlfw* plf) {
     plf->cursorpos.dy = (f32) mouse_y - plf->cursorpos.y;
     plf->cursorpos.x = (f32) mouse_x;
     plf->cursorpos.y = (f32) mouse_y;
-    plf->cursorpos.x_frac = ((f32) mouse_x - plf->width * 0.5f) / plf->width;
-    plf->cursorpos.y_frac = ((f32) mouse_y - plf->height * 0.5f) / plf->height;
+
+    f32 x_frac = ((f32) mouse_x - plf->width * 0.5f) / plf->width;
+    f32 y_frac = ((f32) mouse_y - plf->height * 0.5f) / plf->height;
+    plf->cursorpos.dx_frac = plf->cursorpos.x_frac - x_frac;
+    plf->cursorpos.dy_frac = plf->cursorpos.y_frac - y_frac;
+    plf->cursorpos.x_frac = x_frac;
+    plf->cursorpos.y_frac = y_frac;
 
     glfwPollEvents();
 
@@ -338,6 +345,15 @@ Button MouseRight() {
 
 Scroll MouseScroll() {
     Scroll result = g_plaf_glfw.scroll;
+    return result;
+}
+
+Vector2f MouseFrac() {
+    Vector2f result = { g_plaf_glfw.cursorpos.x_frac, g_plaf_glfw.cursorpos.y_frac };
+    return result;
+}
+Vector2f MouseFracDelta() {
+    Vector2f result = { (f32) g_plaf_glfw.cursorpos.dx / g_plaf_glfw.width, (f32) g_plaf_glfw.cursorpos.dy / g_plaf_glfw.height };
     return result;
 }
 
