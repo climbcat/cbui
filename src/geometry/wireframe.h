@@ -77,9 +77,9 @@ Wireframe CreateSphere(f32 r) {
 Wireframe CreateEye(f32 width, f32 depth) {
     Wireframe box = {};
     box.transform = Matrix4f_Identity();
-    box.type = WFT_CYLINDER;
+    box.type = WFT_EYE;
     box.dimensions = { width, width, depth };
-    box.color = COLOR_YELLOW;
+    box.color = COLOR_BLACK;
 
     return box;
 }
@@ -326,29 +326,32 @@ Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wf_lst, M
 
         else if (wf->type == WFT_EYE) {
 
-            /*
-            float radius_xy = campos->dims.x;
-            float length_z = campos->dims.z;
+            f32 w2 = sz.x / 2;
+            f32 d = sz.z;
 
-            campos->verts_low = vertex_buffer->len;
-            campos->lines_low = index_buffer->len;
+            Vector3f urc = TransformPerspective(mvp, { w2, w2, d });
+            Vector3f ulc = TransformPerspective(mvp, { - w2, w2, d });
+            Vector3f lrc = TransformPerspective(mvp, { w2, - w2, d });
+            Vector3f llc = TransformPerspective(mvp, { - w2, - w2, d });
+            Vector3f point = TransformPerspective(mvp, {});
 
-            u16 vertex_offset = vertex_buffer->len;
-            *(index_buffer->lst + index_buffer->len++) = Vector2_u16 { (u16) (vertex_offset + 0), (u16) (vertex_offset + 1) };
-            *(index_buffer->lst + index_buffer->len++) = Vector2_u16 { (u16) (vertex_offset + 0), (u16) (vertex_offset + 2) };
-            *(index_buffer->lst + index_buffer->len++) = Vector2_u16 { (u16) (vertex_offset + 0), (u16) (vertex_offset + 3) };
-            *(index_buffer->lst + index_buffer->len++) = Vector2_u16 { (u16) (vertex_offset + 0), (u16) (vertex_offset + 4) };
-            *(index_buffer->lst + index_buffer->len++) = Vector2_u16 { (u16) (vertex_offset + 1), (u16) (vertex_offset + 2) };
-            *(index_buffer->lst + index_buffer->len++) = Vector2_u16 { (u16) (vertex_offset + 2), (u16) (vertex_offset + 4) };
-            *(index_buffer->lst + index_buffer->len++) = Vector2_u16 { (u16) (vertex_offset + 4), (u16) (vertex_offset + 3) };
-            *(index_buffer->lst + index_buffer->len++) = Vector2_u16 { (u16) (vertex_offset + 3), (u16) (vertex_offset + 1) };
+            segment_anchs.Add(urc);
+            segment_anchs.Add(ulc);
+            segment_anchs.Add(ulc);
+            segment_anchs.Add(llc);
+            segment_anchs.Add(llc);
+            segment_anchs.Add(lrc);
+            segment_anchs.Add(lrc);
+            segment_anchs.Add(urc);
 
-            *(vertex_buffer->lst + vertex_buffer->len++) = campos->origo;
-            *(vertex_buffer->lst + vertex_buffer->len++) = Vector3f { campos->origo.x - radius_xy, campos->origo.y - radius_xy, campos->origo.z + length_z };
-            *(vertex_buffer->lst + vertex_buffer->len++) = Vector3f { campos->origo.x - radius_xy, campos->origo.y + radius_xy, campos->origo.z + length_z };
-            *(vertex_buffer->lst + vertex_buffer->len++) = Vector3f { campos->origo.x + radius_xy, campos->origo.y - radius_xy, campos->origo.z + length_z };
-            *(vertex_buffer->lst + vertex_buffer->len++) = Vector3f { campos->origo.x + radius_xy, campos->origo.y + radius_xy, campos->origo.z + length_z };
-            */
+            segment_anchs.Add(urc);
+            segment_anchs.Add(point);
+            segment_anchs.Add(ulc);
+            segment_anchs.Add(point);
+            segment_anchs.Add(llc);
+            segment_anchs.Add(point);
+            segment_anchs.Add(lrc);
+            segment_anchs.Add(point);
         }
 
         else {

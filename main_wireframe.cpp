@@ -190,6 +190,8 @@ void RunWireframe() {
     objs.Add(CreatePlane(10));
     objs.Add(CreateCylinder(0.2, 0.7));
     objs.arr[3].transform = TransformBuildTranslationOnly({ -0.5, 0.5, -0.5 });
+    objs.Add(CreateEye(0.05, 0.1));
+    objs.arr[4].transform = TransformBuildTranslationOnly({ -0.5, 1, 1 });
 
     // selection & drag variables
     Wireframe *selected = NULL;
