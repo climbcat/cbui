@@ -183,10 +183,13 @@ void RunWireframe() {
     OrbitCamera cam = OrbitCameraInit( PlafGlfwGetAspect(plf) );
 
     // scene objects
-    Array<Wireframe> objs = InitArray<Wireframe>(ctx->a_pers, 3);
+    Array<Wireframe> objs = InitArray<Wireframe>(ctx->a_pers, 100);
     objs.Add(CreateAAAxes());
     objs.Add(CreateAABox(0.5, 0.5, 0.5));
+    objs.arr[1].transform = TransformBuildTranslationOnly({ 0.7, 0.7, 0.7 });
     objs.Add(CreatePlane(10));
+    objs.Add(CreateCylinder(0.2, 0.7));
+    objs.arr[3].transform = TransformBuildTranslationOnly({ -0.5, 0.5, -0.5 });
 
     // selection & drag variables
     Wireframe *selected = NULL;
