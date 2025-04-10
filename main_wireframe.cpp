@@ -184,20 +184,27 @@ void RunWireframe() {
 
     // scene objects
     Array<Wireframe> objs = InitArray<Wireframe>(ctx->a_pers, 100);
-    objs.Add(CreateAAAxes());
-    objs.Add(CreateAABox(0.5, 0.5, 0.5));
-    objs.arr[1].transform = TransformBuildTranslationOnly({ 0.7, 0.7, 0.7 });
+    //objs.Add(CreateAAAxes());
+
+    Wireframe box = CreateAABox( 0.5, 0.5, 0.5 );
+    box.transform = TransformBuildTranslationOnly({ 0.7, 0.7, 0.7 });
+    objs.Add(box);
+    Wireframe ball = CreateSphere( 0.5 );
+    ball.transform = TransformBuildTranslationOnly({ 0.7, 0.7, -0.7 });
+    objs.Add(ball);
+
     objs.Add(CreatePlane(10));
-    objs.Add(CreateCylinder(0.2, 0.7));
-    objs.arr[3].transform = TransformBuildTranslationOnly({ -0.5, 0.5, -0.5 });
-    objs.Add(CreateEye(0.05, 0.1));
-    objs.arr[4].transform = TransformBuildTranslationOnly({ -0.5, 1, 1 });
+    //objs.Add(CreateCylinder( 0.2, 0.7 ));
+    //objs.arr[3].transform = TransformBuildTranslationOnly({ -0.5, 0.5, -0.5 });
+    //objs.Add(CreateEye( 0.05, 0.1 ));
+    //objs.arr[4].transform = TransformBuildTranslationOnly({ -0.5, 1, 1 });
 
     // selection & drag variables
     Wireframe *selected = NULL;
     Wireframe *selected_prev = NULL;
     bool drag_enabled = false;
     Vector3f drag = {};
+    Vector3f drag_prev = {};
     Vector3f drag_nxt = {};
     Vector3f hit = {};
 
@@ -208,18 +215,22 @@ void RunWireframe() {
 
         if (MouseLeft().released) {
             drag_enabled = false;
-            drag = Vector3f_Zero();
-            drag_nxt = Vector3f_Zero();
+            drag = {};
+            drag_nxt = {};
+            drag_prev = {};
+            hit = {};
         }
 
         if (drag_enabled && MouseLeft().ended_down) {
             drag_nxt = cam.GetPointAtDepth(plf->cursorpos.x_frac, plf->cursorpos.y_frac, drag);
 
             Vector3f delta = drag_nxt - drag;
+
             selected->transform.m[0][3] += delta.x;
             selected->transform.m[1][3] += delta.y;
             selected->transform.m[2][3] += delta.z;
             
+            drag_prev = drag;
             drag = drag_nxt;
         }
 
@@ -227,13 +238,13 @@ void RunWireframe() {
         Ray shoot = cam.GetRay(plf->cursorpos.x_frac, plf->cursorpos.y_frac);
         bool collided = false;
         for (u32 i = 0; i < objs.len; ++i) {
-            Wireframe *box = objs.arr + i;
+            Wireframe *obj = objs.arr + i;
 
-            if (WireFrameCollide(shoot, *box, &hit)) {
+            if (WireFrameCollide(shoot, *obj, &hit)) {
                 collided = true;
 
                 if (MouseLeft().pushed) {
-                    selected = box;
+                    selected = obj;
                     drag_enabled = true;
                     drag = hit;
                 }
@@ -249,19 +260,20 @@ void RunWireframe() {
         RenderFat3x3(plf->image_buffer, TransformPerspective(cam.vp, hit), plf->width, plf->height, COLOR_GREEN);
         RenderFat3x3(plf->image_buffer, TransformPerspective(cam.vp, drag), plf->width, plf->height, COLOR_BLACK);
         RenderFat3x3(plf->image_buffer, TransformPerspective(cam.vp, drag_nxt), plf->width, plf->height, COLOR_RED);
-        RenderLineSegment(plf->image_buffer, TransformPerspective(cam.vp, drag_nxt), TransformPerspective(cam.vp, drag), plf->width, plf->height, COLOR_BLACK);
+        //RenderLineSegment(plf->image_buffer, TransformPerspective(cam.vp, drag_nxt), TransformPerspective(cam.vp, drag), plf->width, plf->height, COLOR_BLACK);
+        RenderLineSegment(plf->image_buffer, TransformPerspective(cam.vp, drag_prev), TransformPerspective(cam.vp, drag), plf->width, plf->height, COLOR_BLACK);
 
         // selection changed
         if (selected != selected_prev) {
+            if (selected_prev) {
+                selected_prev->style = WFR_SLIM;
+
+                selected_prev = NULL;
+            }
             if (selected) {
                 selected->style = WFR_FAT;
 
                 selected_prev = selected;
-            }
-            else {
-                selected_prev->style = WFR_SLIM;
-
-                selected_prev = NULL;
             }
         }
 

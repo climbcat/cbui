@@ -67,9 +67,9 @@ Wireframe CreateCylinder(f32 r, f32 h) {
 Wireframe CreateSphere(f32 r) {
     Wireframe box = {};
     box.transform = Matrix4f_Identity();
-    box.type = WFT_CYLINDER;
+    box.type = WFT_SPHERE;
     box.dimensions = { r, r, r };
-    box.color = COLOR_YELLOW;
+    box.color = COLOR_BLUE;
 
     return box;
 }
@@ -105,14 +105,15 @@ Wireframe CreateAAAxes(f32 len = 1.0f) {
 }
 
 bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3f *hit_out = NULL) {
+    Ray loc = TransformInverseRay(wf.transform, global);
+    Vector3f sz = wf.dimensions;
 
     if (wf.type == WFT_BOX) {
+
         // TODO: slab method; handle axis-aligned rays
 
-        Ray local = TransformInverseRay(wf.transform, global);
-
-        Vector3f o = local.position;
-        Vector3f d = local.direction;
+        Vector3f o = loc.position;
+        Vector3f d = loc.direction;
 
         f32 tl_x = (-wf.dimensions.x - o.x) / d.x;
         f32 th_x = (wf.dimensions.x - o.x) / d.x;
@@ -133,29 +134,48 @@ bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3
 
         bool intersect = t_cls <= t_far;
         if (intersect && hit_in) {
-            *hit_in = TransformPoint(wf.transform, local.position + t_cls * local.direction);
+            *hit_in = TransformPoint(wf.transform, loc.position + t_cls * loc.direction);
         }
         if (intersect && hit_out) {
-            *hit_out = TransformPoint(wf.transform, local.position + t_far * local.direction);
+            *hit_out = TransformPoint(wf.transform, loc.position + t_far * loc.direction);
         }
 
         return intersect;
     }
+
     else if (wf.type == WFT_CYLINDER) {
         // TODO: impl.
 
         return false;
     }
+
     else if (wf.type == WFT_EYE) {
         // TODO: impl.
 
         return false;
     }
-    else if (wf.type == WFT_SPHERE) {
-        // TODO: impl.
 
-        return false;
+    else if (wf.type == WFT_SPHERE) {
+
+        Vector3f center = {};
+        Vector3f closest = PointToLine(center, loc.position, loc.direction);
+        f32 dist = (center - closest).Norm();
+        f32 radius = wf.dimensions.x;
+        if (dist <= radius) {
+            if (hit_in) {
+                *hit_in = TransformPoint(wf.transform, center);
+            }
+            if (hit_out) {
+                *hit_out = TransformPoint(wf.transform, center);
+            }
+
+            return true;
+        }
+        else {
+            return false;
+        }
     }
+
     else {
         return false;
     }
@@ -280,7 +300,47 @@ Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wf_lst, M
 
         else if (wf->type == WFT_SPHERE) {
 
-            // TODO: impl.
+            u32 len_prev = segment_anchs.len;
+            f32 r = sz.x;
+
+            u32 nlatt = 6;
+            u32 nlong = 6;
+            Vector3f center = {};
+            Vector3f north = { 0, r, 0 };
+            Vector3f south = { 0, -r, 0 };
+
+
+            for (u32 i = 0; i < nlatt; ++i) {
+                f32 theta = PI / nlatt * i;
+
+                Vector3f pt_0 = SphericalCoordsY(theta, 0, r);
+                segment_anchs.Add(TransformPerspective(mvp, pt_0));
+                for (u32 j = 0; j < nlong; ++j) {
+                    f32 phi = 2 * PI / nlong * (j % nlong);
+
+                    Vector3f pt = SphericalCoordsY(theta, phi, r);
+                    segment_anchs.Add(TransformPerspective(mvp, pt));
+                    segment_anchs.Add(TransformPerspective(mvp, pt));
+                } 
+                segment_anchs.Add(TransformPerspective(mvp, pt_0));
+            }
+
+            for (u32 j = 0; j < nlong; ++j) {
+                f32 phi = 2 * PI / nlong * j;
+
+                segment_anchs.Add(TransformPerspective(mvp, north));
+                for (u32 i = 0; i < nlatt; ++i) {
+                    f32 theta = PI / nlatt * i;
+
+                    Vector3f pt = SphericalCoordsY(theta, phi, r);
+                    segment_anchs.Add(TransformPerspective(mvp, pt));
+                    segment_anchs.Add(TransformPerspective(mvp, pt));
+
+                }
+                segment_anchs.Add(TransformPerspective(mvp, south));
+            }
+
+            wf->nsegments = (segment_anchs.len - len_prev) / 2;
         }
 
         else if (wf->type == WFT_CYLINDER) {
@@ -367,7 +427,6 @@ Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wf_lst, M
 
     return result;
 }
-
 
 
 #endif
