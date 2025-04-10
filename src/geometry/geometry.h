@@ -850,13 +850,16 @@ Ray TransformInverseRay(Matrix4f a, Ray r) {
 
 
 //
-// Plane / Line / Point Helpers
+// Plane / Line / Point / Triangle Helpers
 
 
-Vector3f RayPlaneIntersect(Ray ray, Vector3f plane_origo, Vector3f plane_normal) {
+Vector3f RayPlaneIntersect(Ray ray, Vector3f plane_origo, Vector3f plane_normal, f32 *t_at = NULL) {
     f32 dot = plane_normal.Dot(ray.direction);
     if (abs(dot) > 0.0001f) {
         f32 t = (plane_origo - ray.position).Dot(plane_normal) / dot;
+        if (t_at) {
+            *t_at = t;
+        }
 
         Vector3f result = ray.position + t * ray.direction;
         return result;
@@ -879,6 +882,30 @@ Vector3f PointToPlane(Vector3f point, Vector3f plane_origo, Vector3f plane_norma
     Vector3f result = point - dot * plane_normal;
     return result;
 }
+
+
+bool RayCastTriangle(Ray r, Vector3f v1, Vector3f v2, Vector3f v3, Vector3f *hit)
+{
+    Vector3f plane_hit = RayPlaneIntersect(r, v1, (v2 - v1).Cross(v3 - v1));
+
+    Vector3f v1h = plane_hit - v1;
+    Vector3f v2h = plane_hit - v2;
+    Vector3f v3h = plane_hit - v3;
+    v1h.Normalize();
+    v2h.Normalize();
+    v3h.Normalize();
+
+    float a1 = acos(v1h.Dot(v2h));
+    float a2 = acos(v2h.Dot(v3h));
+    float a3 = acos(v3h.Dot(v1h));
+
+    bool did_hit = abs(a1 + a2 + a3 - 2 * PI) < 0.0001f;
+    if (did_hit && hit) {
+        *hit = plane_hit;
+    }
+    return did_hit;
+}
+
 
 
 //
