@@ -174,16 +174,21 @@ void RenderLineSegmentList(u8 *image_buffer, Array<Wireframe> wireframes, Array<
 void RunWireframe() {
     printf("Running wireframe program ...\n");
 
+    // system init
     MContext *ctx = InitBaselayer();
     ImageBufferInit(ctx->a_life);
     PlafGlfw *plf = PlafGlfwInit();
 
+    // cameras
     OrbitCamera cam = OrbitCameraInit( PlafGlfwGetAspect(plf) );
 
-    Array<Wireframe> objs = InitArray<Wireframe>(ctx->a_pers, 2);
+    // scene objects
+    Array<Wireframe> objs = InitArray<Wireframe>(ctx->a_pers, 3);
     objs.Add(CreateAAAxes());
     objs.Add(CreateAABox(0.5, 0.5, 0.5));
+    objs.Add(CreatePlane(10));
 
+    // selection & drag variables
     Wireframe *selected = NULL;
     Wireframe *selected_prev = NULL;
     bool drag_enabled = false;
@@ -191,7 +196,7 @@ void RunWireframe() {
     Vector3f drag_nxt = {};
     Vector3f hit = {};
 
-
+    // graphics loop
     bool running = true;
     while (running) {
         ImageBufferClear(plf->width, plf->height);

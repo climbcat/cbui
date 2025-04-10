@@ -43,9 +43,18 @@ struct Wireframe {
 };
 
 
+Wireframe CreatePlane(f32 size) {
+    Wireframe box = {};
+    box.transform = Matrix4f_Identity();
+    box.type = WFT_PLANE;
+    box.dimensions = { 0.5f*size, 5, 0.5f*size };
+    box.color = COLOR_GRAY;
+
+    return box;
+}
+
 Wireframe CreateAABox(f32 w, f32 h, f32 d) {
     Wireframe box = {};
-    //box.transform = Matrix4f_Identity();
     box.transform = TransformBuildTranslationOnly( { 0.7f, 0.7f, 0.7f,  } );
     box.type = WFT_BOX;
     box.dimensions = { 0.5f*w, 0.5f*h, 0.5f*d };
@@ -139,6 +148,52 @@ Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wf_lst, M
             segments.Add(y);
             segments.Add(origo);
             segments.Add(z);
+        }
+
+        else if (wf->type == WFT_PLANE) {
+
+            // local coordinates is the x-z plane at y == 0 with nbeams internal cross-lines x and z
+            f32 rx = wf->dimensions.x;
+            f32 rz = wf->dimensions.z;
+            s32 nbeams = floor(wf->dimensions.y);
+
+            Vector3f urc = { rx, 0, rz };
+            Vector3f ulc = { -rx, 0, rz };
+            Vector3f lrc = { rx, 0, -rz };
+            Vector3f llc = { -rx, 0, -rz };
+            Vector3f urc_ndc = TransformPerspective(mvp, urc);
+            Vector3f ulc_ndc = TransformPerspective(mvp, ulc);
+            Vector3f lrc_ndc = TransformPerspective(mvp, lrc);
+            Vector3f llc_ndc = TransformPerspective(mvp, llc);
+
+            // the outer square
+            segments.Add(urc_ndc);
+            segments.Add(ulc_ndc);
+            segments.Add(ulc_ndc);
+            segments.Add(llc_ndc);
+            segments.Add(llc_ndc);
+            segments.Add(lrc_ndc);
+            segments.Add(lrc_ndc);
+            segments.Add(urc_ndc);
+            wf->nsegments = 4;
+
+            // insider beams
+            Vector3f xhat = 1.0f / (nbeams + 1) * (urc - ulc);
+            Vector3f zhat = 1.0f / (nbeams + 1) * (llc - ulc);
+
+            for (u32 i = 0; i < nbeams + 1; ++i) {
+                Vector3f v1 = TransformPerspective(mvp, ulc + i* xhat);
+                Vector3f v2 = TransformPerspective(mvp, llc + i* xhat);
+
+                Vector3f h1 = TransformPerspective(mvp, ulc + i* zhat);
+                Vector3f h2 = TransformPerspective(mvp, urc + i* zhat);
+
+                segments.Add(v1);
+                segments.Add(v2);
+                segments.Add(h1);
+                segments.Add(h2);
+            }
+            wf->nsegments += 4 * (nbeams + 1);
         }
 
         else if (wf->type == WFT_BOX) {
