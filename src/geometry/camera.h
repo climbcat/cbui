@@ -2,20 +2,6 @@
 #define __CAMERA_H__
 
 
-Vector3f RayPlaneIntersect(Ray ray, Vector3f plane_origo, Vector3f plane_normal) {
-    f32 dot = plane_normal.Dot(ray.direction);
-    if (abs(dot) > 0.0001f) {
-        f32 t = (plane_origo - ray.position).Dot(plane_normal) / dot;
-
-        Vector3f result = ray.position + t * ray.direction;
-        return result;
-    }
-    else {
-        return {};
-    }
-}
-
-
 struct OrbitCamera {
     PerspectiveFrustum frustum;
     Vector3f center;

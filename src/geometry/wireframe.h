@@ -15,9 +15,13 @@
 
 
 enum WireFrameType {
+    // do not collide
     WFT_AXIS,
-    WFT_BOX,
+    WFT_PLANE,
+
+    // do collide
     WFT_EYE,
+    WFT_BOX,
     WFT_CYLINDER,
     WFT_SPHERE,
 
@@ -98,8 +102,13 @@ bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3
 
         return intersect;
     }
-    else
-    {
+    else if (wf.type == WFT_CYLINDER) {
+        return false;
+    }
+    else if (wf.type == WFT_SPHERE) {
+        return false;
+    }
+    else {
         return false;
     }
 }

@@ -171,15 +171,6 @@ void RenderLineSegmentList(u8 *image_buffer, Array<Wireframe> wireframes, Array<
     }
 }
 
-
-Vector3f Vector3fProjectToPlane(Vector3f point, Vector3f plane_origo, Vector3f plane_normal) {
-    Vector3f delta = point - plane_origo;
-    f32 dot = delta.Dot(plane_normal);
-    Vector3f result = point - dot * plane_normal;
-    return result;
-}
-
-
 void RunWireframe() {
     printf("Running wireframe program ...\n");
 

@@ -850,6 +850,38 @@ Ray TransformInverseRay(Matrix4f a, Ray r) {
 
 
 //
+// Plane / Line / Point Helpers
+
+
+Vector3f RayPlaneIntersect(Ray ray, Vector3f plane_origo, Vector3f plane_normal) {
+    f32 dot = plane_normal.Dot(ray.direction);
+    if (abs(dot) > 0.0001f) {
+        f32 t = (plane_origo - ray.position).Dot(plane_normal) / dot;
+
+        Vector3f result = ray.position + t * ray.direction;
+        return result;
+    }
+    else {
+        return {};
+    }
+}
+
+Vector3f PointToLine(Vector3f point, Vector3f line_origo, Vector3f line_direction) {
+    Vector3f diff = point - line_origo;
+    f32 coeff = diff.Dot(line_direction);
+    Vector3f proj = line_origo + coeff * line_direction;
+    return proj;
+}
+
+Vector3f PointToPlane(Vector3f point, Vector3f plane_origo, Vector3f plane_normal) {
+    Vector3f delta = point - plane_origo;
+    f32 dot = delta.Dot(plane_normal);
+    Vector3f result = point - dot * plane_normal;
+    return result;
+}
+
+
+//
 // Utility
 
 
@@ -868,6 +900,7 @@ void PrintTransform(Matrix4f m) {
     }
     printf(" ]\n\n");
 }
+
 void PopulateMatrixRandomly(Matrix4f *m) {
     RandInit();
     for (int i = 0; i < 4; ++i) {

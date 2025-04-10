@@ -93,7 +93,6 @@ f32 PlafGlfwGetAspect(PlafGlfw *plf) {
     return aspect;
 }
 
-
 inline PlafGlfw *_GlfwWindowToUserPtr(GLFWwindow* window) {
     PlafGlfw *plaf = (PlafGlfw*) glfwGetWindowUserPointer(window);
     return plaf;
