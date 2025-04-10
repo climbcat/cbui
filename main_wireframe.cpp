@@ -139,10 +139,10 @@ void RenderLineSegmentList(u8 *image_buffer, Array<Wireframe> wireframes, Array<
     u32 wf_nsegments = wireframes.arr[wf_idx].nsegments;
 
     for (u32 i = 0; i < segments_ndc.len / 2; ++i) {
-
         if (wf_style == WFR_SLIM) {
             RenderLineSegment(image_buffer, segments_ndc.arr[2*i], segments_ndc.arr[2*i + 1], w, h, wf_color);
         }
+
         else if (wf_style == WFR_FAT) {
             Vector3f anchor_a = segments_ndc.arr[2*i];
             Vector3f anchor_b = segments_ndc.arr[2*i + 1];
@@ -192,24 +192,42 @@ void RunWireframe() {
     Array<Wireframe> objs = InitArray<Wireframe>(ctx->a_pers, 2);
     objs.Add(CreateAAAxes());
     objs.Add(CreateAABox(0.5, 0.5, 0.5));
+
     Wireframe *selected = NULL;
     Wireframe *selected_prev = NULL;
     bool drag_enabled = false;
     Vector3f drag = {};
     Vector3f drag_nxt = {};
+    Vector3f hit = {};
+
 
     bool running = true;
     while (running) {
         ImageBufferClear(plf->width, plf->height);
 
+        if (MouseLeft().released) {
+            drag_enabled = false;
+            drag = Vector3f_Zero();
+            drag_nxt = Vector3f_Zero();
+        }
 
+        if (drag_enabled && MouseLeft().ended_down) {
+            drag_nxt = cam.GetPointAtDepth(plf->cursorpos.x_frac, plf->cursorpos.y_frac, drag);
+
+            Vector3f delta = drag_nxt - drag;
+            selected->transform.m[0][3] += delta.x;
+            selected->transform.m[1][3] += delta.y;
+            selected->transform.m[2][3] += delta.z;
+            
+            drag = drag_nxt;
+        }
+
+        //
         Ray shoot = cam.GetRay(plf->cursorpos.x_frac, plf->cursorpos.y_frac);
         bool collided = false;
         for (u32 i = 0; i < objs.len; ++i) {
             Wireframe *box = objs.arr + i;
 
-            Vector3f hit;
-            drag_enabled = false;
             if (WireFrameCollide(shoot, *box, &hit)) {
                 collided = true;
 
@@ -218,37 +236,21 @@ void RunWireframe() {
                     drag_enabled = true;
                     drag = hit;
                 }
-                else if (MouseLeft().ended_down) {
-                    drag_enabled = true;
-
-                    drag_nxt = Vector3fProjectToPlane(hit, drag, cam.CameraRay().direction);
-
-                    Vector3f delta = drag - drag_nxt;
-                    Vector3f pos = TransformGetTranslation(box->transform);
-
-
-                    //box->transform.m[0][3] += delta.x;
-                    //box->transform.m[1][3] += delta.y;
-                    //box->transform.m[2][3] += delta.z;
-                    
-                    //drag = drag_nxt;
-                }
-                else {
-                    //drag = Vector3f_Zero();
-                }
-                //RenderFat3x3(plf->image_buffer, TransformPerspective(cam.vp, hit), plf->width, plf->height);
             }
         }
 
+        // de-selection
         if (collided == false && MouseLeft().pushed) {
             selected = NULL;
         }
+
+        // DBG render anchors
+        RenderFat3x3(plf->image_buffer, TransformPerspective(cam.vp, hit), plf->width, plf->height, COLOR_GREEN);
         RenderFat3x3(plf->image_buffer, TransformPerspective(cam.vp, drag), plf->width, plf->height, COLOR_BLACK);
-        RenderFat3x3(plf->image_buffer, TransformPerspective(cam.vp, drag_nxt), plf->width, plf->height, COLOR_BLACK);
+        RenderFat3x3(plf->image_buffer, TransformPerspective(cam.vp, drag_nxt), plf->width, plf->height, COLOR_RED);
         RenderLineSegment(plf->image_buffer, TransformPerspective(cam.vp, drag_nxt), TransformPerspective(cam.vp, drag), plf->width, plf->height, COLOR_BLACK);
 
-
-        printf("%f %f %f %d\n", drag.x, drag.y, drag.z, collided);
+        // selection changed
         if (selected != selected_prev) {
             if (selected) {
                 selected->style = WFR_FAT;
@@ -268,7 +270,6 @@ void RunWireframe() {
 
         // usr frame end
         cam.SetAspect(plf->width, plf->height);
-
         if (drag_enabled == false) {
             OrbitCameraUpdate(&cam, plf->cursorpos.dx, plf->cursorpos.dy, plf->left.ended_down, plf->right.ended_down, plf->scroll.yoffset_acc);
         }

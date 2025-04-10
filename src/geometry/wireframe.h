@@ -41,7 +41,8 @@ struct Wireframe {
 
 Wireframe CreateAABox(f32 w, f32 h, f32 d) {
     Wireframe box = {};
-    box.transform = Matrix4f_Identity();
+    //box.transform = Matrix4f_Identity();
+    box.transform = TransformBuildTranslationOnly( { 0.7f, 0.7f, 0.7f,  } );
     box.type = WFT_BOX;
     box.dimensions = { 0.5f*w, 0.5f*h, 0.5f*d };
     box.color = COLOR_BLUE;
@@ -89,10 +90,10 @@ bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3
 
         bool intersect = t_cls <= t_far;
         if (intersect && hit_in) {
-            *hit_in = TransformInversePoint(wf.transform, local.position + t_cls * local.direction);
+            *hit_in = TransformPoint(wf.transform, local.position + t_cls * local.direction);
         }
         if (intersect && hit_out) {
-            *hit_out = TransformInversePoint(wf.transform, local.position + t_far * local.direction);
+            *hit_out = TransformPoint(wf.transform, local.position + t_far * local.direction);
         }
 
         return intersect;
