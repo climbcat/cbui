@@ -146,11 +146,18 @@ bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3
     else if (wf.type == WFT_CYLINDER) {
         // TODO: impl.
 
+        //  1) box collide (SLAB)
+        //  2) calc. the line-to-line distance between the cylinder axis and the ray, check with radius
+        //  3) check any end-cap intersection point's distance to cylinder axis, check with radius
+
         return false;
     }
 
     else if (wf.type == WFT_EYE) {
         // TODO: impl.
+
+        //  Can we develop some generic triangle-based intersection scheme?
+        //  Might be an easier approach, generally.
 
         return false;
     }
@@ -168,6 +175,9 @@ bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3
             if (hit_out) {
                 *hit_out = TransformPoint(wf.transform, center);
             }
+
+            // TODO: calc hit_in and hit_out, an easy quadratic equation
+            //      (or, rethink the drag implementation)
 
             return true;
         }
