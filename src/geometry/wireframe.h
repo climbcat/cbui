@@ -48,27 +48,28 @@ Wireframe CreatePlane(f32 size) {
     Wireframe box = {};
     box.transform = Matrix4f_Identity();
     box.type = WFT_PLANE;
-    box.dimensions = { 0.5f*size, 5.0f /* xlines cnt */, 0.5f*size };
+    box.dimensions = { size, 0.0f, size };
     box.color = COLOR_GRAY;
 
     return box;
 }
 
-Wireframe CreateCylinder(f32 r, f32 h) {
+Wireframe CreateCylinder(f32 radius, f32 height) {
     Wireframe box = {};
     box.transform = Matrix4f_Identity();
     box.type = WFT_CYLINDER;
-    box.dimensions = { r, h, r };
+    f32 diameter = 2*radius;
+    box.dimensions = { radius, 0.5f*height, radius };
     box.color = COLOR_GREEN;
 
     return box;
 }
 
-Wireframe CreateSphere(f32 r) {
+Wireframe CreateSphere(f32 radius) {
     Wireframe box = {};
     box.transform = Matrix4f_Identity();
     box.type = WFT_SPHERE;
-    box.dimensions = { r, r, r };
+    box.dimensions = { radius, radius, radius };
     box.color = COLOR_BLUE;
 
     return box;
@@ -78,17 +79,17 @@ Wireframe CreateEye(f32 width, f32 depth) {
     Wireframe box = {};
     box.transform = Matrix4f_Identity();
     box.type = WFT_EYE;
-    box.dimensions = { width, width, depth };
+    box.dimensions = { 0.5f*width, 0.5f*width, depth };
     box.color = COLOR_BLACK;
 
     return box;
 }
 
-Wireframe CreateAABox(f32 w, f32 h, f32 d) {
+Wireframe CreateAABox(f32 width, f32 height, f32 depth) {
     Wireframe box = {};
     box.transform = Matrix4f_Identity();
     box.type = WFT_BOX;
-    box.dimensions = { 0.5f*w, 0.5f*h, 0.5f*d };
+    box.dimensions = { 0.5f*width, 0.5f*height, 0.5f*depth };
     box.color = COLOR_BLUE;
 
     return box;
@@ -104,43 +105,49 @@ Wireframe CreateAAAxes(f32 len = 1.0f) {
     return axis;
 }
 
+bool BoxCollideSLAB(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3f *hit_out = NULL) {
+    // TODO: slab method; handle axis-aligned rays
+
+    Ray loc = TransformInverseRay(wf.transform, global);
+
+    Vector3f o = loc.position;
+    Vector3f d = loc.direction;
+
+    f32 tl_x = (-wf.dimensions.x - o.x) / d.x;
+    f32 th_x = (wf.dimensions.x - o.x) / d.x;
+    f32 tl_y = (- wf.dimensions.y - o.y) / d.y;
+    f32 th_y = (wf.dimensions.y - o.y) / d.y;
+    f32 tl_z = (- wf.dimensions.z - o.z) / d.z;
+    f32 th_z = (wf.dimensions.z - o.z) / d.z;
+
+    f32 t_cls_x = MinF32(tl_x, th_x);
+    f32 t_far_x = MaxF32(tl_x, th_x);
+    f32 t_cls_y = MinF32(tl_y, th_y);
+    f32 t_far_y = MaxF32(tl_y, th_y);
+    f32 t_cls_z = MinF32(tl_z, th_z);
+    f32 t_far_z = MaxF32(tl_z, th_z);
+
+    f32 t_cls = MaxF32(MaxF32(t_cls_x, t_cls_y), t_cls_z);
+    f32 t_far = MinF32(MinF32(t_far_x, t_far_y), t_far_z);
+
+    bool intersect = t_cls <= t_far;
+    if (intersect && hit_in) {
+        *hit_in = TransformPoint(wf.transform, loc.position + t_cls * loc.direction);
+    }
+    if (intersect && hit_out) {
+        *hit_out = TransformPoint(wf.transform, loc.position + t_far * loc.direction);
+    }
+
+    return intersect;
+}
+
 bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3f *hit_out = NULL) {
     Ray loc = TransformInverseRay(wf.transform, global);
     Vector3f sz = wf.dimensions;
 
     if (wf.type == WFT_BOX) {
 
-        // TODO: slab method; handle axis-aligned rays
-
-        Vector3f o = loc.position;
-        Vector3f d = loc.direction;
-
-        f32 tl_x = (-wf.dimensions.x - o.x) / d.x;
-        f32 th_x = (wf.dimensions.x - o.x) / d.x;
-        f32 tl_y = (- wf.dimensions.y - o.y) / d.y;
-        f32 th_y = (wf.dimensions.y - o.y) / d.y;
-        f32 tl_z = (- wf.dimensions.z - o.z) / d.z;
-        f32 th_z = (wf.dimensions.z - o.z) / d.z;
-
-        f32 t_cls_x = MinF32(tl_x, th_x);
-        f32 t_far_x = MaxF32(tl_x, th_x);
-        f32 t_cls_y = MinF32(tl_y, th_y);
-        f32 t_far_y = MaxF32(tl_y, th_y);
-        f32 t_cls_z = MinF32(tl_z, th_z);
-        f32 t_far_z = MaxF32(tl_z, th_z);
-
-        f32 t_cls = MaxF32(MaxF32(t_cls_x, t_cls_y), t_cls_z);
-        f32 t_far = MinF32(MinF32(t_far_x, t_far_y), t_far_z);
-
-        bool intersect = t_cls <= t_far;
-        if (intersect && hit_in) {
-            *hit_in = TransformPoint(wf.transform, loc.position + t_cls * loc.direction);
-        }
-        if (intersect && hit_out) {
-            *hit_out = TransformPoint(wf.transform, loc.position + t_far * loc.direction);
-        }
-
-        return intersect;
+        return BoxCollideSLAB(global, wf, hit_in, hit_out);
     }
 
     else if (wf.type == WFT_CYLINDER) {
@@ -150,6 +157,8 @@ bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3
         //  2) calc. the line-to-line distance between the cylinder axis and the ray, check with radius
         //  3) check any end-cap intersection point's distance to cylinder axis, check with radius
 
+        return BoxCollideSLAB(global, wf, hit_in, hit_out);
+
         return false;
     }
 
@@ -158,6 +167,8 @@ bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3
 
         //  Can we develop some generic triangle-based intersection scheme?
         //  Might be an easier approach, generally.
+
+        return BoxCollideSLAB(global, wf, hit_in, hit_out);
 
         return false;
     }
@@ -224,9 +235,9 @@ Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wf_lst, M
         else if (wf->type == WFT_PLANE) {
 
             // local coordinates is the x-z plane at y == 0 with nbeams internal cross-lines x and z
-            f32 rx = wf->dimensions.x;
-            f32 rz = wf->dimensions.z;
-            s32 nbeams = floor(wf->dimensions.y);
+            f32 rx = 0.5f * wf->dimensions.x;
+            f32 rz = 0.5f * wf->dimensions.z;
+            s32 nbeams = 5;
 
             Vector3f urc = { rx, 0, rz };
             Vector3f ulc = { -rx, 0, rz };
@@ -356,7 +367,7 @@ Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wf_lst, M
         else if (wf->type == WFT_CYLINDER) {
 
             f32 r = sz.x;
-            f32 h2 = sz.y / 2;
+            f32 h2 = sz.y;
 
             s32 nbars = 8;
 
@@ -396,7 +407,7 @@ Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wf_lst, M
 
         else if (wf->type == WFT_EYE) {
 
-            f32 w2 = sz.x / 2;
+            f32 w2 = sz.x;
             f32 d = sz.z;
 
             Vector3f urc = TransformPerspective(mvp, { w2, w2, d });

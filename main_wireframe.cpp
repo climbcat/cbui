@@ -184,20 +184,25 @@ void RunWireframe() {
 
     // scene objects
     Array<Wireframe> objs = InitArray<Wireframe>(ctx->a_pers, 100);
-    //objs.Add(CreateAAAxes());
+    objs.Add(CreateAAAxes());
 
     Wireframe box = CreateAABox( 0.5, 0.5, 0.5 );
     box.transform = TransformBuildTranslationOnly({ 0.7, 0.7, 0.7 });
     objs.Add(box);
+    
     Wireframe ball = CreateSphere( 0.5 );
     ball.transform = TransformBuildTranslationOnly({ 0.7, 0.7, -0.7 });
     objs.Add(ball);
 
     objs.Add(CreatePlane(10));
-    //objs.Add(CreateCylinder( 0.2, 0.7 ));
-    //objs.arr[3].transform = TransformBuildTranslationOnly({ -0.5, 0.5, -0.5 });
-    //objs.Add(CreateEye( 0.05, 0.1 ));
-    //objs.arr[4].transform = TransformBuildTranslationOnly({ -0.5, 1, 1 });
+    
+    Wireframe cylinder = CreateCylinder( 0.2, 0.7 );
+    cylinder.transform = TransformBuildTranslationOnly({ -0.5, 0.5, -0.5 });
+    objs.Add(cylinder);
+
+    Wireframe eye = CreateEye( 0.05, 0.1 );
+    eye.transform = TransformBuildTranslationOnly({ -0.5, 1, 1 });
+    objs.Add(eye);
 
     // selection & drag variables
     Wireframe *selected = NULL;
