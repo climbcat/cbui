@@ -131,9 +131,27 @@ void RenderLineSegment(u8 *image_buffer, Vector3f anchor_a, Vector3f anchor_b, u
     RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, color);
 }
 
+inline
+s32 _GetNextNonDisabledWireframeIndex(u32 idx_prev, Array<Wireframe> wireframes) {
+    idx_prev++;
+    if (wireframes.len <= idx_prev) {
+        return -1;
+    }
+
+    while ((wireframes.arr + idx_prev)->disabled == true) {
+        idx_prev++;
+
+        if (wireframes.len <= idx_prev) {
+            return -1;
+        }
+    }
+    return idx_prev;
+}
+
 void RenderLineSegmentList(u8 *image_buffer, Array<Wireframe> wireframes, Array<Vector3f> segments_ndc, u32 w, u32 h) {
-    u32 wf_segs_idx = 0;
-    u32 wf_idx = 0;
+    s32 wf_segs_idx = 0;
+    s32 wf_idx = -1;
+    wf_idx = _GetNextNonDisabledWireframeIndex(wf_idx, wireframes);
     Color wf_color = wireframes.arr[wf_idx].color;
     WireFrameRenderStyle wf_style = wireframes.arr[wf_idx].style;
     u32 wf_nsegments = wireframes.arr[wf_idx].nsegments;
@@ -160,10 +178,14 @@ void RenderLineSegmentList(u8 *image_buffer, Array<Wireframe> wireframes, Array<
 
         // update color to match the current wireframe
         wf_segs_idx++;
-        if (wf_segs_idx == wf_nsegments) {
-            wf_segs_idx = 0;
-            wf_idx++;
 
+        if (wf_segs_idx == wf_nsegments) {
+            wf_idx = _GetNextNonDisabledWireframeIndex(wf_idx, wireframes);
+            if (wf_idx == -1) {
+                continue;
+            }
+
+            wf_segs_idx = 0;
             wf_nsegments = wireframes.arr[wf_idx].nsegments;
             wf_color = wireframes.arr[wf_idx].color;
             wf_style = wireframes.arr[wf_idx].style;
@@ -189,7 +211,7 @@ void RunWireframe() {
     Wireframe box = CreateAABox( 0.5, 0.5, 0.5 );
     box.transform = TransformBuildTranslationOnly({ 0.7, 0.7, 0.7 });
     objs.Add(box);
-    
+
     Wireframe ball = CreateSphere( 0.5 );
     ball.transform = TransformBuildTranslationOnly({ 0.7, 0.7, -0.7 });
     objs.Add(ball);
@@ -280,6 +302,11 @@ void RunWireframe() {
 
                 selected_prev = selected;
             }
+        }
+
+        if (selected && (GetBackspace() || GetDelete())) {
+            selected->disabled = true;
+            selected = NULL;
         }
 
         // update and render wireframe objects

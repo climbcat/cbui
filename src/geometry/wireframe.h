@@ -41,6 +41,7 @@ struct Wireframe {
     WireFrameRenderStyle style;
     Color color;
     u32 nsegments;
+    bool disabled;
 };
 
 
@@ -142,6 +143,10 @@ bool BoxCollideSLAB(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3f 
 }
 
 bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3f *hit_out = NULL) {
+    if (wf.disabled) {
+        return false;
+    }
+
     Ray loc = TransformInverseRay(wf.transform, global);
     Vector3f sz = wf.dimensions;
 
@@ -202,18 +207,23 @@ bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3
     }
 }
 
-Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wf_lst, Matrix4f vp) {
 
-    // anchors
+Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wf_lst, Matrix4f vp) {
+    // anchors - start and ends of each line; anchor points are duplicated for every line segment
     List<Vector3f> segment_anchs = {};
     segment_anchs.lst = (Vector3f*) ArenaOpen(a_dest);
+    u32 segments_accum = 0;
 
     for (u32 j = 0; j < wf_lst.len; ++j) {
 
         Wireframe *wf = wf_lst.arr + j;
+        if (wf->disabled) {
+            continue;
+        }
+
         Matrix4f mvp = vp * wf->transform;
         Vector3f sz = wf->dimensions;
-        u32 points_per_line_segment = 2;
+        u32 segment_anchs_len_prev = segment_anchs.len;
 
         if (wf->type == WFT_AXIS) {
 
@@ -229,7 +239,7 @@ Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wf_lst, M
             segment_anchs.Add(origo);
             segment_anchs.Add(z);
 
-            wf->nsegments = 3;
+            wf->nsegments = (segment_anchs.len - segment_anchs_len_prev) / 2;
         }
 
         else if (wf->type == WFT_PLANE) {
@@ -275,7 +285,7 @@ Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wf_lst, M
                 segment_anchs.Add(h2_ndc);
             }
 
-            wf->nsegments = 4 + 2*(nbeams + 1);
+            wf->nsegments = (segment_anchs.len - segment_anchs_len_prev) / 2;
         }
 
         else if (wf->type == WFT_BOX) {
@@ -316,7 +326,7 @@ Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wf_lst, M
             segment_anchs.Add(pmp);
             segment_anchs.Add(mmp);
 
-            wf->nsegments = 12;
+            wf->nsegments = (segment_anchs.len - segment_anchs_len_prev) / 2;
         }
 
         else if (wf->type == WFT_SPHERE) {
@@ -361,7 +371,7 @@ Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wf_lst, M
                 segment_anchs.Add(TransformPerspective(mvp, south));
             }
 
-            wf->nsegments = (segment_anchs.len - len_prev) / 2;
+            wf->nsegments = (segment_anchs.len - segment_anchs_len_prev) / 2;
         }
 
         else if (wf->type == WFT_CYLINDER) {
@@ -402,7 +412,8 @@ Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wf_lst, M
                 up_prev = up;
                 lw_prev = lw;
             }
-            wf->nsegments = 24;
+
+            wf->nsegments = (segment_anchs.len - segment_anchs_len_prev) / 2;
         }
 
         else if (wf->type == WFT_EYE) {
@@ -433,14 +444,19 @@ Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wf_lst, M
             segment_anchs.Add(point);
             segment_anchs.Add(lrc);
             segment_anchs.Add(point);
+
+            wf->nsegments = (segment_anchs.len - segment_anchs_len_prev) / 2;
         }
 
         else {
             printf("WARN: Unknown wireframe type\n");
         }
-    }
 
-    ArenaClose(a_dest, 3 * sizeof(Vector3f) * segment_anchs.len);
+        segments_accum += wf->nsegments;
+    }
+    assert(segments_accum == segment_anchs.len / 2);
+
+    ArenaClose(a_dest, sizeof(Vector3f) * segment_anchs.len);
     Array<Vector3f> result = {};
     result.max = segment_anchs.len;
     result.len = result.max;

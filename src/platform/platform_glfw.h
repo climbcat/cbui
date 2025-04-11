@@ -381,6 +381,11 @@ bool GetBackspace() {
     return was;
 }
 
+bool GetDelete() {
+    bool was = g_plaf_glfw.akeys.del;
+    return was;
+}
+
 bool GetFKey(u32 *fval) {
     assert(fval != NULL);
 
