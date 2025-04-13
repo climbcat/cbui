@@ -35,10 +35,13 @@ include_directories(${DIR_C_LIBS}/glew/include/)
 link_directories(${DIR_C_LIBS}/glew/lib/)
 
 add_executable(${PROJECT_NAME} main.cpp)
-
-# link
 target_link_libraries(${PROJECT_NAME} glfw3)
 target_link_libraries(${PROJECT_NAME} glew32)
 target_link_libraries(${PROJECT_NAME} OpenGL32)
+
+add_executable(wireframe main_wireframe.cpp)
+target_link_libraries(wireframe glfw3)
+target_link_libraries(wireframe glew32)
+target_link_libraries(wireframe OpenGL32)
 
 endif()
