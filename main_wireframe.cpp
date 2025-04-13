@@ -230,6 +230,7 @@ void RunWireframe() {
     Wireframe *selected = NULL;
     Wireframe *selected_prev = NULL;
     bool drag_enabled = false;
+    Vector3f drag_push = {};
     Vector3f drag = {};
     Vector3f drag_prev = {};
     Vector3f drag_nxt = {};
@@ -249,7 +250,7 @@ void RunWireframe() {
         }
 
         if (drag_enabled && MouseLeft().ended_down) {
-            drag_nxt = cam.GetPointAtDepth(plf->cursorpos.x_frac, plf->cursorpos.y_frac, drag);
+            drag_nxt = cam.GetPointAtDepth(plf->cursorpos.x_frac, plf->cursorpos.y_frac, drag_push);
 
             Vector3f delta = drag_nxt - drag;
 
@@ -274,6 +275,7 @@ void RunWireframe() {
                     selected = obj;
                     drag_enabled = true;
                     drag = hit;
+                    drag_push = hit;
                 }
             }
         }
@@ -286,9 +288,10 @@ void RunWireframe() {
         // DBG render anchors
         RenderFat3x3(plf->image_buffer, TransformPerspective(cam.vp, hit), plf->width, plf->height, COLOR_GREEN);
         RenderFat3x3(plf->image_buffer, TransformPerspective(cam.vp, drag), plf->width, plf->height, COLOR_BLACK);
-        RenderFat3x3(plf->image_buffer, TransformPerspective(cam.vp, drag_nxt), plf->width, plf->height, COLOR_RED);
-        //RenderLineSegment(plf->image_buffer, TransformPerspective(cam.vp, drag_nxt), TransformPerspective(cam.vp, drag), plf->width, plf->height, COLOR_BLACK);
-        RenderLineSegment(plf->image_buffer, TransformPerspective(cam.vp, drag_prev), TransformPerspective(cam.vp, drag), plf->width, plf->height, COLOR_BLACK);
+        if (drag_prev.x != 0 || drag_prev.y != 0 || drag_prev.z != 0) {
+            RenderFat3x3(plf->image_buffer, TransformPerspective(cam.vp, drag_nxt), plf->width, plf->height, COLOR_RED);
+            RenderLineSegment(plf->image_buffer, TransformPerspective(cam.vp, drag_prev), TransformPerspective(cam.vp, drag), plf->width, plf->height, COLOR_BLACK);
+        }
 
         // selection changed
         if (selected != selected_prev) {
