@@ -208,261 +208,272 @@ bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3
 }
 
 
-Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wf_lst, Matrix4f vp) {
-    // anchors - start and ends of each line; anchor points are duplicated for every line segment
-    List<Vector3f> segment_anchs = {};
-    segment_anchs.lst = (Vector3f*) ArenaOpen(a_dest);
-    u32 segments_accum = 0;
+Array<Vector3f> WireframeRawSegments(MArena *a_dest, Wireframe *wf) {
+    TimeFunction;
 
-    for (u32 j = 0; j < wf_lst.len; ++j) {
+    Array<Vector3f> anchors = {};
+    Vector3f sz = wf->dimensions;
 
-        Wireframe *wf = wf_lst.arr + j;
-        if (wf->disabled) {
-            continue;
+    if (wf->type == WFT_AXIS) {
+
+        anchors = InitArray<Vector3f>(a_dest, 6);
+
+        Vector3f origo = {0.0f, 0.0f, 0.0f};
+        Vector3f x = {sz.x, 0.0f, 0.0f};
+        Vector3f y = {0.0f, sz.y, 0.0f};
+        Vector3f z = {0.0f, 0.0f, sz.z};
+
+        anchors.Add(origo);
+        anchors.Add(x);
+        anchors.Add(origo);
+        anchors.Add(y);
+        anchors.Add(origo);
+        anchors.Add(z);
+
+        wf->nsegments = anchors.len / 2;
+    }
+
+    else if (wf->type == WFT_PLANE) {
+
+        // local coordinates is the x-z plane at y == 0 with nbeams internal cross-lines x and z
+        f32 rx = 0.5f * sz.x;
+        f32 rz = 0.5f * sz.z;
+        s32 nbeams = 5;
+
+        anchors = InitArray<Vector3f>(a_dest, (nbeams + 1) * 4 + 8);
+
+        Vector3f urc = { rx, 0, rz };
+        Vector3f ulc = { -rx, 0, rz };
+        Vector3f lrc = { rx, 0, -rz };
+        Vector3f llc = { -rx, 0, -rz };
+
+        // the outer square
+        anchors.Add(urc);
+        anchors.Add(ulc);
+        anchors.Add(ulc);
+        anchors.Add(llc);
+        anchors.Add(llc);
+        anchors.Add(lrc);
+        anchors.Add(lrc);
+        anchors.Add(urc);
+
+        // insider beams
+        Vector3f xhat = 1.0f / (nbeams + 1) * (urc - ulc);
+        Vector3f zhat = 1.0f / (nbeams + 1) * (llc - ulc);
+
+        for (u32 i = 0; i < nbeams + 1; ++i) {
+            Vector3f v1 = ulc + i* xhat;
+            Vector3f v2 = llc + i* xhat;
+
+            Vector3f h1 = ulc + i* zhat;
+            Vector3f h2 = urc + i* zhat;
+
+            anchors.Add(v1);
+            anchors.Add(v2);
+            anchors.Add(h1);
+            anchors.Add(h2);
         }
 
-        Matrix4f mvp = vp * wf->transform;
-        Vector3f sz = wf->dimensions;
-        u32 segment_anchs_len_prev = segment_anchs.len;
+        wf->nsegments = anchors.len / 2;
+    }
 
-        if (wf->type == WFT_AXIS) {
+    else if (wf->type == WFT_BOX) {
 
-            Vector3f origo = TransformPerspective(mvp, {0.0f, 0.0f, 0.0f} );
-            Vector3f x = TransformPerspective(mvp, {sz.x, 0.0f, 0.0f} );
-            Vector3f y = TransformPerspective(mvp, {0.0f, sz.y, 0.0f} );
-            Vector3f z = TransformPerspective(mvp, {0.0f, 0.0f, sz.z} );
+        anchors = InitArray<Vector3f>(a_dest, 24);
 
-            segment_anchs.Add(origo);
-            segment_anchs.Add(x);
-            segment_anchs.Add(origo);
-            segment_anchs.Add(y);
-            segment_anchs.Add(origo);
-            segment_anchs.Add(z);
+        Vector3f ppp = { sz.x, sz.y, sz.z };
+        Vector3f ppm = { sz.x, sz.y, -sz.z };
+        Vector3f pmp = { sz.x, -sz.y, sz.z };
+        Vector3f pmm = { sz.x, -sz.y, -sz.z };
+        Vector3f mpp = { -sz.x, sz.y, sz.z };
+        Vector3f mpm = { -sz.x, sz.y, -sz.z };
+        Vector3f mmp = { -sz.x, -sz.y, sz.z };
+        Vector3f mmm = { -sz.x, -sz.y, -sz.z };
 
-            wf->nsegments = (segment_anchs.len - segment_anchs_len_prev) / 2;
+        anchors.Add(ppp);
+        anchors.Add(ppm);
+        anchors.Add(ppm);
+        anchors.Add(pmm);
+        anchors.Add(pmm);
+        anchors.Add(pmp);
+        anchors.Add(pmp);
+        anchors.Add(ppp);
+
+        anchors.Add(mpp);
+        anchors.Add(mpm);
+        anchors.Add(mpm);
+        anchors.Add(mmm);
+        anchors.Add(mmm);
+        anchors.Add(mmp);
+        anchors.Add(mmp);
+        anchors.Add(mpp);
+
+        anchors.Add(ppp);
+        anchors.Add(mpp);
+        anchors.Add(ppm);
+        anchors.Add(mpm);
+        anchors.Add(pmm);
+        anchors.Add(mmm);
+        anchors.Add(pmp);
+        anchors.Add(mmp);
+
+        wf->nsegments = anchors.len / 2;
+    }
+
+    else if (wf->type == WFT_SPHERE) {
+
+        u32 len_prev = anchors.len;
+        f32 r = sz.x;
+
+        u32 nlatt = 6;
+        u32 nlong = 6;
+
+        anchors = InitArray<Vector3f>(a_dest, (nlatt + nlong) * 4);
+
+        Vector3f center = {};
+        Vector3f north = { 0, r, 0 };
+        Vector3f south = { 0, -r, 0 };
+
+        for (u32 i = 0; i < nlatt; ++i) {
+            f32 theta = PI / nlatt * i;
+
+            Vector3f pt_0 = SphericalCoordsY(theta, 0, r);
+            anchors.Add(pt_0);
+            for (u32 j = 0; j < nlong; ++j) {
+                f32 phi = 2 * PI / nlong * (j % nlong);
+
+                Vector3f pt = SphericalCoordsY(theta, phi, r);
+                anchors.Add(pt);
+                anchors.Add(pt);
+            } 
+            anchors.Add(pt_0);
         }
 
-        else if (wf->type == WFT_PLANE) {
+        for (u32 j = 0; j < nlong; ++j) {
+            f32 phi = 2 * PI / nlong * j;
 
-            // local coordinates is the x-z plane at y == 0 with nbeams internal cross-lines x and z
-            f32 rx = 0.5f * wf->dimensions.x;
-            f32 rz = 0.5f * wf->dimensions.z;
-            s32 nbeams = 5;
-
-            Vector3f urc = { rx, 0, rz };
-            Vector3f ulc = { -rx, 0, rz };
-            Vector3f lrc = { rx, 0, -rz };
-            Vector3f llc = { -rx, 0, -rz };
-            Vector3f urc_ndc = TransformPerspective(mvp, urc);
-            Vector3f ulc_ndc = TransformPerspective(mvp, ulc);
-            Vector3f lrc_ndc = TransformPerspective(mvp, lrc);
-            Vector3f llc_ndc = TransformPerspective(mvp, llc);
-
-            // the outer square
-            segment_anchs.Add(urc_ndc);
-            segment_anchs.Add(ulc_ndc);
-            segment_anchs.Add(ulc_ndc);
-            segment_anchs.Add(llc_ndc);
-            segment_anchs.Add(llc_ndc);
-            segment_anchs.Add(lrc_ndc);
-            segment_anchs.Add(lrc_ndc);
-            segment_anchs.Add(urc_ndc);
-
-            // insider beams
-            Vector3f xhat = 1.0f / (nbeams + 1) * (urc - ulc);
-            Vector3f zhat = 1.0f / (nbeams + 1) * (llc - ulc);
-
-            for (u32 i = 0; i < nbeams + 1; ++i) {
-                Vector3f v1_ndc = TransformPerspective(mvp, ulc + i* xhat);
-                Vector3f v2_ndc = TransformPerspective(mvp, llc + i* xhat);
-
-                Vector3f h1_ndc = TransformPerspective(mvp, ulc + i* zhat);
-                Vector3f h2_ndc = TransformPerspective(mvp, urc + i* zhat);
-
-                segment_anchs.Add(v1_ndc);
-                segment_anchs.Add(v2_ndc);
-                segment_anchs.Add(h1_ndc);
-                segment_anchs.Add(h2_ndc);
-            }
-
-            wf->nsegments = (segment_anchs.len - segment_anchs_len_prev) / 2;
-        }
-
-        else if (wf->type == WFT_BOX) {
-
-            Vector3f ppp = TransformPerspective(mvp, { sz.x, sz.y, sz.z } );
-            Vector3f ppm = TransformPerspective(mvp, { sz.x, sz.y, -sz.z } );
-            Vector3f pmp = TransformPerspective(mvp, { sz.x, -sz.y, sz.z } );
-            Vector3f pmm = TransformPerspective(mvp, { sz.x, -sz.y, -sz.z } );
-            Vector3f mpp = TransformPerspective(mvp, { -sz.x, sz.y, sz.z } );
-            Vector3f mpm = TransformPerspective(mvp, { -sz.x, sz.y, -sz.z } );
-            Vector3f mmp = TransformPerspective(mvp, { -sz.x, -sz.y, sz.z } );
-            Vector3f mmm = TransformPerspective(mvp, { -sz.x, -sz.y, -sz.z } );
-
-            segment_anchs.Add(ppp);
-            segment_anchs.Add(ppm);
-            segment_anchs.Add(ppm);
-            segment_anchs.Add(pmm);
-            segment_anchs.Add(pmm);
-            segment_anchs.Add(pmp);
-            segment_anchs.Add(pmp);
-            segment_anchs.Add(ppp);
-
-            segment_anchs.Add(mpp);
-            segment_anchs.Add(mpm);
-            segment_anchs.Add(mpm);
-            segment_anchs.Add(mmm);
-            segment_anchs.Add(mmm);
-            segment_anchs.Add(mmp);
-            segment_anchs.Add(mmp);
-            segment_anchs.Add(mpp);
-
-            segment_anchs.Add(ppp);
-            segment_anchs.Add(mpp);
-            segment_anchs.Add(ppm);
-            segment_anchs.Add(mpm);
-            segment_anchs.Add(pmm);
-            segment_anchs.Add(mmm);
-            segment_anchs.Add(pmp);
-            segment_anchs.Add(mmp);
-
-            wf->nsegments = (segment_anchs.len - segment_anchs_len_prev) / 2;
-        }
-
-        else if (wf->type == WFT_SPHERE) {
-
-            u32 len_prev = segment_anchs.len;
-            f32 r = sz.x;
-
-            u32 nlatt = 6;
-            u32 nlong = 6;
-            Vector3f center = {};
-            Vector3f north = { 0, r, 0 };
-            Vector3f south = { 0, -r, 0 };
-
-
+            anchors.Add(north);
             for (u32 i = 0; i < nlatt; ++i) {
                 f32 theta = PI / nlatt * i;
 
-                Vector3f pt_0 = SphericalCoordsY(theta, 0, r);
-                segment_anchs.Add(TransformPerspective(mvp, pt_0));
-                for (u32 j = 0; j < nlong; ++j) {
-                    f32 phi = 2 * PI / nlong * (j % nlong);
+                Vector3f pt = SphericalCoordsY(theta, phi, r);
+                anchors.Add(pt);
+                anchors.Add(pt);
 
-                    Vector3f pt = SphericalCoordsY(theta, phi, r);
-                    segment_anchs.Add(TransformPerspective(mvp, pt));
-                    segment_anchs.Add(TransformPerspective(mvp, pt));
-                } 
-                segment_anchs.Add(TransformPerspective(mvp, pt_0));
             }
-
-            for (u32 j = 0; j < nlong; ++j) {
-                f32 phi = 2 * PI / nlong * j;
-
-                segment_anchs.Add(TransformPerspective(mvp, north));
-                for (u32 i = 0; i < nlatt; ++i) {
-                    f32 theta = PI / nlatt * i;
-
-                    Vector3f pt = SphericalCoordsY(theta, phi, r);
-                    segment_anchs.Add(TransformPerspective(mvp, pt));
-                    segment_anchs.Add(TransformPerspective(mvp, pt));
-
-                }
-                segment_anchs.Add(TransformPerspective(mvp, south));
-            }
-
-            wf->nsegments = (segment_anchs.len - segment_anchs_len_prev) / 2;
+            anchors.Add(south);
         }
 
-        else if (wf->type == WFT_CYLINDER) {
-
-            f32 r = sz.x;
-            f32 h2 = sz.y;
-
-            s32 nbars = 8;
-
-            Vector3f up_prev = {};
-            Vector3f lw_prev = {};
-            Vector3f up_first = {};
-            Vector3f lw_first = {};
-            for (u32 i = 0; i < nbars; ++i) {
-                f32 theta = 2 * 3.14159265f / 8 * i;
-                Vector3f up = TransformPerspective(mvp, { r * cos(theta), h2, r * sin(theta) });
-                Vector3f lw = TransformPerspective(mvp, { r * cos(theta), - h2, r * sin(theta) });
-
-                segment_anchs.Add(up);
-                segment_anchs.Add(lw);
-
-                if (i == 0) {
-                    up_first = up;
-                    lw_first = lw;
-                }
-                else if (i > 0) {
-                    segment_anchs.Add(up_prev);
-                    segment_anchs.Add(up);
-                    segment_anchs.Add(lw_prev);
-                    segment_anchs.Add(lw);
-                }
-                if (i == (nbars - 1)) {
-                    segment_anchs.Add(up);
-                    segment_anchs.Add(up_first);
-                    segment_anchs.Add(lw);
-                    segment_anchs.Add(lw_first);
-                }
-                up_prev = up;
-                lw_prev = lw;
-            }
-
-            wf->nsegments = (segment_anchs.len - segment_anchs_len_prev) / 2;
-        }
-
-        else if (wf->type == WFT_EYE) {
-
-            f32 w2 = sz.x;
-            f32 d = sz.z;
-
-            Vector3f urc = TransformPerspective(mvp, { w2, w2, d });
-            Vector3f ulc = TransformPerspective(mvp, { - w2, w2, d });
-            Vector3f lrc = TransformPerspective(mvp, { w2, - w2, d });
-            Vector3f llc = TransformPerspective(mvp, { - w2, - w2, d });
-            Vector3f point = TransformPerspective(mvp, {});
-
-            segment_anchs.Add(urc);
-            segment_anchs.Add(ulc);
-            segment_anchs.Add(ulc);
-            segment_anchs.Add(llc);
-            segment_anchs.Add(llc);
-            segment_anchs.Add(lrc);
-            segment_anchs.Add(lrc);
-            segment_anchs.Add(urc);
-
-            segment_anchs.Add(urc);
-            segment_anchs.Add(point);
-            segment_anchs.Add(ulc);
-            segment_anchs.Add(point);
-            segment_anchs.Add(llc);
-            segment_anchs.Add(point);
-            segment_anchs.Add(lrc);
-            segment_anchs.Add(point);
-
-            wf->nsegments = (segment_anchs.len - segment_anchs_len_prev) / 2;
-        }
-
-        else {
-            printf("WARN: Unknown wireframe type\n");
-        }
-
-        segments_accum += wf->nsegments;
+        wf->nsegments = anchors.len / 2;
     }
-    assert(segments_accum == segment_anchs.len / 2);
 
-    ArenaClose(a_dest, sizeof(Vector3f) * segment_anchs.len);
-    Array<Vector3f> result = {};
-    result.max = segment_anchs.len;
-    result.len = result.max;
-    result.arr = segment_anchs.lst;
+    else if (wf->type == WFT_CYLINDER) {
 
-    return result;
+        f32 r = sz.x;
+        f32 h2 = sz.y;
+
+        s32 nbars = 8;
+        anchors = InitArray<Vector3f>(a_dest, nbars * 2 + (nbars-1) * 4);
+
+        Vector3f up_prev = {};
+        Vector3f lw_prev = {};
+        Vector3f up_first = {};
+        Vector3f lw_first = {};
+        for (u32 i = 0; i < nbars; ++i) {
+            f32 theta = 2 * 3.14159265f / 8 * i;
+            Vector3f up = { r * cos(theta), h2, r * sin(theta) };
+            Vector3f lw = { r * cos(theta), - h2, r * sin(theta) };
+
+            anchors.Add(up);
+            anchors.Add(lw);
+
+            if (i == 0) {
+                up_first = up;
+                lw_first = lw;
+            }
+            else if (i > 0) {
+                anchors.Add(up_prev);
+                anchors.Add(up);
+                anchors.Add(lw_prev);
+                anchors.Add(lw);
+            }
+            if (i == (nbars - 1)) {
+                anchors.Add(up);
+                anchors.Add(up_first);
+                anchors.Add(lw);
+                anchors.Add(lw_first);
+            }
+            up_prev = up;
+            lw_prev = lw;
+        }
+
+        wf->nsegments = anchors.len / 2;
+    }
+
+    else if (wf->type == WFT_EYE) {
+
+        anchors = InitArray<Vector3f>(a_dest, 16);
+
+        f32 w2 = sz.x;
+        f32 d = sz.z;
+
+        Vector3f urc = { w2, w2, d };
+        Vector3f ulc = { - w2, w2, d };
+        Vector3f lrc = { w2, - w2, d };
+        Vector3f llc = { - w2, - w2, d };
+        Vector3f point = {};
+
+        anchors.Add(urc);
+        anchors.Add(ulc);
+        anchors.Add(ulc);
+        anchors.Add(llc);
+        anchors.Add(llc);
+        anchors.Add(lrc);
+        anchors.Add(lrc);
+        anchors.Add(urc);
+
+        anchors.Add(urc);
+        anchors.Add(point);
+        anchors.Add(ulc);
+        anchors.Add(point);
+        anchors.Add(llc);
+        anchors.Add(point);
+        anchors.Add(lrc);
+        anchors.Add(point);
+
+        wf->nsegments = anchors.len / 2;
+    }
+
+    else {
+        printf("WARN: Unknown wireframe type\n");
+    }
+
+    return anchors;
+}
+
+
+Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wireframes, Matrix4f vp) {
+    TimeFunction
+
+    Array<Vector3f> anchors_all = InitArray<Vector3f>(a_dest, 0);
+
+    for (u32 i = 0; i < wireframes.len; ++i) {
+        Array<Vector3f> anchors;
+        anchors = WireframeRawSegments(a_dest, wireframes.arr + i);
+        anchors_all.len += anchors.len;
+
+        {
+            TimeBlock("block_2");
+            // DBG: transform, for testing purposes
+            Matrix4f mvp = vp * wireframes.arr[i].transform;
+            for (u32 j = 0; j < anchors.len; ++j) {
+                anchors.arr[j] = TransformPerspective(mvp, anchors.arr[j]);
+            }
+        }
+    }
+
+    anchors_all.max = anchors_all.len;
+    return anchors_all;
 }
 
 

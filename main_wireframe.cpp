@@ -8,11 +8,12 @@
 
 #define WF_VERSION_MAJOR 0
 #define WF_VERSION_MINOR 0
-#define WF_VERSION_PATCH 1
+#define WF_VERSION_PATCH 2
 
 
 inline
 bool _CullScreenCoords(u32 pos_x, u32 pos_y, u32 w, u32 h) {
+    // returns true if the coordinate is out of range
     bool not_result = pos_x >= 0 && pos_x < w && pos_y >= 0 && pos_y < h;
     return !not_result;
 }
@@ -106,7 +107,7 @@ void RenderPoint(u8 *image_buffer, Vector3f point_ndc, u32 w, u32 h, Color color
     ((Color*) image_buffer)[ GetXYIdx(x, y, w) ] = color;
 }
 
-void RenderFat3x3(u8 *image_buffer, Vector3f point_ndc, u32 w, u32 h, Color color = COLOR_RED) {
+void RenderFatPoint3x3(u8 *image_buffer, Vector3f point_ndc, u32 w, u32 h, Color color = COLOR_RED) {
     f32 x = (point_ndc.x + 1) / 2 * w;
     f32 y = (point_ndc.y + 1) / 2 * h;
 
@@ -151,7 +152,6 @@ s32 _GetNextNonDisabledWireframeIndex(u32 idx_prev, Array<Wireframe> wireframes)
     }
     return idx_prev;
 }
-
 void RenderLineSegmentList(u8 *image_buffer, Array<Wireframe> wireframes, Array<Vector3f> segments_ndc, u32 w, u32 h) {
     s32 wf_segs_idx = 0;
     s32 wf_idx = -1;
@@ -210,18 +210,19 @@ void RunWireframe() {
 
     // scene objects
     Array<Wireframe> objs = InitArray<Wireframe>(ctx->a_pers, 100);
-    objs.Add(CreateAAAxes());
 
     Wireframe box = CreateAABox( 0.5, 0.5, 0.5 );
     box.transform = TransformBuildTranslationOnly({ 0.7, 0.7, 0.7 });
     objs.Add(box);
 
+    objs.Add(CreateAAAxes());
+    objs.Add(CreatePlane(10));
+
+    /*
     Wireframe ball = CreateSphere( 0.5 );
     ball.transform = TransformBuildTranslationOnly({ 0.7, 0.7, -0.7 });
     objs.Add(ball);
 
-    objs.Add(CreatePlane(10));
-    
     Wireframe cylinder = CreateCylinder( 0.2, 0.7 );
     cylinder.transform = TransformBuildTranslationOnly({ -0.5, 0.5, -0.5 });
     objs.Add(cylinder);
@@ -229,6 +230,7 @@ void RunWireframe() {
     Wireframe eye = CreateEye( 0.05, 0.1 );
     eye.transform = TransformBuildTranslationOnly({ -0.5, 1, 1 });
     objs.Add(eye);
+    */
 
     // selection & drag variables
     Wireframe *selected = NULL;
@@ -290,12 +292,15 @@ void RunWireframe() {
         }
 
         // DBG render anchors
-        RenderFat3x3(plf->image_buffer, TransformPerspective(cam.vp, hit), plf->width, plf->height, COLOR_GREEN);
-        RenderFat3x3(plf->image_buffer, TransformPerspective(cam.vp, drag), plf->width, plf->height, COLOR_BLACK);
+        // TODO: bring back when box renders correctly again
+        /*
+        RenderFatPoint3x3(plf->image_buffer, TransformPerspective(cam.vp, hit), plf->width, plf->height, COLOR_GREEN);
+        RenderFatPoint3x3(plf->image_buffer, TransformPerspective(cam.vp, drag), plf->width, plf->height, COLOR_BLACK);
         if (drag_prev.x != 0 || drag_prev.y != 0 || drag_prev.z != 0) {
-            RenderFat3x3(plf->image_buffer, TransformPerspective(cam.vp, drag_nxt), plf->width, plf->height, COLOR_RED);
+            RenderFatPoint3x3(plf->image_buffer, TransformPerspective(cam.vp, drag_nxt), plf->width, plf->height, COLOR_RED);
             RenderLineSegment(plf->image_buffer, TransformPerspective(cam.vp, drag_prev), TransformPerspective(cam.vp, drag), plf->width, plf->height, COLOR_BLACK);
         }
+        */
 
         // selection changed
         if (selected != selected_prev) {
@@ -317,7 +322,7 @@ void RunWireframe() {
         }
 
         // update and render wireframe objects
-        Array<Vector3f> segments_ndc = WireframeLineSegments(ctx->a_tmp, objs, cam.vp);
+        Array<Vector3f> segments_ndc = WireframeLineSegments2(ctx->a_tmp, objs, cam.vp);
         RenderLineSegmentList(plf->image_buffer, objs, segments_ndc, plf->width, plf->height);
 
         // usr frame end
