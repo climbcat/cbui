@@ -328,7 +328,8 @@ Array<Vector3f> WireframeRawSegments(MArena *a_dest, Wireframe *wf) {
         u32 nlatt = 6;
         u32 nlong = 6;
 
-        anchors = InitArray<Vector3f>(a_dest, (nlatt + nlong) * 4);
+        u32 cnt = (nlatt * 2 + nlatt * nlong * 2) + (nlong * 2 + nlong * nlatt * 2);
+        anchors = InitArray<Vector3f>(a_dest, cnt);
 
         Vector3f center = {};
         Vector3f north = { 0, r, 0 };
@@ -373,7 +374,8 @@ Array<Vector3f> WireframeRawSegments(MArena *a_dest, Wireframe *wf) {
         f32 h2 = sz.y;
 
         s32 nbars = 8;
-        anchors = InitArray<Vector3f>(a_dest, nbars * 2 + (nbars-1) * 4);
+        u32 cnt = nbars * 2 + nbars * 4;
+        anchors = InitArray<Vector3f>(a_dest, cnt);
 
         Vector3f up_prev = {};
         Vector3f lw_prev = {};

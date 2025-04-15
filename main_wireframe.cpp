@@ -218,7 +218,6 @@ void RunWireframe() {
     objs.Add(CreateAAAxes());
     objs.Add(CreatePlane(10));
 
-    /*
     Wireframe ball = CreateSphere( 0.5 );
     ball.transform = TransformBuildTranslationOnly({ 0.7, 0.7, -0.7 });
     objs.Add(ball);
@@ -230,7 +229,6 @@ void RunWireframe() {
     Wireframe eye = CreateEye( 0.05, 0.1 );
     eye.transform = TransformBuildTranslationOnly({ -0.5, 1, 1 });
     objs.Add(eye);
-    */
 
     // selection & drag variables
     Wireframe *selected = NULL;
@@ -322,7 +320,7 @@ void RunWireframe() {
         }
 
         // update and render wireframe objects
-        Array<Vector3f> segments_ndc = WireframeLineSegments2(ctx->a_tmp, objs, cam.vp);
+        Array<Vector3f> segments_ndc = WireframeLineSegments(ctx->a_tmp, objs, cam.vp);
         RenderLineSegmentList(plf->image_buffer, objs, segments_ndc, plf->width, plf->height);
 
         // usr frame end
