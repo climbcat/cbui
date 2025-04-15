@@ -6,6 +6,10 @@
 
 #include "test/test_02.cpp"
 
+#define WF_VERSION_MAJOR 0
+#define WF_VERSION_MINOR 1
+#define WF_VERSION_PATCH 0
+
 
 inline
 bool _CullScreenCoords(u32 pos_x, u32 pos_y, u32 w, u32 h) {
@@ -339,9 +343,14 @@ int main (int argc, char **argv) {
     if (CLAContainsArg("--help", argc, argv) || CLAContainsArg("-h", argc, argv)) {
         printf("--help:          display help (this text)\n");
         printf("--test:          run available test functions\n");
+        printf("--version:       print the application version\n");
     }
     else if (CLAContainsArg("--test", argc, argv)) {
         Test();
+    }
+    else if (CLAContainsArg("--version", argc, argv)) {
+        printf("%d.%d.%d\n", WF_VERSION_MAJOR, WF_VERSION_MINOR, WF_VERSION_PATCH);
+        exit(0);
     }
     else {
         RunWireframe();
