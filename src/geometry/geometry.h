@@ -811,11 +811,11 @@ struct Perspective {
     Matrix4f p;
 };
 
-Matrix4f PerspectiveMatrixOpenGL(f32 far, f32 near, f32 fov, f32 aspect, bool flip_x = true, bool flip_y = false, bool flip_z = true) {
+Matrix4f PerspectiveMatrixOpenGL(f32 farr, f32 nearr, f32 fov, f32 aspect, bool flip_x = true, bool flip_y = false, bool flip_z = true) {
     // gather values
-    float f = far;
-    float n = near;
-    float r = near * sin(fov / 2 * deg2rad);
+    float f = farr;
+    float n = nearr;
+    float r = nearr * sin(fov / 2 * deg2rad);
     float l = -r;
     float b = r / aspect;
     float t = -b;
