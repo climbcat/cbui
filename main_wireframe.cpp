@@ -11,6 +11,25 @@
 #define WF_VERSION_PATCH 2
 
 
+struct WireframeApp {
+    Matrix4f v;
+    Matrix4f p;
+    u32 w;
+    u32 h;
+    MArena *a_tmp;
+};
+static WireframeApp app;
+void AppUpdate(Matrix4f v, Matrix4f p, u32 w, u32 h) {
+    app.v = v;
+    app.p = p;
+    app.w = w;
+    app.h = h;
+}
+void AppInit(MArena *a_tmp) {
+    app.a_tmp = a_tmp;
+}
+
+
 inline
 bool _CullScreenCoords(u32 pos_x, u32 pos_y, u32 w, u32 h) {
     // returns true if the coordinate is out of range
@@ -152,7 +171,14 @@ s32 _GetNextNonDisabledWireframeIndex(u32 idx_prev, Array<Wireframe> wireframes)
     }
     return idx_prev;
 }
-void RenderLineSegmentList(u8 *image_buffer, Array<Wireframe> wireframes, Array<Vector3f> segments_ndc, u32 w, u32 h) {
+void RenderLineSegmentList(u8 *image_buffer, Matrix4f v, Matrix4f p, u32 w, u32 h, Array<Wireframe> wireframes, Array<Vector3f> segments) {
+    Array<Vector3f> segments_ndc = segments;
+
+    // go to view coordinates
+    for (u32 j = 0; j < segments.len; ++j) {
+        segments.arr[j] = TransformInversePoint(v, segments.arr[j]);
+    }
+
     s32 wf_segs_idx = 0;
     s32 wf_idx = -1;
     wf_idx = _GetNextNonDisabledWireframeIndex(wf_idx, wireframes);
@@ -161,13 +187,18 @@ void RenderLineSegmentList(u8 *image_buffer, Array<Wireframe> wireframes, Array<
     u32 wf_nsegments = wireframes.arr[wf_idx].nsegments;
 
     for (u32 i = 0; i < segments_ndc.len / 2; ++i) {
-        if (wf_style == WFR_SLIM) {
-            RenderLineSegment(image_buffer, segments_ndc.arr[2*i], segments_ndc.arr[2*i + 1], w, h, wf_color);
-        }
+        bool culled = false;
 
-        else if (wf_style == WFR_FAT) {
-            Vector3f anchor_a = segments_ndc.arr[2*i];
-            Vector3f anchor_b = segments_ndc.arr[2*i + 1];
+        Vector3f anchor_a = segments_ndc.arr[2*i];
+        Vector3f anchor_b = segments_ndc.arr[2*i + 1];
+
+        // TODO: do the segment culling
+        // TODO: do the segment cropping with view plane
+
+        if (culled == false) {
+            anchor_a = TransformPerspective(p, anchor_a);
+            anchor_b = TransformPerspective(p, anchor_b);
+
             Vector2f a = {};
             a.x = (anchor_a.x + 1) / 2 * w;
             a.y = (anchor_a.y + 1) / 2 * h;
@@ -175,14 +206,20 @@ void RenderLineSegmentList(u8 *image_buffer, Array<Wireframe> wireframes, Array<
             b.x = (anchor_b.x + 1) / 2 * w;
             b.y = (anchor_b.y + 1) / 2 * h;
 
-            RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, wf_color);
-            RenderLineRGBA(image_buffer, w, h, a.x + 1, a.y, b.x + 1, b.y, wf_color);
-            RenderLineRGBA(image_buffer, w, h, a.x, a.y + 1, b.x, b.y + 1, wf_color);
+
+            if (wf_style == WFR_SLIM) {
+                RenderLineSegment(image_buffer, anchor_a, anchor_b, w, h, wf_color);
+            }
+
+            else if (wf_style == WFR_FAT) {
+                RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, wf_color);
+                RenderLineRGBA(image_buffer, w, h, a.x + 1, a.y, b.x + 1, b.y, wf_color);
+                RenderLineRGBA(image_buffer, w, h, a.x, a.y + 1, b.x, b.y + 1, wf_color);
+            }
         }
 
-        // update color to match the current wireframe
+        // update object-specific properties s.a. colour, style
         wf_segs_idx++;
-
         if (wf_segs_idx == wf_nsegments) {
             wf_idx = _GetNextNonDisabledWireframeIndex(wf_idx, wireframes);
             if (wf_idx == -1) {
@@ -196,12 +233,20 @@ void RenderLineSegmentList(u8 *image_buffer, Array<Wireframe> wireframes, Array<
         }
     }
 }
+void RenderWireframes(Array<Wireframe> wireframes) {
+    
+    Array<Vector3f> segments = WireframeLineSegments(app.a_tmp, wireframes);
+    // insert the globals
+    return RenderLineSegmentList(g_image_buffer, app.v, app.p, app.w, app.h, wireframes, segments);
+}
+
 
 void RunWireframe() {
     printf("Running wireframe program ...\n");
 
     // system init
     MContext *ctx = InitBaselayer();
+    AppInit(ctx->a_tmp);
     ImageBufferInit(ctx->a_life);
     PlafGlfw *plf = PlafGlfwInit();
 
@@ -245,6 +290,8 @@ void RunWireframe() {
     while (running) {
         ImageBufferClear(plf->width, plf->height);
 
+
+
         if (MouseLeft().released) {
             drag_enabled = false;
             drag = {};
@@ -261,7 +308,7 @@ void RunWireframe() {
             selected->transform.m[0][3] += delta.x;
             selected->transform.m[1][3] += delta.y;
             selected->transform.m[2][3] += delta.z;
-            
+
             drag_prev = drag;
             drag = drag_nxt;
         }
@@ -289,17 +336,6 @@ void RunWireframe() {
             selected = NULL;
         }
 
-        // DBG render anchors
-        // TODO: bring back when box renders correctly again
-        /*
-        RenderFatPoint3x3(plf->image_buffer, TransformPerspective(cam.vp, hit), plf->width, plf->height, COLOR_GREEN);
-        RenderFatPoint3x3(plf->image_buffer, TransformPerspective(cam.vp, drag), plf->width, plf->height, COLOR_BLACK);
-        if (drag_prev.x != 0 || drag_prev.y != 0 || drag_prev.z != 0) {
-            RenderFatPoint3x3(plf->image_buffer, TransformPerspective(cam.vp, drag_nxt), plf->width, plf->height, COLOR_RED);
-            RenderLineSegment(plf->image_buffer, TransformPerspective(cam.vp, drag_prev), TransformPerspective(cam.vp, drag), plf->width, plf->height, COLOR_BLACK);
-        }
-        */
-
         // selection changed
         if (selected != selected_prev) {
             if (selected_prev) {
@@ -320,19 +356,28 @@ void RunWireframe() {
         }
 
         // update and render wireframe objects
-        Array<Vector3f> segments_ndc = WireframeLineSegments(ctx->a_tmp, objs, cam.vp);
-        RenderLineSegmentList(plf->image_buffer, objs, segments_ndc, plf->width, plf->height);
+        RenderWireframes(objs);
 
-        // usr frame end
+        // DBG render anchors
+        RenderFatPoint3x3(plf->image_buffer, TransformPerspective(cam.vp, hit), plf->width, plf->height, COLOR_GREEN);
+        RenderFatPoint3x3(plf->image_buffer, TransformPerspective(cam.vp, drag), plf->width, plf->height, COLOR_BLACK);
+        if (drag_prev.x != 0 || drag_prev.y != 0 || drag_prev.z != 0) {
+            RenderFatPoint3x3(plf->image_buffer, TransformPerspective(cam.vp, drag_nxt), plf->width, plf->height, COLOR_RED);
+            RenderLineSegment(plf->image_buffer, TransformPerspective(cam.vp, drag_prev), TransformPerspective(cam.vp, drag), plf->width, plf->height, COLOR_BLACK);
+        }
+
+
+        // frame end (usr)
         cam.SetAspect(plf->width, plf->height);
         if (drag_enabled == false) {
             OrbitCameraUpdate(&cam, plf->cursorpos.dx, plf->cursorpos.dy, plf->left.ended_down, plf->right.ended_down, plf->scroll.yoffset_acc);
         }
 
-        // system frame end
+        // frame end (sys)
         running = running && !GetEscape() && !GetWindowShouldClose(plf);
         PlafGlfwUpdate(plf);
         ArenaClear(ctx->a_tmp);
+        AppUpdate(cam.view, cam.proj, plf->width, plf->height);
         XSleep(1);
     }
 

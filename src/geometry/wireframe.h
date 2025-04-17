@@ -454,9 +454,7 @@ Array<Vector3f> WireframeRawSegments(MArena *a_dest, Wireframe *wf) {
 }
 
 
-Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wireframes, Matrix4f vp) {
-    TimeFunction
-
+Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wireframes) {
     Array<Vector3f> anchors_all = InitArray<Vector3f>(a_dest, 0);
 
     for (u32 i = 0; i < wireframes.len; ++i) {
@@ -464,13 +462,10 @@ Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wireframe
         anchors = WireframeRawSegments(a_dest, wireframes.arr + i);
         anchors_all.len += anchors.len;
 
-        {
-            TimeBlock("block_2");
-            // DBG: transform, for testing purposes
-            Matrix4f mvp = vp * wireframes.arr[i].transform;
-            for (u32 j = 0; j < anchors.len; ++j) {
-                anchors.arr[j] = TransformPerspective(mvp, anchors.arr[j]);
-            }
+        // deliver points in world space
+        Matrix4f m = wireframes.arr[i].transform;
+        for (u32 j = 0; j < anchors.len; ++j) {
+            anchors.arr[j] = TransformPerspective(m, anchors.arr[j]);
         }
     }
 
