@@ -257,7 +257,7 @@ struct VoxelGridReduce {
 
         // points
         u32 npoints_max = leaves.len * 8;
-        List<Vector3f> points = InitListOpen<Vector3f>(a_dest, npoints_max);
+        List<Vector3f> points = InitList<Vector3f>(a_dest, npoints_max);
         Vector3f avg;
         Vector3f sum;
         Vector3f p_world;
@@ -281,13 +281,13 @@ struct VoxelGridReduce {
                 }
             }
         }
-        InitListClose<Vector3f>(a_dest, points.len);
+        ArenaRelease(a_dest, sizeof(Vector3f) * (npoints_max - points.len) );
         *points_dest = points;
         stats.nvertices_out = points.len;
         stats.avg_verts_pr_leaf = cnt_sum / stats.nvertices_out;
 
         // normals
-        List<Vector3f> normals = InitListOpen<Vector3f>(a_dest, npoints_max);
+        List<Vector3f> normals = InitList<Vector3f>(a_dest, points.len);
         for (u32 i = 0; i < leaves.len; ++i) {
             OcLeaf leaf = leaves.lst[i];
             for (u32 j = 0; j < 8; ++j) {
@@ -302,7 +302,6 @@ struct VoxelGridReduce {
                 }
             }
         }
-        InitListClose<Vector3f>(a_dest, normals.len);
         *normals_dest = normals;
     }
 };

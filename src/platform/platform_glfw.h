@@ -88,11 +88,6 @@ struct PlafGlfw {
 };
 
 
-f32 PlafGlfwGetAspect(PlafGlfw *plf) {
-    f32 aspect = ((f32) plf->width) / ((f32) plf->height);
-    return aspect;
-}
-
 inline PlafGlfw *_GlfwWindowToUserPtr(GLFWwindow* window) {
     PlafGlfw *plaf = (PlafGlfw*) glfwGetWindowUserPointer(window);
     return plaf;

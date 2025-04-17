@@ -3,8 +3,6 @@
 
 
 #include <math.h>
-
-
 #include "../../../baselayer/baselayer.h"
 
 
@@ -16,27 +14,33 @@ struct Vector2_u16 {
     u16 x;
     u16 y;
 };
+
 struct Vector2_s16 {
     s16 x;
     s16 y;
 };
+
 struct Vector3i {
     u32 i1;
     u32 i2;
     u32 i3;
 };
+
 struct Vector2i {
     s32 i1;
     s32 i2;
 };
+
 struct Vector2u {
     u32 i1;
     u32 i2;
 };
+
 struct Vector2s {
     u32 x;
     u32 y;
 };
+
 struct Vector2f {
     f32 x;
     f32 y;
@@ -45,10 +49,12 @@ struct Vector2f {
         return Vector2f { a->x + b->x, a->y + b->y };
     }
 };
+
 inline
 Vector2f operator+(Vector2f u, Vector2f v) {
     return Vector2f::Add(&u, &v);
 }
+
 Vector2f Vector2f_Zero() {
     return {};
 }
@@ -56,12 +62,14 @@ Vector2f Vector2f_Zero() {
 struct Matrix4f {
     float m[4][4];
 };
+
 struct Vector4f {
     float x;
     float y;
     float z;
     float w;
 };
+
 struct Vector3f {
     float x;
     float y;
@@ -70,6 +78,10 @@ struct Vector3f {
     inline
     float Norm() {
         return sqrt(x*x + y*y + z*z);
+    }
+    inline
+    float NormSquared() {
+        return x*x + y*y + z*z;
     }
     inline
     void ScalarProductOn(float f) {
@@ -163,11 +175,11 @@ struct Vector3f {
         return Vector3f { 0, 0, 1 };
     }
     inline
-    static float NormSquared(Vector3f *a) {
-        return a->x*a->x + a->y*a->y + a->z*a->z;
+    static float NormSquared(Vector3f a) {
+        return a.x*a.x + a.y*a.y + a.z*a.z;
     }
     inline
-    static float Norm(Vector3f *a) {
+    static float Norm(Vector3f a) {
         return sqrt(Vector3f::NormSquared(a));
     }
     inline
@@ -175,9 +187,9 @@ struct Vector3f {
         return Vector3f { f*a->x, f*a->y, f*a->z };
     }
     inline
-    static Vector3f Normalize(Vector3f *a) {
+    static Vector3f Normalize(Vector3f a) {
         float norm_inv = 1 / Vector3f::Norm(a);
-        return Vector3f { norm_inv * a->x, norm_inv * a->y, norm_inv * a->z };
+        return Vector3f { norm_inv * a.x, norm_inv * a.y, norm_inv * a.z };
     }
     inline
     static Vector3f Subtract(Vector3f *a, Vector3f *b) {
@@ -196,35 +208,44 @@ struct Vector3f {
         return Vector3f { a->y*b->z - a->z*b->y, a->z*b->x - a->x*b->z, a->x*b->y - a->y*b->x };
     }
 };
+
 inline
 Vector3f operator+(Vector3f u, Vector3f v) {
     return Vector3f::Add(&u, &v);
 }
+
 inline
 Vector3f operator-(Vector3f u, Vector3f v) {
     return Vector3f::Subtract(&u, &v);
 }
+
 inline
 bool operator==(Vector3f u, Vector3f v) {
     return (u.x == v.x) && (u.y == v.y) && (u.z == v.z);
 }
+
 inline
 Vector3f operator*(float f, Vector3f v) {
     return Vector3f::ScalarProduct(f, &v);
 }
+
 inline
 Vector3f operator-(Vector3f v) {
     return Vector3f::ScalarProduct(-1, &v);
 }
+
 Vector3f x_hat { 1, 0, 0 };
 Vector3f y_hat { 0, 1, 0 };
 Vector3f z_hat { 0, 0, 1 };
+
 Vector3f Vector3f_Zero() {
     return Vector3f { 0, 0, 0 };
 }
+
 Vector3f Vector3f_Ones() {
     return Vector3f { 1, 1, 1 };
 }
+
 Vector3f SphericalCoordsY(float theta, float phi, float radius) {
     Vector3f v;
     v.x = radius * sin(theta) * cos(phi);
@@ -247,6 +268,7 @@ Matrix4f Matrix4f_Zero() {
     }
     return m;
 }
+
 Matrix4f Matrix4f_One() {
     Matrix4f m;
     for (int i = 0; i < 4; ++i) {
@@ -256,6 +278,7 @@ Matrix4f Matrix4f_One() {
     }
     return m;
 }
+
 Matrix4f Matrix4f_Identity() {
     Matrix4f m;
     for (int i = 0; i < 4; ++i) {
@@ -270,6 +293,7 @@ Matrix4f Matrix4f_Identity() {
     }
     return m;
 }
+
 bool Matrix4f_IsIdentity(Matrix4f m) {
     bool is_zero =
         m.m[0][0] == 1 &&
@@ -293,6 +317,7 @@ bool Matrix4f_IsIdentity(Matrix4f m) {
         m.m[3][3] == 1;
     return is_zero;
 }
+
 Matrix4f Matrix4f_Diagonal(Vector4f d) {
     Matrix4f m = Matrix4f_Zero();
     m.m[0][0] = d.x;
@@ -301,6 +326,7 @@ Matrix4f Matrix4f_Diagonal(Vector4f d) {
     m.m[3][3] = d.w;
     return m;
 }
+
 Matrix4f Matrix4f_Transpose(Matrix4f *m) {
     Matrix4f result;
     for (int i = 0; i < 4; ++i) {
@@ -310,6 +336,7 @@ Matrix4f Matrix4f_Transpose(Matrix4f *m) {
     }
     return result;
 }
+
 Matrix4f Matrix4f_Transpose(Matrix4f m) {
     Matrix4f result;
     for (int i = 0; i < 4; ++i) {
@@ -319,6 +346,7 @@ Matrix4f Matrix4f_Transpose(Matrix4f m) {
     }
     return result;
 }
+
 Matrix4f Matrix4f_Multiply(Matrix4f *a, Matrix4f *b) {
     Matrix4f result;
     for (int i = 0; i < 4; ++i) {
@@ -331,6 +359,7 @@ Matrix4f Matrix4f_Multiply(Matrix4f *a, Matrix4f *b) {
     }
     return result;
 }
+
 Vector4f Matrix4f_MultVector(Matrix4f *a, Vector4f *v) {
     Vector4f result;
     result.x = a->m[0][0]*v->x + a->m[0][1]*v->y + a->m[0][2]*v->z + a->m[0][3]*v->w;
@@ -339,6 +368,7 @@ Vector4f Matrix4f_MultVector(Matrix4f *a, Vector4f *v) {
     result.w = a->m[3][0]*v->x + a->m[3][1]*v->y + a->m[3][2]*v->z + a->m[3][3]*v->w;
     return result;
 }
+
 bool Matrix4f_Equals(Matrix4f *a, Matrix4f *b) {
     bool result = true;
     for (int i = 0; i < 4; ++i) {
@@ -348,18 +378,22 @@ bool Matrix4f_Equals(Matrix4f *a, Matrix4f *b) {
     }
     return result;
 }
+
 inline
 Matrix4f operator*(Matrix4f a, Matrix4f b) {
     return Matrix4f_Multiply(&a, &b);
 }
+
 inline
 Vector4f operator*(Matrix4f m, Vector4f v) {
     return Matrix4f_MultVector(&m, &v);
 }
+
 inline
 bool operator==(Matrix4f a, Matrix4f b) {
     return Matrix4f_Equals(&a, &b);
 }
+
 inline
 void MatrixNf_Transpose(float *dest, float *src, u32 dims) {
     for (u32 row = 0; row < dims; ++row) {
@@ -368,6 +402,7 @@ void MatrixNf_Transpose(float *dest, float *src, u32 dims) {
         }
     }
 }
+
 inline
 void MatrixNf_Multiply(float *dest, float *a, float *b, u32 dims) {
     for (u32 i = 0; i < dims; ++i) {
@@ -380,6 +415,7 @@ void MatrixNf_Multiply(float *dest, float *a, float *b, u32 dims) {
         }
     }
 }
+
 inline
 void MatrixNf_MultVector(float *dest, float *a, float *v, u32 dims) {
     for (u32 i = 0; i < dims; ++i) {
@@ -388,6 +424,24 @@ void MatrixNf_MultVector(float *dest, float *a, float *v, u32 dims) {
             dest[i] += a[i*dims + k]*v[k];
         }
     }
+}
+
+Matrix4f Matrix4f_FlipX() {
+    Matrix4f flip = Matrix4f_Identity();
+    flip.m[0][0] = -1;
+    return flip;
+}
+
+Matrix4f Matrix4f_FlipY() {
+    Matrix4f flip = Matrix4f_Identity();
+    flip.m[1][1] = -1;
+    return flip;
+}
+
+Matrix4f Matrix4f_FlipZ() {
+    Matrix4f flip = Matrix4f_Identity();
+    flip.m[2][2] = -1;
+    return flip;
 }
 
 
@@ -428,15 +482,19 @@ Matrix4f TransformBuild(Vector3f axis, float angle_rads, Vector3f translate = {0
 
     return result;
 }
+
 Matrix4f TransformBuildRotateX(float angle_rads) {
     return TransformBuild(x_hat, angle_rads);
 }
+
 Matrix4f TransformBuildRotateY(float angle_rads) {
     return TransformBuild(y_hat, angle_rads);
 }
+
 Matrix4f TransformBuildRotateZ(float angle_rads) {
     return TransformBuild(z_hat, angle_rads);
 }
+
 Matrix4f TransformBuildTranslationOnly(Vector3f translate) {
     // TODO: TEST: should be equal to a matrix with identity rot, built manually
     return TransformBuild(Vector3f {1, 0, 0}, 0, translate);
@@ -469,15 +527,18 @@ Matrix4f TransformGetInverse(Matrix4f *a) {
 
     return result;
 }
+
 inline
 Matrix4f TransformGetInverse(Matrix4f a) {
     return TransformGetInverse(&a);
 }
+
 inline
 Vector3f TransformGetTranslation(Matrix4f transform) {
     Vector3f result { transform.m[0][3], transform.m[1][3], transform.m[2][3] };
     return result;
 }
+
 inline
 Matrix4f TransformSetTranslation(const Matrix4f transform, const Vector3f translation) {
     Matrix4f result = transform;
@@ -486,6 +547,7 @@ Matrix4f TransformSetTranslation(const Matrix4f transform, const Vector3f transl
     result.m[2][3] = translation.z;
     return result;
 }
+
 inline
 Vector3f TransformPoint(Matrix4f *a, Vector3f *v) {
     Vector3f result;
@@ -497,6 +559,7 @@ Vector3f TransformPoint(Matrix4f *a, Vector3f *v) {
 
     return result;
 }
+
 inline
 Vector3f TransformPoint(Matrix4f a, Vector3f v) {
     Vector3f result;
@@ -508,6 +571,7 @@ Vector3f TransformPoint(Matrix4f a, Vector3f v) {
 
     return result;
 }
+
 // TODO: how do I build a vector that does this ?
 inline
 Vector3f TransformInversePoint(Matrix4f *a, Vector3f *v) {
@@ -526,6 +590,7 @@ Vector3f TransformInversePoint(Matrix4f *a, Vector3f *v) {
 
     return r;
 }
+
 inline
 Vector3f TransformInversePoint(Matrix4f a, Vector3f v) {
     Vector3f r;
@@ -543,6 +608,7 @@ Vector3f TransformInversePoint(Matrix4f a, Vector3f v) {
 
     return r;
 }
+
 inline
 Vector3f TransformDirection(Matrix4f *a, Vector3f *d) {
     Vector3f result;
@@ -554,6 +620,7 @@ Vector3f TransformDirection(Matrix4f *a, Vector3f *d) {
 
     return result;
 }
+
 inline
 Vector3f TransformDirection(Matrix4f a, Vector3f d) {
     Vector3f result;
@@ -565,6 +632,7 @@ Vector3f TransformDirection(Matrix4f a, Vector3f d) {
 
     return result;
 }
+
 inline
 Vector3f TransformInverseDirection(Matrix4f *a, Vector3f *d) {
     Vector3f result;
@@ -577,6 +645,7 @@ Vector3f TransformInverseDirection(Matrix4f *a, Vector3f *d) {
     // TODO: scale back
     return result;
 }
+
 inline
 Vector3f TransformInverseDirection(Matrix4f a, Vector3f d) {
     Vector3f result;
@@ -589,6 +658,7 @@ Vector3f TransformInverseDirection(Matrix4f a, Vector3f d) {
     // TODO: scale back
     return result;
 }
+
 Matrix4f TransformBuildLookRotationYUp(Vector3f at, Vector3f from) {
     Vector3f forward = at - from;
     forward.Normalize();
@@ -614,7 +684,7 @@ Matrix4f TransformBuildLookRotationYUp(Vector3f at, Vector3f from) {
 
 
 //
-// Quaternions
+//  Quaternions
 
 
 struct Quat {
@@ -721,9 +791,8 @@ Quat Slerp(Quat q1, Quat q2, float t) {
 }
 
 
-
 //
-// Projections
+//  Projection & camera model
 
 
 struct LensParams {
@@ -733,34 +802,22 @@ struct LensParams {
     float w; // sensor width, 35.9 [mm]
     float h; // sensor height, 24 [mm]
 };
-struct PerspectiveFrustum {
+
+struct Perspective {
     float fov; // [degs] (horizontal field of view)
     float aspect; // [1] (width divided by height)
     float dist_near; // [m]
     float dist_far; // [m]
+    Matrix4f p;
 };
-Matrix4f Matrix4f_FlipX() {
-    Matrix4f flip = Matrix4f_Identity();
-    flip.m[0][0] = -1;
-    return flip;
-}
-Matrix4f Matrix4f_FlipY() {
-    Matrix4f flip = Matrix4f_Identity();
-    flip.m[1][1] = -1;
-    return flip;
-}
-Matrix4f Matrix4f_FlipZ() {
-    Matrix4f flip = Matrix4f_Identity();
-    flip.m[2][2] = -1;
-    return flip;
-}
-Matrix4f PerspectiveMatrixOpenGL(PerspectiveFrustum frustum, bool flip_x = true, bool flip_y = false, bool flip_z = true) {
+
+Matrix4f PerspectiveMatrixOpenGL(f32 farr, f32 nearr, f32 fov, f32 aspect, bool flip_x = true, bool flip_y = false, bool flip_z = true) {
     // gather values
-    float f = frustum.dist_far;
-    float n = frustum.dist_near;
-    float r = frustum.dist_near * sin(frustum.fov / 2 * deg2rad);
+    float f = farr;
+    float n = nearr;
+    float r = nearr * sin(fov / 2 * deg2rad);
     float l = -r;
-    float b = r / frustum.aspect;
+    float b = r / aspect;
     float t = -b;
 
     // populate
@@ -790,27 +847,57 @@ Matrix4f PerspectiveMatrixOpenGL(PerspectiveFrustum frustum, bool flip_x = true,
 
     return m;
 }
+
+void PerspectiveSetAspectAndP(Perspective *proj, u32 width = 0, u32 height = 0) {
+    if (width != 0 && height != 0) {
+        f32 aspect_new = width / (f32) height;
+
+        if (aspect_new != proj->aspect) {
+            proj->aspect = aspect_new;
+            proj->p = PerspectiveMatrixOpenGL(proj->dist_near, proj->dist_far, proj->fov, proj->aspect, false, true, false);
+        }
+    }
+}
+
+Perspective ProjectionInit(u32 width, u32 height) {
+    Perspective proj = {};
+    proj.fov = 90;
+    proj.dist_near = 0.01f;
+    proj.dist_far = 10.0f;
+    PerspectiveSetAspectAndP(&proj, width, height);
+
+    return proj;
+}
+
 inline
 Matrix4f TransformBuildMVP(Matrix4f model, Matrix4f view, Matrix4f proj) {
     Matrix4f mvp = proj * TransformGetInverse( view ) * model;
     return mvp;
 }
+
 inline
 Matrix4f TransformBuildMVP(Matrix4f model, Matrix4f vp) {
     Matrix4f mvp = vp * model;
     return mvp;
 }
+
 inline
 Matrix4f TransformBuildViewProj(Matrix4f view, Matrix4f proj) {
     Matrix4f mvp = proj * TransformGetInverse( view );
     return mvp;
 }
+
 inline
-Matrix4f TransformBuildOrbitCam(Vector3f center, float theta_degs, float phi_degs, float radius) {
+Matrix4f TransformBuildOrbitCam(Vector3f center, float theta_degs, float phi_degs, float radius, Vector3f *campos_out) {
     Vector3f campos = center + SphericalCoordsY(theta_degs*deg2rad, phi_degs*deg2rad, radius);
     Matrix4f view = TransformBuildTranslationOnly(campos) * TransformBuildLookRotationYUp(center, campos);
+
+    if (campos_out) {
+        *campos_out = campos;
+    }
     return view;
 }
+
 inline
 Vector3f TransformPerspective(Matrix4f p, Vector3f v) {
     Vector4f v_hom { v.x, v.y, v.z, 1 }; // homogeneous coordinates
@@ -822,7 +909,7 @@ Vector3f TransformPerspective(Matrix4f p, Vector3f v) {
 
 
 //
-// Ray
+//  Ray
 
 
 struct Ray {
