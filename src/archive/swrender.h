@@ -2,7 +2,6 @@
 #define __SWRENDER_H__
 
 
-#include "../../../baselayer/baselayer.h"
 #include "../geometry/geometry.h"
 #include "entity.h"
 #include "../platform/shaders.h"
