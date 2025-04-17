@@ -113,7 +113,6 @@ void RenderLineRGBA(u8* image_buffer, u16 w, u16 h, s16 ax, s16 ay, s16 bx, s16 
     }
 }
 
-
 inline
 u32 GetXYIdx(f32 x, f32 y, u32 stride) {
     u32 idx = floor(x) + stride * floor(y);
@@ -171,6 +170,7 @@ s32 _GetNextNonDisabledWireframeIndex(u32 idx_prev, Array<Wireframe> wireframes)
     }
     return idx_prev;
 }
+
 void RenderLineSegmentList(u8 *image_buffer, Matrix4f v, Matrix4f p, u32 w, u32 h, Array<Wireframe> wireframes, Array<Vector3f> segments) {
     Array<Vector3f> segments_ndc = segments;
 
@@ -233,6 +233,7 @@ void RenderLineSegmentList(u8 *image_buffer, Matrix4f v, Matrix4f p, u32 w, u32 
         }
     }
 }
+
 void RenderWireframes(Array<Wireframe> wireframes) {
     
     Array<Vector3f> segments = WireframeLineSegments(app.a_tmp, wireframes);
@@ -385,11 +386,7 @@ void RunWireframe() {
     // graphics loop
     bool running = true;
     while (running) {
-
         drag = DragStateUpdate(drag, objs, cam.view, cam.position, proj.fov, proj.aspect, plf->cursorpos.x_frac, plf->cursorpos.y_frac);
-
-        //
-        // frame end (usr)
 
         PerspectiveSetAspectAndP(&proj, plf->width, plf->height);
         if (drag.drag_enabled == false) {
@@ -408,13 +405,15 @@ void RunWireframe() {
             RenderLineSegment(plf->image_buffer, TransformPerspective(vp, drag.drag_prev), TransformPerspective(vp, drag.drag), plf->width, plf->height, COLOR_BLACK);
         }
 
-        // frame end (sys)
-        running = running && !GetEscape() && !GetWindowShouldClose(plf);
+        // frae end
         PlafGlfwUpdate(plf);
-        ArenaClear(ctx->a_tmp);
         AppUpdate(cam.view, proj.p, plf->width, plf->height);
+
+        ArenaClear(ctx->a_tmp);
         ImageBufferClear(plf->width, plf->height);
+
         XSleep(1);
+        running = running && !GetEscape() && !GetWindowShouldClose(plf);
     }
 
     PlafGlfwTerminate(plf);
