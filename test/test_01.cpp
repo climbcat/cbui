@@ -1,4 +1,4 @@
-#include "../../baselayer/baselayer.h"
+#include "../lib/jg_baselayer.h"
 #include "../src/archive/init.h"
 #include "../src/algorithms/octree.h"
 #include "../src/algorithms/indices.h"

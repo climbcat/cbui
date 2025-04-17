@@ -1,4 +1,4 @@
-#include "../../baselayer/baselayer.h"
+#include "../lib/jg_baselayer.h"
 #include "../src/platform/platform_glfw.h"
 
 

@@ -2,9 +2,6 @@
 #define __RESOURCE_H__
 
 
-#include "../../../baselayer/baselayer.h"
-
-
 enum ResourceType {
     RST_FONT,
     RST_SPRITE,
