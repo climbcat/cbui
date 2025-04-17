@@ -249,9 +249,10 @@ void RunWireframe() {
     AppInit(ctx->a_tmp);
     ImageBufferInit(ctx->a_life);
     PlafGlfw *plf = PlafGlfwInit();
+    Perspective proj = ProjectionInit(plf->width, plf->height);
 
     // cameras
-    OrbitCamera cam = OrbitCameraInit( PlafGlfwGetAspect(plf) );
+    OrbitCamera cam = OrbitCameraInit( proj.aspect );
 
     // scene objects
     Array<Wireframe> objs = InitArray<Wireframe>(ctx->a_pers, 100);
@@ -301,7 +302,7 @@ void RunWireframe() {
         }
 
         if (drag_enabled && MouseLeft().ended_down) {
-            drag_nxt = cam.GetPointAtDepth(plf->cursorpos.x_frac, plf->cursorpos.y_frac, drag_push);
+            drag_nxt = CameraGetPointAtDepth( cam.view, proj.fov, proj.aspect, drag_push, plf->cursorpos.x_frac, plf->cursorpos.y_frac);
 
             Vector3f delta = drag_nxt - drag;
 
@@ -314,20 +315,27 @@ void RunWireframe() {
         }
 
         //
-        Ray shoot = cam.GetRay(plf->cursorpos.x_frac, plf->cursorpos.y_frac);
+        Ray shoot = CameraGetRay(cam.view, proj.fov, proj.aspect, plf->cursorpos.x_frac, plf->cursorpos.y_frac);
+        
         bool collided = false;
+        f32 dist = 0;
         for (u32 i = 0; i < objs.len; ++i) {
             Wireframe *obj = objs.arr + i;
 
             if (WireFrameCollide(shoot, *obj, &hit)) {
-                collided = true;
-
                 if (MouseLeft().pushed) {
-                    selected = obj;
-                    drag_enabled = true;
-                    drag = hit;
-                    drag_push = hit;
+                    if ((collided == false) || (Vector3f::NormSquared(hit - cam.position) < dist)) {
+                        // first hit; then closer to cam pos
+                        drag = hit;
+                        dist = Vector3f::NormSquared(cam.position - hit);
+
+                        selected = obj;
+                        drag_push = hit;
+                        drag_enabled = true;
+                    }
                 }
+
+                collided = true;
             }
         }
 
@@ -355,29 +363,34 @@ void RunWireframe() {
             selected = NULL;
         }
 
+
+
+
+        // frame end (usr)
+        PerspectiveSetAspectAndP(&proj, plf->width, plf->height);
+        if (drag_enabled == false) {
+            OrbitCameraUpdate(&cam, plf->cursorpos.dx, plf->cursorpos.dy, plf->left.ended_down, plf->right.ended_down, plf->scroll.yoffset_acc);
+        }
+
         // update and render wireframe objects
         RenderWireframes(objs);
 
         // DBG render anchors
-        RenderFatPoint3x3(plf->image_buffer, TransformPerspective(cam.vp, hit), plf->width, plf->height, COLOR_GREEN);
+        Matrix4f vp = TransformBuildViewProj(cam.view, proj.p);
+        RenderFatPoint3x3(g_image_buffer, TransformPerspective(vp, hit), plf->width, plf->height, COLOR_GREEN);
+        /*
         RenderFatPoint3x3(plf->image_buffer, TransformPerspective(cam.vp, drag), plf->width, plf->height, COLOR_BLACK);
         if (drag_prev.x != 0 || drag_prev.y != 0 || drag_prev.z != 0) {
             RenderFatPoint3x3(plf->image_buffer, TransformPerspective(cam.vp, drag_nxt), plf->width, plf->height, COLOR_RED);
             RenderLineSegment(plf->image_buffer, TransformPerspective(cam.vp, drag_prev), TransformPerspective(cam.vp, drag), plf->width, plf->height, COLOR_BLACK);
         }
-
-
-        // frame end (usr)
-        cam.SetAspect(plf->width, plf->height);
-        if (drag_enabled == false) {
-            OrbitCameraUpdate(&cam, plf->cursorpos.dx, plf->cursorpos.dy, plf->left.ended_down, plf->right.ended_down, plf->scroll.yoffset_acc);
-        }
+        */
 
         // frame end (sys)
         running = running && !GetEscape() && !GetWindowShouldClose(plf);
         PlafGlfwUpdate(plf);
         ArenaClear(ctx->a_tmp);
-        AppUpdate(cam.view, cam.proj, plf->width, plf->height);
+        AppUpdate(cam.view, proj.p, plf->width, plf->height);
         XSleep(1);
     }
 
