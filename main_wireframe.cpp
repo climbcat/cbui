@@ -8,7 +8,7 @@
 
 #define WF_VERSION_MAJOR 0
 #define WF_VERSION_MINOR 0
-#define WF_VERSION_PATCH 2
+#define WF_VERSION_PATCH 3
 
 
 struct WireframeApp {
@@ -421,6 +421,8 @@ void RunWireframe() {
 
 
 int main (int argc, char **argv) {
+    BaselayerAssertVersion(0, 1, 0);
+
     TimeProgram;
 
     if (CLAContainsArg("--help", argc, argv) || CLAContainsArg("-h", argc, argv)) {
