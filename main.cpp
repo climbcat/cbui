@@ -3,6 +3,11 @@
 #include "test/test_01.cpp"
 
 
+#define CBUI_VERSION_MAJOR 0
+#define CBUI_VERSION_MINOR 1
+#define CBUI_VERSION_PATCH 0
+
+
 void BoxesAndPointClouds() {
     printf("BoxesAndPointClouds\n");
 
@@ -80,14 +85,21 @@ void BoxesAndPointClouds() {
 
 int main (int argc, char **argv) {
     TimeProgram;
+    BaselayerAssertVersion(0, 1, 0);
+
     bool force_testing = false;
 
     if (CLAContainsArg("--help", argc, argv) || CLAContainsArg("-h", argc, argv)) {
         printf("--help:          display help (this text)\n");
         printf("--test:          run available test functions\n");
+        printf("--version:       print library version\n");
     }
     else if (CLAContainsArg("--test", argc, argv) || force_testing) {
         Test();
+    }
+    else if (CLAContainsArg("--version", argc, argv)) {
+        printf("%d.%d.%d\n", CBUI_VERSION_MAJOR, CBUI_VERSION_MINOR, CBUI_VERSION_PATCH);
+        exit(0);
     }
     else {
         BoxesAndPointClouds();
