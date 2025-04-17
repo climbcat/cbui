@@ -56,6 +56,7 @@ struct GameLoopOne {
     SwRenderer renderer;
     MouseTrap mouse;
     OrbitCamera cam;
+    Perspective proj;
 
     UiEvent events_mem[GAMELOOPONE_EVENT_QUEUE_CAPACITY];
     u32 event_queue_capacity;
@@ -134,7 +135,9 @@ struct GameLoopOne {
         OrbitCameraUpdate(&cam, mouse.dx, mouse.dy, mouse.l, mouse.r, mouse.mwheel_y_delta);
         mouse.FrameEnd(frameno);
 
-        SwRenderFrame(&renderer, es, &cam.vp, frameno);
+        Matrix4f vp = proj.p * TransformGetInverse( cam.view );
+        SwRenderFrame(&renderer, es, &vp, frameno);
+
         glfwSwapBuffers(window);
 
         frameno++;
@@ -157,12 +160,11 @@ struct GameLoopOne {
         XSleep(10);
     }
     void FrameEnd2DAnd3D(EntitySystem *es) {
-
-        // TODO: fix
-        //cam.Update(mouse);
+        OrbitCameraUpdate(&cam, mouse.dx, mouse.dy, mouse.l, mouse.r, mouse.mwheel_y_delta);
         mouse.FrameEnd(frameno);
 
-        SwRenderFrame(&renderer, es, &cam.vp, frameno);
+        Matrix4f vp = proj.p * TransformGetInverse( cam.view );
+        SwRenderFrame(&renderer, es, &vp, frameno);
         SR_Render();
         ImageBufferDrawAndSwap();
 
@@ -241,6 +243,8 @@ GameLoopOne *InitGameLoopOne(u32 width = 1280, u32 height = 800, const char *win
     g_gameloop->renderer = InitRenderer(width, height);
 
     g_gameloop->cam = OrbitCameraInit(g_gameloop->renderer.aspect);
+    g_gameloop->proj = ProjectionInit(width, height);
+
 
     double xpos, ypos;
     glfwGetCursorPos(g_gameloop->window, &xpos, &ypos);
