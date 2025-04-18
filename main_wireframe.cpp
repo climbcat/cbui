@@ -81,7 +81,7 @@ void RenderLineRGBA(u8* image_buffer, u16 w, u16 h, s16 ax, s16 ay, s16 bx, s16 
     }
     else {
         // draw by y
-        float slope_inv = 1 / slope_ab;
+        f32 slope_inv = 1 / slope_ab;
 
         // swap a & b ?
         if (ay > by) {
@@ -125,7 +125,27 @@ void RenderPoint(u8 *image_buffer, Vector3f point_ndc, u32 w, u32 h, Color color
     ((Color*) image_buffer)[ GetXYIdx(x, y, w) ] = color;
 }
 
-void RenderFatPoint3x3(u8 *image_buffer, Vector3f point_ndc, u32 w, u32 h, Color color = COLOR_RED) {
+f32 PointPlaneSign(Vector3f point, Ray plane) {
+    Vector3f diff = (plane.position - point);
+    diff.Normalize();
+    f32 result = diff.Dot(plane.direction);
+
+    return result;
+}
+
+void RenderFatPoint3x3(u8 *image_buffer, Matrix4f view, Matrix4f proj, Vector3f point, u32 w, u32 h, Color color = COLOR_RED) {
+    Vector3f point_cam = TransformInversePoint(view, point);
+
+    Ray view_plane = { Vector3f { 0, 0, 0.1 }, Vector3f { 0, 0, 1 } };
+    Ray view_plane_far = { Vector3f { 0, 0, 1 }, Vector3f { 0, 0, 1 } };
+
+    f32 sign = PointPlaneSign(point_cam, view_plane);
+    if (sign > 0) {
+        return;
+    }
+
+    Vector3f point_ndc = TransformPerspective(proj, point_cam);
+
     f32 x = (point_ndc.x + 1) / 2 * w;
     f32 y = (point_ndc.y + 1) / 2 * h;
 
@@ -143,16 +163,41 @@ void RenderFatPoint3x3(u8 *image_buffer, Vector3f point_ndc, u32 w, u32 h, Color
 }
 
 inline
-void RenderLineSegment(u8 *image_buffer, Vector3f anchor_a, Vector3f anchor_b, u32 w, u32 h, Color color) {
+void RenderLineSegment(u8 *image_buffer, Matrix4f view, Matrix4f proj, Vector3f p1, Vector3f p2, u32 w, u32 h, Color color) {
+    Vector3f p1_cam = TransformInversePoint(view, p1);
+    Vector3f p2_cam = TransformInversePoint(view, p2);
+
+    Ray view_plane = { Vector3f { 0, 0, 0.1 }, Vector3f { 0, 0, 1 } };
+
+    f32 sign1 = PointPlaneSign(p1_cam, view_plane);
+    f32 sign2 = PointPlaneSign(p2_cam, view_plane);
+    if (sign1 > 0 && sign2 > 0) {
+        return;
+    }
+    else if (sign1 > 0 && sign2 < 0) {
+        Ray segment = { p2_cam, p1_cam - p2_cam };
+        f32 t = 0;
+        p1_cam = RayPlaneIntersect(segment, view_plane.position, view_plane.direction, &t);
+    }
+    else if (sign1 < 0 && sign2 > 0) {
+        Ray segment = { p1_cam, p2_cam - p1_cam };
+        f32 t = 0;
+        p2_cam = RayPlaneIntersect(segment, view_plane.position, view_plane.direction, &t);
+    }
+
+    Vector3f p1_ndc = TransformPerspective(proj, p1_cam);
+    Vector3f p2_ndc = TransformPerspective(proj, p2_cam);
+
     Vector2f a = {};
-    a.x = (anchor_a.x + 1) / 2 * w;
-    a.y = (anchor_a.y + 1) / 2 * h;
+    a.x = (p1_ndc.x + 1) / 2 * w;
+    a.y = (p1_ndc.y + 1) / 2 * h;
     Vector2f b = {};
-    b.x = (anchor_b.x + 1) / 2 * w;
-    b.y = (anchor_b.y + 1) / 2 * h;
+    b.x = (p2_ndc.x + 1) / 2 * w;
+    b.y = (p2_ndc.y + 1) / 2 * h;
 
     RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, color);
 }
+
 
 inline
 s32 _GetNextNonDisabledWireframeIndex(u32 idx_prev, Array<Wireframe> wireframes) {
@@ -171,14 +216,13 @@ s32 _GetNextNonDisabledWireframeIndex(u32 idx_prev, Array<Wireframe> wireframes)
     return idx_prev;
 }
 
-void RenderLineSegmentList(u8 *image_buffer, Matrix4f v, Matrix4f p, u32 w, u32 h, Array<Wireframe> wireframes, Array<Vector3f> segments) {
-    Array<Vector3f> segments_ndc = segments;
 
-    // go to view coordinates
-    for (u32 j = 0; j < segments.len; ++j) {
-        segments.arr[j] = TransformInversePoint(v, segments.arr[j]);
-    }
+void RenderLineSegmentList(u8 *image_buffer, Matrix4f view, Matrix4f proj, u32 w, u32 h, Array<Wireframe> wireframes, Array<Vector3f> segments) {
+    if (wireframes.len == 0) {
+        return;
+    }    
 
+    // set up wireframe properties
     s32 wf_segs_idx = 0;
     s32 wf_idx = -1;
     wf_idx = _GetNextNonDisabledWireframeIndex(wf_idx, wireframes);
@@ -186,37 +230,11 @@ void RenderLineSegmentList(u8 *image_buffer, Matrix4f v, Matrix4f p, u32 w, u32 
     WireFrameRenderStyle wf_style = wireframes.arr[wf_idx].style;
     u32 wf_nsegments = wireframes.arr[wf_idx].nsegments;
 
-    for (u32 i = 0; i < segments_ndc.len / 2; ++i) {
-        bool culled = false;
+    for (u32 i = 0; i < segments.len / 2; ++i) {
+        Vector3f p1 = segments.arr[2*i];
+        Vector3f p2 = segments.arr[2*i + 1];
 
-        Vector3f anchor_a = segments_ndc.arr[2*i];
-        Vector3f anchor_b = segments_ndc.arr[2*i + 1];
-
-        // TODO: do the segment culling
-        // TODO: do the segment cropping with view plane
-
-        if (culled == false) {
-            anchor_a = TransformPerspective(p, anchor_a);
-            anchor_b = TransformPerspective(p, anchor_b);
-
-            Vector2f a = {};
-            a.x = (anchor_a.x + 1) / 2 * w;
-            a.y = (anchor_a.y + 1) / 2 * h;
-            Vector2f b = {};
-            b.x = (anchor_b.x + 1) / 2 * w;
-            b.y = (anchor_b.y + 1) / 2 * h;
-
-
-            if (wf_style == WFR_SLIM) {
-                RenderLineSegment(image_buffer, anchor_a, anchor_b, w, h, wf_color);
-            }
-
-            else if (wf_style == WFR_FAT) {
-                RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, wf_color);
-                RenderLineRGBA(image_buffer, w, h, a.x + 1, a.y, b.x + 1, b.y, wf_color);
-                RenderLineRGBA(image_buffer, w, h, a.x, a.y + 1, b.x, b.y + 1, wf_color);
-            }
-        }
+        RenderLineSegment(image_buffer, view, proj, p1, p2, w, h, wf_color);
 
         // update object-specific properties s.a. colour, style
         wf_segs_idx++;
@@ -235,10 +253,10 @@ void RenderLineSegmentList(u8 *image_buffer, Matrix4f v, Matrix4f p, u32 w, u32 
 }
 
 void RenderWireframes(Array<Wireframe> wireframes) {
-    
     Array<Vector3f> segments = WireframeLineSegments(app.a_tmp, wireframes);
+
     // insert the globals
-    return RenderLineSegmentList(g_image_buffer, app.v, app.p, app.w, app.h, wireframes, segments);
+    RenderLineSegmentList(g_image_buffer, app.v, app.p, app.w, app.h, wireframes, segments);
 }
 
 
@@ -284,9 +302,8 @@ DragState DragStateUpdate(DragState sd, Array<Wireframe> objs, Matrix4f view, Ve
         drag = drag_nxt;
     }
 
-    //
     Ray shoot = CameraGetRay(view, fov, aspect, x_frac, y_frac);
-    
+
     bool collided = false;
     f32 dist = 0;
     for (u32 i = 0; i < objs.len; ++i) {
@@ -332,7 +349,6 @@ DragState DragStateUpdate(DragState sd, Array<Wireframe> objs, Matrix4f view, Ve
         selected->disabled = true;
         selected = NULL;
     }
-
 
     sd.selected = selected;
     sd.selected_prev = selected_prev;
@@ -396,13 +412,10 @@ void RunWireframe() {
         // update and render wireframe objects
         RenderWireframes(objs);
 
-        // DBG render anchors
-        Matrix4f vp = TransformBuildViewProj(cam.view, proj.p);
-        RenderFatPoint3x3(g_image_buffer, TransformPerspective(vp, drag.hit), plf->width, plf->height, COLOR_GREEN);
-        RenderFatPoint3x3(plf->image_buffer, TransformPerspective(vp, drag.drag), plf->width, plf->height, COLOR_BLACK);
+        RenderFatPoint3x3(plf->image_buffer, cam.view, proj.p, drag.drag, plf->width, plf->height, COLOR_BLACK);
         if (drag.drag_prev.x != 0 || drag.drag_prev.y != 0 || drag.drag_prev.z != 0) {
-            RenderFatPoint3x3(plf->image_buffer, TransformPerspective(vp, drag.drag_nxt), plf->width, plf->height, COLOR_RED);
-            RenderLineSegment(plf->image_buffer, TransformPerspective(vp, drag.drag_prev), TransformPerspective(vp, drag.drag), plf->width, plf->height, COLOR_BLACK);
+            RenderFatPoint3x3(plf->image_buffer, cam.view, proj.p, drag.drag_nxt, plf->width, plf->height, COLOR_RED);
+            RenderLineSegment(plf->image_buffer, cam.view, proj.p, drag.drag_prev, drag.drag, plf->width, plf->height, COLOR_BLACK);
         }
 
         // frae end
