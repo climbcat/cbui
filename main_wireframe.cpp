@@ -125,21 +125,6 @@ void RenderPoint(u8 *image_buffer, Vector3f point_ndc, u32 w, u32 h, Color color
     ((Color*) image_buffer)[ GetXYIdx(x, y, w) ] = color;
 }
 
-bool PointSideOfPlane(Vector3f point, Ray plane) {
-    // returns true if point is in the R3-halfspace defined by plane normal
-
-    Vector3f diff = (plane.position - point);
-    diff.Normalize();
-    f32 cos_angle = diff.Dot(plane.direction);
-
-    if (cos_angle <= 0) {
-        return true;
-    }
-    else {
-        return false;
-    }
-}
-
 void RenderFatPoint3x3(u8 *image_buffer, Matrix4f view, Matrix4f proj, Vector3f point, u32 w, u32 h, Color color = COLOR_RED) {
     Vector3f point_cam = TransformInversePoint(view, point);
 
@@ -295,7 +280,6 @@ void RenderWireframes(Array<Wireframe> wireframes) {
     RenderLineSegmentList(g_image_buffer, app.v, app.persp.proj, app.w, app.h, wireframes, segments);
 }
 
-
 struct DragState {
     Wireframe *selected;
     Wireframe *selected_prev;
@@ -396,6 +380,7 @@ DragState DragStateUpdate(DragState sd, Array<Wireframe> objs, Matrix4f view, Ve
     sd.hit = hit;
     return sd;
 }
+inline
 DragState DragStateUpdate(DragState sd, Array<Wireframe> objs, Vector3f campos, f32 x_frac, f32 y_frac) {
     return DragStateUpdate(sd, objs, app.v, campos, app.persp.fov, app.persp.aspect, x_frac, y_frac);
 }

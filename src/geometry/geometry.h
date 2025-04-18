@@ -935,6 +935,21 @@ Ray TransformInverseRay(Matrix4f a, Ray r) {
 // Plane / Line / Point / Triangle Helpers
 
 
+bool PointSideOfPlane(Vector3f point, Ray plane) {
+    // returns true if point is in the R3-halfspace defined by plane normal
+
+    Vector3f diff = (plane.position - point);
+    diff.Normalize();
+    f32 cos_angle = diff.Dot(plane.direction);
+
+    if (cos_angle <= 0) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 Vector3f RayPlaneIntersect(Ray ray, Vector3f plane_origo, Vector3f plane_normal, f32 *t_at = NULL) {
     f32 dot = plane_normal.Dot(ray.direction);
     if (abs(dot) > 0.0001f) {
