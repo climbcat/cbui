@@ -76,6 +76,13 @@ struct Vector3f {
     float z;
 
     inline
+    bool IsNonZero() {
+        return abs(x) > 0.0001f || abs(y) > 0.0001f || abs(z) > 0.0001f;
+    }
+    inline bool IsZero() {
+        return ! IsNonZero();
+    }
+    inline
     float Norm() {
         return sqrt(x*x + y*y + z*z);
     }
@@ -130,18 +137,6 @@ struct Vector3f {
     inline
     Vector3f Cross(Vector3f v) {
         return Vector3f { y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x };
-    }
-    inline bool IsNonZero() {
-        // TODO: how should epsilon be done in general?
-        float epsilon = 0.0000000001f;
-        bool x_nzero = abs(x) - epsilon >= 0;
-        bool y_nzero = abs(y) - epsilon >= 0;
-        bool z_nzero = abs(z) - epsilon >= 0;
-        bool result = x_nzero || y_nzero || z_nzero;
-        return result;
-    }
-    inline bool IsZero() {
-        return ! IsNonZero();
     }
 
     // static versions
@@ -808,7 +803,7 @@ struct Perspective {
     float aspect; // [1] (width divided by height)
     float dist_near; // [m]
     float dist_far; // [m]
-    Matrix4f p;
+    Matrix4f proj;
 };
 
 Matrix4f PerspectiveMatrixOpenGL(f32 farr, f32 nearr, f32 fov, f32 aspect, bool flip_x = true, bool flip_y = false, bool flip_z = true) {
@@ -854,7 +849,7 @@ void PerspectiveSetAspectAndP(Perspective *proj, u32 width = 0, u32 height = 0) 
 
         if (aspect_new != proj->aspect) {
             proj->aspect = aspect_new;
-            proj->p = PerspectiveMatrixOpenGL(proj->dist_near, proj->dist_far, proj->fov, proj->aspect, false, true, false);
+            proj->proj = PerspectiveMatrixOpenGL(proj->dist_near, proj->dist_far, proj->fov, proj->aspect, false, true, false);
         }
     }
 }

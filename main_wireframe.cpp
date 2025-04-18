@@ -11,17 +11,17 @@
 #define WF_VERSION_PATCH 3
 
 
-struct WireframeApp {
+struct WireframeAppState {
+    Perspective persp;
     Matrix4f v;
-    Matrix4f p;
     u32 w;
     u32 h;
     MArena *a_tmp;
 };
-static WireframeApp app;
-void AppUpdate(Matrix4f v, Matrix4f p, u32 w, u32 h) {
+static WireframeAppState app;
+void AppStateUpdate(Matrix4f v, Perspective p, u32 w, u32 h) {
     app.v = v;
-    app.p = p;
+    app.persp = p;
     app.w = w;
     app.h = h;
 }
@@ -166,6 +166,10 @@ void RenderFatPoint3x3(u8 *image_buffer, Matrix4f view, Matrix4f proj, Vector3f 
         }
     }
 }
+inline
+void RenderFatPoint3x3(Vector3f point, Color color = COLOR_RED) {
+    RenderFatPoint3x3(g_image_buffer, app.v, app.persp.proj, point, app.w, app.h, color);
+}
 
 inline
 void RenderLineSegment(u8 *image_buffer, Matrix4f view, Matrix4f proj, Vector3f p1, Vector3f p2, u32 w, u32 h, Color color) {
@@ -201,6 +205,10 @@ void RenderLineSegment(u8 *image_buffer, Matrix4f view, Matrix4f proj, Vector3f 
 
         RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, color);
     }
+}
+inline
+void RenderLineSegment(Vector3f p1, Vector3f p2, Color color) {
+    RenderLineSegment(g_image_buffer, app.v, app.persp.proj, p1, p2, app.w, app.h, color);
 }
 
 inline
@@ -284,7 +292,7 @@ void RenderWireframes(Array<Wireframe> wireframes) {
     Array<Vector3f> segments = WireframeLineSegments(app.a_tmp, wireframes);
 
     // insert the globals
-    RenderLineSegmentList(g_image_buffer, app.v, app.p, app.w, app.h, wireframes, segments);
+    RenderLineSegmentList(g_image_buffer, app.v, app.persp.proj, app.w, app.h, wireframes, segments);
 }
 
 
@@ -388,20 +396,22 @@ DragState DragStateUpdate(DragState sd, Array<Wireframe> objs, Matrix4f view, Ve
     sd.hit = hit;
     return sd;
 }
+DragState DragStateUpdate(DragState sd, Array<Wireframe> objs, Vector3f campos, f32 x_frac, f32 y_frac) {
+    return DragStateUpdate(sd, objs, app.v, campos, app.persp.fov, app.persp.aspect, x_frac, y_frac);
+}
 
 
 void RunWireframe() {
     printf("Running wireframe program ...\n");
 
-    // system init
+    // init
     MContext *ctx = InitBaselayer();
     AppInit(ctx->a_tmp);
     ImageBufferInit(ctx->a_life);
     PlafGlfw *plf = PlafGlfwInit();
     Perspective proj = ProjectionInit(plf->width, plf->height);
-
-    // cameras
     OrbitCamera cam = OrbitCameraInit( proj.aspect );
+    DragState drag = {};
 
     // scene objects
     Array<Wireframe> objs = InitArray<Wireframe>(ctx->a_pers, 100);
@@ -425,36 +435,35 @@ void RunWireframe() {
     eye.transform = TransformBuildTranslationOnly({ -0.5, 1, 1 });
     objs.Add(eye);
 
-    DragState drag = {};
-
     // graphics loop
     bool running = true;
     while (running) {
-        drag = DragStateUpdate(drag, objs, cam.view, cam.position, proj.fov, proj.aspect, plf->cursorpos.x_frac, plf->cursorpos.y_frac);
-
+        // frame start
+        ArenaClear(ctx->a_tmp);
+        PlafGlfwUpdate(plf);
         PerspectiveSetAspectAndP(&proj, plf->width, plf->height);
+        ImageBufferClear(plf->width, plf->height);
+        running = running && !GetEscape() && !GetWindowShouldClose(plf);
+        AppStateUpdate(cam.view, proj, plf->width, plf->height);
+
+        // frame body
+        drag = DragStateUpdate(drag, objs, cam.position, plf->cursorpos.x_frac, plf->cursorpos.y_frac);
         if (drag.drag_enabled == false) {
             OrbitCameraUpdate(&cam, plf->cursorpos.dx, plf->cursorpos.dy, plf->left.ended_down, plf->right.ended_down, plf->scroll.yoffset_acc);
         }
 
-        // update and render wireframe objects
+        // render objects
         RenderWireframes(objs);
 
-        RenderFatPoint3x3(plf->image_buffer, cam.view, proj.p, drag.drag, plf->width, plf->height, COLOR_BLACK);
-        if (drag.drag_prev.x != 0 || drag.drag_prev.y != 0 || drag.drag_prev.z != 0) {
-            RenderFatPoint3x3(plf->image_buffer, cam.view, proj.p, drag.drag_nxt, plf->width, plf->height, COLOR_RED);
-            RenderLineSegment(plf->image_buffer, cam.view, proj.p, drag.drag_prev, drag.drag, plf->width, plf->height, COLOR_BLACK);
+        // render DBG
+        RenderFatPoint3x3(drag.drag, COLOR_BLACK);
+        if (drag.drag_prev.IsNonZero()) {
+            RenderFatPoint3x3(drag.drag_nxt, COLOR_RED);
+            RenderLineSegment(drag.drag_prev, drag.drag, COLOR_BLACK);
         }
 
         // frae end
-        PlafGlfwUpdate(plf);
-        AppUpdate(cam.view, proj.p, plf->width, plf->height);
-
-        ArenaClear(ctx->a_tmp);
-        ImageBufferClear(plf->width, plf->height);
-
         XSleep(1);
-        running = running && !GetEscape() && !GetWindowShouldClose(plf);
     }
 
     PlafGlfwTerminate(plf);

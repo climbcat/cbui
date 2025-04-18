@@ -135,7 +135,7 @@ struct GameLoopOne {
         OrbitCameraUpdate(&cam, mouse.dx, mouse.dy, mouse.l, mouse.r, mouse.mwheel_y_delta);
         mouse.FrameEnd(frameno);
 
-        Matrix4f vp = proj.p * TransformGetInverse( cam.view );
+        Matrix4f vp = proj.proj * TransformGetInverse( cam.view );
         SwRenderFrame(&renderer, es, &vp, frameno);
 
         glfwSwapBuffers(window);
@@ -163,7 +163,7 @@ struct GameLoopOne {
         OrbitCameraUpdate(&cam, mouse.dx, mouse.dy, mouse.l, mouse.r, mouse.mwheel_y_delta);
         mouse.FrameEnd(frameno);
 
-        Matrix4f vp = proj.p * TransformGetInverse( cam.view );
+        Matrix4f vp = proj.proj * TransformGetInverse( cam.view );
         SwRenderFrame(&renderer, es, &vp, frameno);
         SR_Render();
         ImageBufferDrawAndSwap();
