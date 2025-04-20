@@ -48,6 +48,16 @@ void TestPlatformGlfw() {
     PlafGlfwTerminate(plf);
 }
 
+void TestSLABEdgeCases() {
+    Vector3f x_hat = { 1, 0, 0 };
+    Vector3f y_hat = { 0, 1, 0 };
+    Vector3f z_hat = { 0, 0, 1 };
+
+    // TODO: test 1D
+    // TODO: test 2D
+}
+
 void Test() {
     TestPlatformGlfw();
+    TestSLABEdgeCases();
 }

@@ -106,38 +106,96 @@ Wireframe CreateAAAxes(f32 len = 1.0f) {
     return axis;
 }
 
+
+inline
+bool FZero(f32 f) {
+    bool result = abs(f) < 0.0001f;
+    return result;
+}
+inline
+bool FRange(f32 val, f32 min, f32 max) {
+    bool result = val >= min && val <= max;
+    return result;
+}
+inline
+bool BoxCollideLocal1D(f32 p1, f32 p2, f32 d, f32 sz1, f32 sz2, f32 *t_in, f32 *t_out) {
+    bool intersect = (abs(p1) <= sz1) && (abs(p2) <= sz2);
+    if (intersect) {
+        *t_in = (-sz1 - p1) / d;
+        *t_out = (sz1 - p1) / d;
+    }
+
+    return intersect; 
+}
+inline
+bool BoxCollideLocal2D(f32 p1, f32 p2, f32 d1, f32 d2, f32 sz1, f32 sz2, f32 *t_in, f32 *t_out) {
+    f32 t_low_1 = (-sz1 - p1) / d1;
+    f32 t_high_1 = (sz1 - p1) / d1;
+    f32 t_low_2 = (-sz2 - p1) / d2;
+    f32 t_high_2 = (sz2 - p1) / d2;
+
+    f32 t_close_1 = MinF32(t_low_1, t_high_1);
+    f32 t_far_1 = MaxF32(t_low_1, t_high_1);
+    f32 t_close_2 = MinF32(t_low_2, t_high_2);
+    f32 t_far_2 = MaxF32(t_low_2, t_high_2);
+
+    f32 t_close = MaxF32(t_close_1, t_close_2);
+    f32 t_far = MinF32(t_far_1, t_far_2);
+
+    bool intersect = t_close <= t_far;
+    if (intersect) {
+        *t_in = t_close;
+        *t_out = t_far;
+    }
+
+    return intersect;
+}
 bool BoxCollideSLAB(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3f *hit_out = NULL) {
-    // TODO: slab method; handle axis-aligned rays
+    TimeFunction;
 
     Ray loc = TransformInverseRay(wf.transform, global);
+    Vector3f p = loc.pos;
+    Vector3f d = loc.dir;
+    Vector3f dims = wf.dimensions;
 
-    Vector3f o = loc.position;
-    Vector3f d = loc.direction;
+    bool intersect;
+    f32 t_close;
+    f32 t_far;
 
-    f32 tl_x = (-wf.dimensions.x - o.x) / d.x;
-    f32 th_x = (wf.dimensions.x - o.x) / d.x;
-    f32 tl_y = (- wf.dimensions.y - o.y) / d.y;
-    f32 th_y = (wf.dimensions.y - o.y) / d.y;
-    f32 tl_z = (- wf.dimensions.z - o.z) / d.z;
-    f32 th_z = (wf.dimensions.z - o.z) / d.z;
+    bool zero_x = FZero(d.x);
+    bool zero_y = FZero(d.y);
+    bool zero_z = FZero(d.z);
 
-    f32 t_cls_x = MinF32(tl_x, th_x);
-    f32 t_far_x = MaxF32(tl_x, th_x);
-    f32 t_cls_y = MinF32(tl_y, th_y);
-    f32 t_far_y = MaxF32(tl_y, th_y);
-    f32 t_cls_z = MinF32(tl_z, th_z);
-    f32 t_far_z = MaxF32(tl_z, th_z);
+    if (zero_x && zero_y) { intersect = BoxCollideLocal1D(p.x, p.y, d.z, dims.x, dims.y, &t_close, &t_far); }
+    else if (zero_y && zero_z) { intersect = BoxCollideLocal1D(p.y, p.z, d.x, dims.y, dims.z, &t_close, &t_far); }
+    else if (zero_z && zero_x) { intersect = BoxCollideLocal1D(p.z, p.x, d.y, dims.z, dims.x, &t_close, &t_far); }
 
-    f32 t_cls = MaxF32(MaxF32(t_cls_x, t_cls_y), t_cls_z);
-    f32 t_far = MinF32(MinF32(t_far_x, t_far_y), t_far_z);
+    else if(zero_x) { intersect = BoxCollideLocal2D(p.y, p.z, d.y, d.z, dims.y, dims.z, &t_close, &t_far); }
+    else if(zero_y) { intersect = BoxCollideLocal2D(p.z, p.x, d.z, d.x, dims.z, dims.x, &t_close, &t_far); }
+    else if(zero_z) { intersect = BoxCollideLocal2D(p.x, p.y, d.x, d.y, dims.x, dims.y, &t_close, &t_far); }
 
-    bool intersect = t_cls <= t_far;
-    if (intersect && hit_in) {
-        *hit_in = TransformPoint(wf.transform, loc.position + t_cls * loc.direction);
+    else {
+        f32 t_low_x = (-dims.x - p.x) / d.x;
+        f32 t_high_x = (dims.x - p.x) / d.x;
+        f32 t_low_y = (- dims.y - p.y) / d.y;
+        f32 t_high_y = (dims.y - p.y) / d.y;
+        f32 t_low_z = (- dims.z - p.z) / d.z;
+        f32 t_high_z = (dims.z - p.z) / d.z;
+
+        f32 t_close_x = MinF32(t_low_x, t_high_x);
+        f32 t_far_x = MaxF32(t_low_x, t_high_x);
+        f32 t_close_y = MinF32(t_low_y, t_high_y);
+        f32 t_far_y = MaxF32(t_low_y, t_high_y);
+        f32 t_close_z = MinF32(t_low_z, t_high_z);
+        f32 t_far_z = MaxF32(t_low_z, t_high_z);
+
+        t_close = MaxF32(MaxF32(t_close_x, t_close_y), t_close_z);
+        t_far = MinF32(MinF32(t_far_x, t_far_y), t_far_z);
+        intersect = t_close <= t_far;
     }
-    if (intersect && hit_out) {
-        *hit_out = TransformPoint(wf.transform, loc.position + t_far * loc.direction);
-    }
+
+    if (intersect && hit_in) { *hit_in = TransformPoint(wf.transform, loc.pos + t_close * loc.dir); }
+    if (intersect && hit_out) { *hit_out = TransformPoint(wf.transform, loc.pos + t_far * loc.dir); }
 
     return intersect;
 }
@@ -181,7 +239,7 @@ bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3
     else if (wf.type == WFT_SPHERE) {
 
         Vector3f center = {};
-        Vector3f closest = PointToLine(center, loc.position, loc.direction);
+        Vector3f closest = PointToLine(center, loc.pos, loc.dir);
         f32 dist = (center - closest).Norm();
         f32 radius = wf.dimensions.x;
         if (dist <= radius) {

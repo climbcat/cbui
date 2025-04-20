@@ -170,12 +170,12 @@ void RenderLineSegment(u8 *image_buffer, Matrix4f view, Matrix4f proj, Vector3f 
         if (visible1 == false && visible2 == true) {
             Ray segment = { p2_cam, p1_cam - p2_cam };
             f32 t = 0;
-            p1_cam = RayPlaneIntersect(segment, view_plane.position, view_plane.direction, &t);
+            p1_cam = RayPlaneIntersect(segment, view_plane.pos, view_plane.dir, &t);
         }
         else if (visible1 == true && visible2 == false) {
             Ray segment = { p1_cam, p2_cam - p1_cam };
             f32 t = 0;
-            p2_cam = RayPlaneIntersect(segment, view_plane.position, view_plane.direction, &t);
+            p2_cam = RayPlaneIntersect(segment, view_plane.pos, view_plane.dir, &t);
         }
 
         Vector3f p1_ndc = TransformPerspective(proj, p1_cam);
@@ -237,12 +237,12 @@ void RenderLineSegmentList(u8 *image_buffer, Matrix4f view, Matrix4f proj, u32 w
             if (visible1 == false && visible2 == true) {
                 Ray segment = { p2_cam, p1_cam - p2_cam };
                 f32 t = 0;
-                p1_cam = RayPlaneIntersect(segment, view_plane.position, view_plane.direction, &t);
+                p1_cam = RayPlaneIntersect(segment, view_plane.pos, view_plane.dir, &t);
             }
             else if (visible1 == true && visible2 == false) {
                 Ray segment = { p1_cam, p2_cam - p1_cam };
                 f32 t = 0;
-                p2_cam = RayPlaneIntersect(segment, view_plane.position, view_plane.direction, &t);
+                p2_cam = RayPlaneIntersect(segment, view_plane.pos, view_plane.dir, &t);
             }
             Vector3f p1_ndc = TransformPerspective(proj, p1_cam);
             Vector3f p2_ndc = TransformPerspective(proj, p2_cam);

@@ -910,8 +910,8 @@ Vector3f TransformPerspective(Matrix4f p, Vector3f v) {
 struct Ray {
     // points: (x, y, z, 1)
     // directions: (x, y, z, 0)
-    Vector3f position;
-    Vector3f direction;
+    Vector3f pos;
+    Vector3f dir;
 
     inline
     static Ray Zero() {
@@ -919,15 +919,15 @@ struct Ray {
     }
 };
 Ray TransformRay(Matrix4f *a, Ray *r) {
-    return Ray { TransformPoint(a, &r->position), TransformDirection(a, &r->direction) };
+    return Ray { TransformPoint(a, &r->pos), TransformDirection(a, &r->dir) };
 }
 inline
 Ray TransformRay(Matrix4f a, Ray r) {
-    return Ray { TransformPoint(a, r.position), TransformDirection(a, r.direction) };
+    return Ray { TransformPoint(a, r.pos), TransformDirection(a, r.dir) };
 }
 inline
 Ray TransformInverseRay(Matrix4f a, Ray r) {
-    return Ray { TransformInversePoint(a, r.position), TransformInverseDirection(a, r.direction) };
+    return Ray { TransformInversePoint(a, r.pos), TransformInverseDirection(a, r.dir) };
 }
 
 
@@ -938,9 +938,9 @@ Ray TransformInverseRay(Matrix4f a, Ray r) {
 bool PointSideOfPlane(Vector3f point, Ray plane) {
     // returns true if point is in the R3-halfspace defined by plane normal
 
-    Vector3f diff = (plane.position - point);
+    Vector3f diff = (plane.pos - point);
     diff.Normalize();
-    f32 cos_angle = diff.Dot(plane.direction);
+    f32 cos_angle = diff.Dot(plane.dir);
 
     if (cos_angle <= 0) {
         return true;
@@ -951,14 +951,14 @@ bool PointSideOfPlane(Vector3f point, Ray plane) {
 }
 
 Vector3f RayPlaneIntersect(Ray ray, Vector3f plane_origo, Vector3f plane_normal, f32 *t_at = NULL) {
-    f32 dot = plane_normal.Dot(ray.direction);
+    f32 dot = plane_normal.Dot(ray.dir);
     if (abs(dot) > 0.0001f) {
-        f32 t = (plane_origo - ray.position).Dot(plane_normal) / dot;
+        f32 t = (plane_origo - ray.pos).Dot(plane_normal) / dot;
         if (t_at) {
             *t_at = t;
         }
 
-        Vector3f result = ray.position + t * ray.direction;
+        Vector3f result = ray.pos + t * ray.dir;
         return result;
     }
     else {

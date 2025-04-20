@@ -17,8 +17,8 @@ Ray CameraGetRay(Matrix4f view, f32 fov, f32 aspect, f32 x_frac = 0, f32 y_frac 
     dir.Normalize();
 
     Ray shoot = {};
-    shoot.position = TransformPoint(view, Vector3f_Zero());
-    shoot.direction = TransformDirection(view, dir);
+    shoot.pos = TransformPoint(view, Vector3f_Zero());
+    shoot.dir = TransformDirection(view, dir);
 
     return shoot;
 }
