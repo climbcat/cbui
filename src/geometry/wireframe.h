@@ -117,39 +117,6 @@ bool FRange(f32 val, f32 min, f32 max) {
     bool result = val >= min && val <= max;
     return result;
 }
-inline
-bool BoxCollideLocal1D(f32 p1, f32 p2, f32 d, f32 sz1, f32 sz2, f32 *t_in, f32 *t_out) {
-    bool intersect = (abs(p1) <= sz1) && (abs(p2) <= sz2);
-    if (intersect) {
-        *t_in = (-sz1 - p1) / d;
-        *t_out = (sz1 - p1) / d;
-    }
-
-    return intersect; 
-}
-inline
-bool BoxCollideLocal2D(f32 p1, f32 p2, f32 d1, f32 d2, f32 sz1, f32 sz2, f32 *t_in, f32 *t_out) {
-    f32 t_low_1 = (-sz1 - p1) / d1;
-    f32 t_high_1 = (sz1 - p1) / d1;
-    f32 t_low_2 = (-sz2 - p1) / d2;
-    f32 t_high_2 = (sz2 - p1) / d2;
-
-    f32 t_close_1 = MinF32(t_low_1, t_high_1);
-    f32 t_far_1 = MaxF32(t_low_1, t_high_1);
-    f32 t_close_2 = MinF32(t_low_2, t_high_2);
-    f32 t_far_2 = MaxF32(t_low_2, t_high_2);
-
-    f32 t_close = MaxF32(t_close_1, t_close_2);
-    f32 t_far = MinF32(t_far_1, t_far_2);
-
-    bool intersect = t_close <= t_far;
-    if (intersect) {
-        *t_in = t_close;
-        *t_out = t_far;
-    }
-
-    return intersect;
-}
 bool BoxCollideSLAB(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3f *hit_out = NULL) {
     TimeFunction;
 
@@ -166,33 +133,23 @@ bool BoxCollideSLAB(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3f 
     bool zero_y = FZero(d.y);
     bool zero_z = FZero(d.z);
 
-    if (zero_x && zero_y) { intersect = BoxCollideLocal1D(p.x, p.y, d.z, dims.x, dims.y, &t_close, &t_far); }
-    else if (zero_y && zero_z) { intersect = BoxCollideLocal1D(p.y, p.z, d.x, dims.y, dims.z, &t_close, &t_far); }
-    else if (zero_z && zero_x) { intersect = BoxCollideLocal1D(p.z, p.x, d.y, dims.z, dims.x, &t_close, &t_far); }
+    f32 t_low_x = (-dims.x - p.x) / d.x;
+    f32 t_high_x = (dims.x - p.x) / d.x;
+    f32 t_low_y = (- dims.y - p.y) / d.y;
+    f32 t_high_y = (dims.y - p.y) / d.y;
+    f32 t_low_z = (- dims.z - p.z) / d.z;
+    f32 t_high_z = (dims.z - p.z) / d.z;
 
-    else if(zero_x) { intersect = BoxCollideLocal2D(p.y, p.z, d.y, d.z, dims.y, dims.z, &t_close, &t_far); }
-    else if(zero_y) { intersect = BoxCollideLocal2D(p.z, p.x, d.z, d.x, dims.z, dims.x, &t_close, &t_far); }
-    else if(zero_z) { intersect = BoxCollideLocal2D(p.x, p.y, d.x, d.y, dims.x, dims.y, &t_close, &t_far); }
+    f32 t_close_x = MinF32(t_low_x, t_high_x);
+    f32 t_far_x = MaxF32(t_low_x, t_high_x);
+    f32 t_close_y = MinF32(t_low_y, t_high_y);
+    f32 t_far_y = MaxF32(t_low_y, t_high_y);
+    f32 t_close_z = MinF32(t_low_z, t_high_z);
+    f32 t_far_z = MaxF32(t_low_z, t_high_z);
 
-    else {
-        f32 t_low_x = (-dims.x - p.x) / d.x;
-        f32 t_high_x = (dims.x - p.x) / d.x;
-        f32 t_low_y = (- dims.y - p.y) / d.y;
-        f32 t_high_y = (dims.y - p.y) / d.y;
-        f32 t_low_z = (- dims.z - p.z) / d.z;
-        f32 t_high_z = (dims.z - p.z) / d.z;
-
-        f32 t_close_x = MinF32(t_low_x, t_high_x);
-        f32 t_far_x = MaxF32(t_low_x, t_high_x);
-        f32 t_close_y = MinF32(t_low_y, t_high_y);
-        f32 t_far_y = MaxF32(t_low_y, t_high_y);
-        f32 t_close_z = MinF32(t_low_z, t_high_z);
-        f32 t_far_z = MaxF32(t_low_z, t_high_z);
-
-        t_close = MaxF32(MaxF32(t_close_x, t_close_y), t_close_z);
-        t_far = MinF32(MinF32(t_far_x, t_far_y), t_far_z);
-        intersect = t_close <= t_far;
-    }
+    t_close = MaxF32(MaxF32(t_close_x, t_close_y), t_close_z);
+    t_far = MinF32(MinF32(t_far_x, t_far_y), t_far_z);
+    intersect = t_close <= t_far;
 
     if (intersect && hit_in) { *hit_in = TransformPoint(wf.transform, loc.pos + t_close * loc.dir); }
     if (intersect && hit_out) { *hit_out = TransformPoint(wf.transform, loc.pos + t_far * loc.dir); }
