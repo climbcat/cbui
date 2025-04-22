@@ -298,15 +298,15 @@ struct DragState {
     Vector3f hit;
 };
 
-DragState DragStateUpdate(DragState sd, Array<Wireframe> objs, Matrix4f view, Vector3f campos, f32 fov, f32 aspect, f32 x_frac, f32 y_frac) {
-    Wireframe *selected = sd.selected;
-    Wireframe *selected_prev = sd.selected_prev;
-    bool drag_enabled = sd.drag_enabled;
-    Vector3f drag_push = sd.drag_push;
-    Vector3f drag = sd.drag;
-    Vector3f drag_prev = sd.drag_prev;
-    Vector3f drag_nxt = sd.drag_nxt;
-    Vector3f hit = sd.hit;
+Vector3f DragStateUpdate(DragState *sd, Array<Wireframe> objs, Matrix4f view, Vector3f campos, f32 fov, f32 aspect, f32 x_frac, f32 y_frac) {
+    Wireframe *selected = sd->selected;
+    Wireframe *selected_prev = sd->selected_prev;
+    bool drag_enabled = sd->drag_enabled;
+    Vector3f drag_push = sd->drag_push;
+    Vector3f drag = sd->drag;
+    Vector3f drag_prev = sd->drag_prev;
+    Vector3f drag_nxt = sd->drag_nxt;
+    Vector3f hit = sd->hit;
 
     if (MouseLeft().released) {
         drag_enabled = false;
@@ -316,14 +316,11 @@ DragState DragStateUpdate(DragState sd, Array<Wireframe> objs, Matrix4f view, Ve
         hit = {};
     }
 
+    Vector3f delta = Vector3f_Zero();
     if (drag_enabled && MouseLeft().ended_down) {
         drag_nxt = CameraGetPointAtDepth( view, fov, aspect, drag_push, x_frac, y_frac);
 
-        Vector3f delta = drag_nxt - drag;
-
-        selected->transform.m[0][3] += delta.x;
-        selected->transform.m[1][3] += delta.y;
-        selected->transform.m[2][3] += delta.z;
+        delta = drag_nxt - drag;
 
         drag_prev = drag;
         drag = drag_nxt;
@@ -377,18 +374,19 @@ DragState DragStateUpdate(DragState sd, Array<Wireframe> objs, Matrix4f view, Ve
         selected = NULL;
     }
 
-    sd.selected = selected;
-    sd.selected_prev = selected_prev;
-    sd.drag_enabled = drag_enabled;
-    sd.drag_push = drag_push;
-    sd.drag = drag;
-    sd.drag_prev = drag_prev;
-    sd.drag_nxt = drag_nxt;
-    sd.hit = hit;
-    return sd;
+    sd->selected = selected;
+    sd->selected_prev = selected_prev;
+    sd->drag_enabled = drag_enabled;
+    sd->drag_push = drag_push;
+    sd->drag = drag;
+    sd->drag_prev = drag_prev;
+    sd->drag_nxt = drag_nxt;
+    sd->hit = hit;
+
+    return delta;
 }
 inline
-DragState DragStateUpdate(DragState sd, Array<Wireframe> objs, Vector3f campos, f32 x_frac, f32 y_frac) {
+Vector3f DragStateUpdate(DragState *sd, Array<Wireframe> objs, Vector3f campos, f32 x_frac, f32 y_frac) {
     return DragStateUpdate(sd, objs, app.v, campos, app.persp.fov, app.persp.aspect, x_frac, y_frac);
 }
 
@@ -439,7 +437,13 @@ void RunWireframe() {
         AppStateUpdate(cam.view, proj, plf->width, plf->height);
 
         // frame body
-        drag = DragStateUpdate(drag, objs, cam.position, plf->cursorpos.x_frac, plf->cursorpos.y_frac);
+        Vector3f delta = DragStateUpdate(&drag, objs, cam.position, plf->cursorpos.x_frac, plf->cursorpos.y_frac);
+        if (drag.selected) {
+            drag.selected->transform.m[0][3] += delta.x;
+            drag.selected->transform.m[1][3] += delta.y;
+            drag.selected->transform.m[2][3] += delta.z;
+        }
+
         if (drag.drag_enabled == false) {
             OrbitCameraUpdate(&cam, plf->cursorpos.dx, plf->cursorpos.dy, plf->left.ended_down, plf->right.ended_down, plf->scroll.yoffset_acc);
         }
