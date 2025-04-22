@@ -254,7 +254,14 @@ void RenderLineSegmentList(u8 *image_buffer, Matrix4f view, Matrix4f proj, u32 w
             b.x = (p2_ndc.x + 1) / 2 * w;
             b.y = (p2_ndc.y + 1) / 2 * h;
 
-            RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, wf_color);
+            if (wf_style == WFR_SLIM) {
+                RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, wf_color);
+            }
+            else if (wf_style == WFR_FAT) {
+                RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, wf_color);
+                RenderLineRGBA(image_buffer, w, h, a.x+1, a.y, b.x+1, b.y, wf_color);
+                RenderLineRGBA(image_buffer, w, h, a.x, a.y+1, b.x, b.y+1, wf_color);
+            }
         }
 
         // update object-specific properties s.a. colour, style
