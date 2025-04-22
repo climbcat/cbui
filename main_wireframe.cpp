@@ -292,6 +292,7 @@ struct DragState {
     Wireframe *selected_prev;
     bool drag_enabled;
     Vector3f drag_push;
+    Vector3f drag_push_objpos;
     Vector3f drag;
     Vector3f drag_prev;
     Vector3f drag_nxt;
@@ -303,6 +304,7 @@ Vector3f DragStateUpdate(DragState *sd, Array<Wireframe> objs, Matrix4f view, Ve
     Wireframe *selected_prev = sd->selected_prev;
     bool drag_enabled = sd->drag_enabled;
     Vector3f drag_push = sd->drag_push;
+    Vector3f drag_push_objpos = sd->drag_push_objpos;
     Vector3f drag = sd->drag;
     Vector3f drag_prev = sd->drag_prev;
     Vector3f drag_nxt = sd->drag_nxt;
@@ -342,6 +344,7 @@ Vector3f DragStateUpdate(DragState *sd, Array<Wireframe> objs, Matrix4f view, Ve
 
                     selected = obj;
                     drag_push = hit;
+                    drag_push_objpos = TransformPoint(obj->transform, {});
                     drag_enabled = true;
                 }
             }
@@ -378,6 +381,7 @@ Vector3f DragStateUpdate(DragState *sd, Array<Wireframe> objs, Matrix4f view, Ve
     sd->selected_prev = selected_prev;
     sd->drag_enabled = drag_enabled;
     sd->drag_push = drag_push;
+    sd->drag_push_objpos = drag_push_objpos;
     sd->drag = drag;
     sd->drag_prev = drag_prev;
     sd->drag_nxt = drag_nxt;
@@ -438,16 +442,23 @@ void RunWireframe() {
 
         // frame body
         Vector3f delta = DragStateUpdate(&drag, objs, cam.position, plf->cursorpos.x_frac, plf->cursorpos.y_frac);
-        if (drag.selected) {
+        if (drag.selected && drag.drag_enabled) {
             if (ModCtrl()) {
-                drag.selected->transform.m[0][3] += delta.x;
+                drag.selected->transform.m[0][3] += 0;
                 drag.selected->transform.m[1][3] += delta.y;
-                drag.selected->transform.m[2][3] += delta.z;
+                drag.selected->transform.m[2][3] += 0;
             }
             else {
-                drag.selected->transform.m[0][3] += delta.x;
+                Vector3f plane_origo = { 0, drag.drag_push_objpos.z, 0 };
+                Vector3f plane_normal = y_hat;
+
+                Vector3f proj1 = RayPlaneIntersect(RayFromTo(cam.position_world, drag.drag), plane_origo, plane_normal); 
+                Vector3f proj0 = RayPlaneIntersect(RayFromTo(cam.position_world, drag.drag - delta), plane_origo, plane_normal); 
+                Vector3f delta_proj = proj1 - proj0;
+
+                drag.selected->transform.m[0][3] += delta_proj.x;
                 drag.selected->transform.m[1][3] += 0;
-                drag.selected->transform.m[2][3] += delta.z;
+                drag.selected->transform.m[2][3] += delta_proj.z;
             }
         }
 
@@ -460,6 +471,9 @@ void RunWireframe() {
 
         // render DBG
         RenderFatPoint3x3(drag.drag, COLOR_BLACK);
+        RenderFatPoint3x3(drag.drag_push, COLOR_RED);
+        RenderFatPoint3x3(drag.drag_push_objpos, COLOR_GREEN);
+
         if (drag.drag_prev.IsNonZero()) {
             RenderFatPoint3x3(drag.drag_nxt, COLOR_RED);
             RenderLineSegment(drag.drag_prev, drag.drag, COLOR_BLACK);
