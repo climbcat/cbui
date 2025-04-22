@@ -200,15 +200,19 @@ bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3
         f32 dist = (center - closest).Norm();
         f32 radius = wf.dimensions.x;
         if (dist <= radius) {
+
+            //  Consider the triangle [center, closest, hit_in], then:
+            //  dist^2 + surf_2^2 == radius^2
+
+            f32 surf_2 = sqrt(radius*radius - dist*dist);
             if (hit_in) {
-                *hit_in = TransformPoint(wf.transform, center);
+                Vector3f hit_in_loc = closest - surf_2 * loc.dir;
+                *hit_in = TransformPoint(wf.transform, hit_in_loc);
             }
             if (hit_out) {
-                *hit_out = TransformPoint(wf.transform, center);
+                Vector3f hit_out_loc = closest + surf_2 * loc.dir;
+                *hit_out = TransformPoint(wf.transform, hit_out_loc);
             }
-
-            // TODO: calc hit_in and hit_out, an easy quadratic equation
-            //      (or, rethink the drag implementation)
 
             return true;
         }
