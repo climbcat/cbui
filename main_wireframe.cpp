@@ -471,8 +471,6 @@ void RunWireframe() {
 
         // render DBG
         RenderFatPoint3x3(drag.drag, COLOR_BLACK);
-        RenderFatPoint3x3(drag.drag_push, COLOR_RED);
-        RenderFatPoint3x3(drag.drag_push_objpos, COLOR_GREEN);
 
         if (drag.drag_prev.IsNonZero()) {
             RenderFatPoint3x3(drag.drag_nxt, COLOR_RED);
