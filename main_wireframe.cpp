@@ -439,9 +439,16 @@ void RunWireframe() {
         // frame body
         Vector3f delta = DragStateUpdate(&drag, objs, cam.position, plf->cursorpos.x_frac, plf->cursorpos.y_frac);
         if (drag.selected) {
-            drag.selected->transform.m[0][3] += delta.x;
-            drag.selected->transform.m[1][3] += delta.y;
-            drag.selected->transform.m[2][3] += delta.z;
+            if (ModCtrl()) {
+                drag.selected->transform.m[0][3] += delta.x;
+                drag.selected->transform.m[1][3] += delta.y;
+                drag.selected->transform.m[2][3] += delta.z;
+            }
+            else {
+                drag.selected->transform.m[0][3] += delta.x;
+                drag.selected->transform.m[1][3] += 0;
+                drag.selected->transform.m[2][3] += delta.z;
+            }
         }
 
         if (drag.drag_enabled == false) {
