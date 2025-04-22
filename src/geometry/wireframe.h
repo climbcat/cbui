@@ -188,9 +188,9 @@ bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3
         //  Can we develop some generic triangle-based intersection scheme?
         //  Might be an easier approach, generally.
 
-        return BoxCollideSLAB(global, wf, hit_in, hit_out);
+        bool boxed = BoxCollideSLAB(global, wf, hit_in, hit_out);
 
-        return false;
+        return boxed;
     }
 
     else if (wf.type == WFT_SPHERE) {
