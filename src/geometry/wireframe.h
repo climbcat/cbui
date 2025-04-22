@@ -177,9 +177,9 @@ bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3
         //  2) calc. the line-to-line distance between the cylinder axis and the ray, check with radius
         //  3) check any end-cap intersection point's distance to cylinder axis, check with radius
 
-        return BoxCollideSLAB(global, wf, hit_in, hit_out);
+        bool boxed = BoxCollideSLAB(global, wf, hit_in, hit_out);
 
-        return false;
+        return boxed;
     }
 
     else if (wf.type == WFT_EYE) {
