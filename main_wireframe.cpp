@@ -8,7 +8,7 @@
 
 #define WF_VERSION_MAJOR 0
 #define WF_VERSION_MINOR 0
-#define WF_VERSION_PATCH 3
+#define WF_VERSION_PATCH 4
 
 
 struct WireframeAppState {
