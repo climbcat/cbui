@@ -8,20 +8,20 @@
 
 #define WF_VERSION_MAJOR 0
 #define WF_VERSION_MINOR 0
-#define WF_VERSION_PATCH 3
+#define WF_VERSION_PATCH 4
 
 
-struct WireframeApp {
+struct WireframeAppState {
+    Perspective persp;
     Matrix4f v;
-    Matrix4f p;
     u32 w;
     u32 h;
     MArena *a_tmp;
 };
-static WireframeApp app;
-void AppUpdate(Matrix4f v, Matrix4f p, u32 w, u32 h) {
+static WireframeAppState app;
+void AppStateUpdate(Matrix4f v, Perspective p, u32 w, u32 h) {
     app.v = v;
-    app.p = p;
+    app.persp = p;
     app.w = w;
     app.h = h;
 }
@@ -81,7 +81,7 @@ void RenderLineRGBA(u8* image_buffer, u16 w, u16 h, s16 ax, s16 ay, s16 bx, s16 
     }
     else {
         // draw by y
-        float slope_inv = 1 / slope_ab;
+        f32 slope_inv = 1 / slope_ab;
 
         // swap a & b ?
         if (ay > by) {
@@ -125,7 +125,17 @@ void RenderPoint(u8 *image_buffer, Vector3f point_ndc, u32 w, u32 h, Color color
     ((Color*) image_buffer)[ GetXYIdx(x, y, w) ] = color;
 }
 
-void RenderFatPoint3x3(u8 *image_buffer, Vector3f point_ndc, u32 w, u32 h, Color color = COLOR_RED) {
+void RenderFatPoint3x3(u8 *image_buffer, Matrix4f view, Matrix4f proj, Vector3f point, u32 w, u32 h, Color color = COLOR_RED) {
+    Vector3f point_cam = TransformInversePoint(view, point);
+
+    Ray view_plane = { Vector3f { 0, 0, 0.1 }, Vector3f { 0, 0, 1 } };
+    Ray view_plane_far = { Vector3f { 0, 0, 1 }, Vector3f { 0, 0, 1 } };
+
+    if (PointSideOfPlane(point_cam, view_plane) == false) {
+        return;
+    }
+    Vector3f point_ndc = TransformPerspective(proj, point_cam);
+
     f32 x = (point_ndc.x + 1) / 2 * w;
     f32 y = (point_ndc.y + 1) / 2 * h;
 
@@ -141,17 +151,49 @@ void RenderFatPoint3x3(u8 *image_buffer, Vector3f point_ndc, u32 w, u32 h, Color
         }
     }
 }
+inline
+void RenderFatPoint3x3(Vector3f point, Color color = COLOR_RED) {
+    RenderFatPoint3x3(g_image_buffer, app.v, app.persp.proj, point, app.w, app.h, color);
+}
 
 inline
-void RenderLineSegment(u8 *image_buffer, Vector3f anchor_a, Vector3f anchor_b, u32 w, u32 h, Color color) {
-    Vector2f a = {};
-    a.x = (anchor_a.x + 1) / 2 * w;
-    a.y = (anchor_a.y + 1) / 2 * h;
-    Vector2f b = {};
-    b.x = (anchor_b.x + 1) / 2 * w;
-    b.y = (anchor_b.y + 1) / 2 * h;
+void RenderLineSegment(u8 *image_buffer, Matrix4f view, Matrix4f proj, Vector3f p1, Vector3f p2, u32 w, u32 h, Color color) {
+    Vector3f p1_cam = TransformInversePoint(view, p1);
+    Vector3f p2_cam = TransformInversePoint(view, p2);
 
-    RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, color);
+    Ray view_plane = { Vector3f { 0, 0, 0.1 }, Vector3f { 0, 0, 1 } };
+
+    bool visible1 = PointSideOfPlane(p1_cam, view_plane);
+    bool visible2 = PointSideOfPlane(p2_cam, view_plane);
+
+    if (visible1 == true || visible2 == true) {
+        if (visible1 == false && visible2 == true) {
+            Ray segment = { p2_cam, p1_cam - p2_cam };
+            f32 t = 0;
+            p1_cam = RayPlaneIntersect(segment, view_plane.pos, view_plane.dir, &t);
+        }
+        else if (visible1 == true && visible2 == false) {
+            Ray segment = { p1_cam, p2_cam - p1_cam };
+            f32 t = 0;
+            p2_cam = RayPlaneIntersect(segment, view_plane.pos, view_plane.dir, &t);
+        }
+
+        Vector3f p1_ndc = TransformPerspective(proj, p1_cam);
+        Vector3f p2_ndc = TransformPerspective(proj, p2_cam);
+
+        Vector2f a = {};
+        a.x = (p1_ndc.x + 1) / 2 * w;
+        a.y = (p1_ndc.y + 1) / 2 * h;
+        Vector2f b = {};
+        b.x = (p2_ndc.x + 1) / 2 * w;
+        b.y = (p2_ndc.y + 1) / 2 * h;
+
+        RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, color);
+    }
+}
+inline
+void RenderLineSegment(Vector3f p1, Vector3f p2, Color color) {
+    RenderLineSegment(g_image_buffer, app.v, app.persp.proj, p1, p2, app.w, app.h, color);
 }
 
 inline
@@ -170,15 +212,13 @@ s32 _GetNextNonDisabledWireframeIndex(u32 idx_prev, Array<Wireframe> wireframes)
     }
     return idx_prev;
 }
+void RenderLineSegmentList(u8 *image_buffer, Matrix4f view, Matrix4f proj, u32 w, u32 h, Array<Wireframe> wireframes, Array<Vector3f> segments) {
+    if (wireframes.len == 0) {
+        return;
+    }    
+    Ray view_plane = { Vector3f { 0, 0, 0.1 }, Vector3f { 0, 0, 1 } };
 
-void RenderLineSegmentList(u8 *image_buffer, Matrix4f v, Matrix4f p, u32 w, u32 h, Array<Wireframe> wireframes, Array<Vector3f> segments) {
-    Array<Vector3f> segments_ndc = segments;
-
-    // go to view coordinates
-    for (u32 j = 0; j < segments.len; ++j) {
-        segments.arr[j] = TransformInversePoint(v, segments.arr[j]);
-    }
-
+    // set up wireframe properties
     s32 wf_segs_idx = 0;
     s32 wf_idx = -1;
     wf_idx = _GetNextNonDisabledWireframeIndex(wf_idx, wireframes);
@@ -186,35 +226,41 @@ void RenderLineSegmentList(u8 *image_buffer, Matrix4f v, Matrix4f p, u32 w, u32 
     WireFrameRenderStyle wf_style = wireframes.arr[wf_idx].style;
     u32 wf_nsegments = wireframes.arr[wf_idx].nsegments;
 
-    for (u32 i = 0; i < segments_ndc.len / 2; ++i) {
-        bool culled = false;
+    for (u32 i = 0; i < segments.len / 2; ++i) {
+        Vector3f p1_cam = TransformInversePoint(view, segments.arr[2*i]);
+        Vector3f p2_cam = TransformInversePoint(view, segments.arr[2*i + 1]);
 
-        Vector3f anchor_a = segments_ndc.arr[2*i];
-        Vector3f anchor_b = segments_ndc.arr[2*i + 1];
+        bool visible1 = PointSideOfPlane(p1_cam, view_plane);
+        bool visible2 = PointSideOfPlane(p2_cam, view_plane);
 
-        // TODO: do the segment culling
-        // TODO: do the segment cropping with view plane
-
-        if (culled == false) {
-            anchor_a = TransformPerspective(p, anchor_a);
-            anchor_b = TransformPerspective(p, anchor_b);
+        if (visible1 == true || visible2 == true) {
+            if (visible1 == false && visible2 == true) {
+                Ray segment = { p2_cam, p1_cam - p2_cam };
+                f32 t = 0;
+                p1_cam = RayPlaneIntersect(segment, view_plane.pos, view_plane.dir, &t);
+            }
+            else if (visible1 == true && visible2 == false) {
+                Ray segment = { p1_cam, p2_cam - p1_cam };
+                f32 t = 0;
+                p2_cam = RayPlaneIntersect(segment, view_plane.pos, view_plane.dir, &t);
+            }
+            Vector3f p1_ndc = TransformPerspective(proj, p1_cam);
+            Vector3f p2_ndc = TransformPerspective(proj, p2_cam);
 
             Vector2f a = {};
-            a.x = (anchor_a.x + 1) / 2 * w;
-            a.y = (anchor_a.y + 1) / 2 * h;
+            a.x = (p1_ndc.x + 1) / 2 * w;
+            a.y = (p1_ndc.y + 1) / 2 * h;
             Vector2f b = {};
-            b.x = (anchor_b.x + 1) / 2 * w;
-            b.y = (anchor_b.y + 1) / 2 * h;
-
+            b.x = (p2_ndc.x + 1) / 2 * w;
+            b.y = (p2_ndc.y + 1) / 2 * h;
 
             if (wf_style == WFR_SLIM) {
-                RenderLineSegment(image_buffer, anchor_a, anchor_b, w, h, wf_color);
+                RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, wf_color);
             }
-
             else if (wf_style == WFR_FAT) {
                 RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, wf_color);
-                RenderLineRGBA(image_buffer, w, h, a.x + 1, a.y, b.x + 1, b.y, wf_color);
-                RenderLineRGBA(image_buffer, w, h, a.x, a.y + 1, b.x, b.y + 1, wf_color);
+                RenderLineRGBA(image_buffer, w, h, a.x+1, a.y, b.x+1, b.y, wf_color);
+                RenderLineRGBA(image_buffer, w, h, a.x, a.y+1, b.x, b.y+1, wf_color);
             }
         }
 
@@ -235,33 +281,34 @@ void RenderLineSegmentList(u8 *image_buffer, Matrix4f v, Matrix4f p, u32 w, u32 
 }
 
 void RenderWireframes(Array<Wireframe> wireframes) {
-    
     Array<Vector3f> segments = WireframeLineSegments(app.a_tmp, wireframes);
-    // insert the globals
-    return RenderLineSegmentList(g_image_buffer, app.v, app.p, app.w, app.h, wireframes, segments);
-}
 
+    // insert the globals
+    RenderLineSegmentList(g_image_buffer, app.v, app.persp.proj, app.w, app.h, wireframes, segments);
+}
 
 struct DragState {
     Wireframe *selected;
     Wireframe *selected_prev;
     bool drag_enabled;
     Vector3f drag_push;
+    Vector3f drag_push_objpos;
     Vector3f drag;
     Vector3f drag_prev;
     Vector3f drag_nxt;
     Vector3f hit;
 };
 
-DragState DragStateUpdate(DragState sd, Array<Wireframe> objs, Matrix4f view, Vector3f campos, f32 fov, f32 aspect, f32 x_frac, f32 y_frac) {
-    Wireframe *selected = sd.selected;
-    Wireframe *selected_prev = sd.selected_prev;
-    bool drag_enabled = sd.drag_enabled;
-    Vector3f drag_push = sd.drag_push;
-    Vector3f drag = sd.drag;
-    Vector3f drag_prev = sd.drag_prev;
-    Vector3f drag_nxt = sd.drag_nxt;
-    Vector3f hit = sd.hit;
+Vector3f DragStateUpdate(DragState *sd, Array<Wireframe> objs, Matrix4f view, Vector3f campos, f32 fov, f32 aspect, f32 x_frac, f32 y_frac) {
+    Wireframe *selected = sd->selected;
+    Wireframe *selected_prev = sd->selected_prev;
+    bool drag_enabled = sd->drag_enabled;
+    Vector3f drag_push = sd->drag_push;
+    Vector3f drag_push_objpos = sd->drag_push_objpos;
+    Vector3f drag = sd->drag;
+    Vector3f drag_prev = sd->drag_prev;
+    Vector3f drag_nxt = sd->drag_nxt;
+    Vector3f hit = sd->hit;
 
     if (MouseLeft().released) {
         drag_enabled = false;
@@ -271,22 +318,18 @@ DragState DragStateUpdate(DragState sd, Array<Wireframe> objs, Matrix4f view, Ve
         hit = {};
     }
 
+    Vector3f delta = Vector3f_Zero();
     if (drag_enabled && MouseLeft().ended_down) {
         drag_nxt = CameraGetPointAtDepth( view, fov, aspect, drag_push, x_frac, y_frac);
 
-        Vector3f delta = drag_nxt - drag;
-
-        selected->transform.m[0][3] += delta.x;
-        selected->transform.m[1][3] += delta.y;
-        selected->transform.m[2][3] += delta.z;
+        delta = drag_nxt - drag;
 
         drag_prev = drag;
         drag = drag_nxt;
     }
 
-    //
     Ray shoot = CameraGetRay(view, fov, aspect, x_frac, y_frac);
-    
+
     bool collided = false;
     f32 dist = 0;
     for (u32 i = 0; i < objs.len; ++i) {
@@ -301,6 +344,7 @@ DragState DragStateUpdate(DragState sd, Array<Wireframe> objs, Matrix4f view, Ve
 
                     selected = obj;
                     drag_push = hit;
+                    drag_push_objpos = TransformPoint(obj->transform, {});
                     drag_enabled = true;
                 }
             }
@@ -333,87 +377,110 @@ DragState DragStateUpdate(DragState sd, Array<Wireframe> objs, Matrix4f view, Ve
         selected = NULL;
     }
 
+    sd->selected = selected;
+    sd->selected_prev = selected_prev;
+    sd->drag_enabled = drag_enabled;
+    sd->drag_push = drag_push;
+    sd->drag_push_objpos = drag_push_objpos;
+    sd->drag = drag;
+    sd->drag_prev = drag_prev;
+    sd->drag_nxt = drag_nxt;
+    sd->hit = hit;
 
-    sd.selected = selected;
-    sd.selected_prev = selected_prev;
-    sd.drag_enabled = drag_enabled;
-    sd.drag_push = drag_push;
-    sd.drag = drag;
-    sd.drag_prev = drag_prev;
-    sd.drag_nxt = drag_nxt;
-    sd.hit = hit;
-    return sd;
+    return delta;
+}
+inline
+Vector3f DragStateUpdate(DragState *sd, Array<Wireframe> objs, Vector3f campos, f32 x_frac, f32 y_frac) {
+    return DragStateUpdate(sd, objs, app.v, campos, app.persp.fov, app.persp.aspect, x_frac, y_frac);
 }
 
 
 void RunWireframe() {
     printf("Running wireframe program ...\n");
 
-    // system init
+    // init
     MContext *ctx = InitBaselayer();
     AppInit(ctx->a_tmp);
     ImageBufferInit(ctx->a_life);
     PlafGlfw *plf = PlafGlfwInit();
     Perspective proj = ProjectionInit(plf->width, plf->height);
-
-    // cameras
     OrbitCamera cam = OrbitCameraInit( proj.aspect );
+    cam.radius = 10;
+    cam.theta = 50;
+    cam.phi = -40;
+    DragState drag = {};
 
     // scene objects
     Array<Wireframe> objs = InitArray<Wireframe>(ctx->a_pers, 100);
 
-    Wireframe box = CreateAABox( 0.5, 0.5, 0.5 );
-    box.transform = TransformBuildTranslationOnly({ 0.7, 0.7, 0.7 });
-    objs.Add(box);
-
     objs.Add(CreateAAAxes());
     objs.Add(CreatePlane(10));
 
-    Wireframe ball = CreateSphere( 0.5 );
-    ball.transform = TransformBuildTranslationOnly({ 0.7, 0.7, -0.7 });
+    Wireframe box = CreateAABox( 0.5, 0.5, 0.5 );
+    box.transform = TransformBuildTranslation({ 0.7, 0.5, -0.7 });
+    box.color = COLOR_RED;
+    objs.Add(box);
+
+    Wireframe ball = CreateSphere( 0.4 );
+    ball.transform = TransformBuildTranslation({ 0.7, 0.5, 0.7 });
+    ball.color = COLOR_BLUE;
     objs.Add(ball);
 
-    Wireframe cylinder = CreateCylinder( 0.2, 0.7 );
-    cylinder.transform = TransformBuildTranslationOnly({ -0.5, 0.5, -0.5 });
+    Wireframe cylinder = CreateCylinder( 0.3, 0.6 );
+    cylinder.transform = TransformBuildTranslation({ -0.7, 0.5, 0 });
+    cylinder.color = COLOR_GREEN;
     objs.Add(cylinder);
-
-    Wireframe eye = CreateEye( 0.05, 0.1 );
-    eye.transform = TransformBuildTranslationOnly({ -0.5, 1, 1 });
-    objs.Add(eye);
-
-    DragState drag = {};
 
     // graphics loop
     bool running = true;
     while (running) {
-        drag = DragStateUpdate(drag, objs, cam.view, cam.position, proj.fov, proj.aspect, plf->cursorpos.x_frac, plf->cursorpos.y_frac);
-
+        // frame start
+        ArenaClear(ctx->a_tmp);
+        PlafGlfwUpdate(plf);
         PerspectiveSetAspectAndP(&proj, plf->width, plf->height);
+        ImageBufferClear(plf->width, plf->height);
+        running = running && !GetEscape() && !GetWindowShouldClose(plf);
+        AppStateUpdate(cam.view, proj, plf->width, plf->height);
+
+        // frame body
+        Vector3f delta = DragStateUpdate(&drag, objs, cam.position, plf->cursorpos.x_frac, plf->cursorpos.y_frac);
+        if (drag.selected && drag.drag_enabled) {
+            if (ModCtrl()) {
+                drag.selected->transform.m[0][3] += 0;
+                drag.selected->transform.m[1][3] += delta.y;
+                drag.selected->transform.m[2][3] += 0;
+            }
+            else {
+                Vector3f plane_origo = { 0, drag.drag_push_objpos.z, 0 };
+                Vector3f plane_normal = y_hat;
+
+                Vector3f proj1 = RayPlaneIntersect(RayFromTo(cam.position_world, drag.drag), plane_origo, plane_normal); 
+                Vector3f proj0 = RayPlaneIntersect(RayFromTo(cam.position_world, drag.drag - delta), plane_origo, plane_normal); 
+                Vector3f delta_proj = proj1 - proj0;
+
+                drag.selected->transform.m[0][3] += delta_proj.x;
+                drag.selected->transform.m[1][3] += 0;
+                drag.selected->transform.m[2][3] += delta_proj.z;
+            }
+        }
+
         if (drag.drag_enabled == false) {
             OrbitCameraUpdate(&cam, plf->cursorpos.dx, plf->cursorpos.dy, plf->left.ended_down, plf->right.ended_down, plf->scroll.yoffset_acc);
         }
 
-        // update and render wireframe objects
+        // render objects
         RenderWireframes(objs);
 
-        // DBG render anchors
-        Matrix4f vp = TransformBuildViewProj(cam.view, proj.p);
-        RenderFatPoint3x3(g_image_buffer, TransformPerspective(vp, drag.hit), plf->width, plf->height, COLOR_GREEN);
-        RenderFatPoint3x3(plf->image_buffer, TransformPerspective(vp, drag.drag), plf->width, plf->height, COLOR_BLACK);
-        if (drag.drag_prev.x != 0 || drag.drag_prev.y != 0 || drag.drag_prev.z != 0) {
-            RenderFatPoint3x3(plf->image_buffer, TransformPerspective(vp, drag.drag_nxt), plf->width, plf->height, COLOR_RED);
-            RenderLineSegment(plf->image_buffer, TransformPerspective(vp, drag.drag_prev), TransformPerspective(vp, drag.drag), plf->width, plf->height, COLOR_BLACK);
+        // render DBG
+        RenderFatPoint3x3(drag.drag, COLOR_BLACK);
+
+        if (drag.drag_prev.IsNonZero()) {
+            RenderFatPoint3x3(drag.drag_nxt, COLOR_RED);
+            RenderLineSegment(drag.drag_prev, drag.drag, COLOR_BLACK);
         }
 
         // frae end
-        PlafGlfwUpdate(plf);
-        AppUpdate(cam.view, proj.p, plf->width, plf->height);
-
-        ArenaClear(ctx->a_tmp);
-        ImageBufferClear(plf->width, plf->height);
-
         XSleep(1);
-        running = running && !GetEscape() && !GetWindowShouldClose(plf);
     }
 
     PlafGlfwTerminate(plf);

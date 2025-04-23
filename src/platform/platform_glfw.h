@@ -60,7 +60,23 @@ struct ActionKeys {
     bool backspace;
     bool del;
     bool space;
-    u8 fkey; 
+    bool mod_ctrl;
+    bool mod_shift;
+    bool mod_alt;
+    bool mod_caps;
+    u8 fkey;
+
+    void ResetButKeepMods() {
+        bool _mod_ctrl = mod_ctrl;
+        bool _mod_shift = mod_shift;
+        bool _mod_alt = mod_alt;
+        bool _mod_caps = mod_caps;
+        *this = {};
+        this->mod_ctrl = _mod_ctrl;
+        this->mod_shift = _mod_shift;
+        this->mod_alt = _mod_alt;
+        this->mod_caps = _mod_caps;
+    }
 };
 
 
@@ -138,6 +154,19 @@ void CharCallBack(GLFWwindow* window, u32 codepoint) {
 
 void KeyCallBack(GLFWwindow* window,  int key, int scancode, int action, int mods) {
     PlafGlfw *plf = _GlfwWindowToUserPtr(window);
+
+    if (key == GLFW_KEY_LEFT_CONTROL || key == GLFW_KEY_LEFT_CONTROL) {
+        plf->akeys.mod_ctrl = (action == GLFW_PRESS);
+    }
+    if (mods == GLFW_KEY_LEFT_ALT || mods == GLFW_KEY_RIGHT_ALT) {
+        plf->akeys.mod_alt = (action == GLFW_PRESS);
+    }
+    if (mods == GLFW_KEY_LEFT_SHIFT || mods == GLFW_KEY_RIGHT_SHIFT) {
+        plf->akeys.mod_shift = (action == GLFW_PRESS);
+    }
+    if (mods == GLFW_MOD_CAPS_LOCK) {
+        plf->akeys.mod_caps = (action == GLFW_PRESS);
+    }
 
     if (action == GLFW_PRESS) {
         if (key == 256) {
@@ -300,7 +329,7 @@ void PlafGlfwUpdate(PlafGlfw* plf) {
     plf->right = {};
     plf->scroll = {};
     plf->keys = {};
-    plf->akeys = {};
+    plf->akeys.ResetButKeepMods();
 
     plf->left.ended_down = (glfwGetMouseButton(plf->window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS);
     plf->right.ended_down = (glfwGetMouseButton(plf->window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS);
@@ -327,59 +356,17 @@ void PlafGlfwUpdate(PlafGlfw* plf) {
 }
 
 
-Button MouseLeft() {
-    Button left = g_plaf_glfw.left;
-    return left;
-}
-
-Button MouseRight() {
-    Button right = g_plaf_glfw.right;
-    return right;
-}
-
-Scroll MouseScroll() {
-    Scroll result = g_plaf_glfw.scroll;
-    return result;
-}
-
-Vector2f MouseFrac() {
-    Vector2f result = { g_plaf_glfw.cursorpos.x_frac, g_plaf_glfw.cursorpos.y_frac };
-    return result;
-}
-Vector2f MouseFracDelta() {
-    Vector2f result = { (f32) g_plaf_glfw.cursorpos.dx / g_plaf_glfw.width, (f32) g_plaf_glfw.cursorpos.dy / g_plaf_glfw.height };
-    return result;
-}
-
-char GetChar() {
-    char c = g_plaf_glfw.keys.Get();
-    return c;
-}
-
-bool GetEscape() {
-    bool was = g_plaf_glfw.akeys.esc;
-    return was;
-}
-
-bool GetEnter() {
-    bool was = g_plaf_glfw.akeys.enter;
-    return was;
-}
-
-bool GetSpace() {
-    bool was = g_plaf_glfw.akeys.space;
-    return was;
-}
-
-bool GetBackspace() {
-    bool was = g_plaf_glfw.akeys.backspace;
-    return was;
-}
-
-bool GetDelete() {
-    bool was = g_plaf_glfw.akeys.del;
-    return was;
-}
+inline Button MouseLeft() { return g_plaf_glfw.left; }
+inline Button MouseRight() { return g_plaf_glfw.right; }
+inline Scroll MouseScroll() { return g_plaf_glfw.scroll; }
+inline Vector2f MouseFrac() { return { g_plaf_glfw.cursorpos.x_frac, g_plaf_glfw.cursorpos.y_frac }; }
+inline Vector2f MouseFracDelta() { return { (f32) g_plaf_glfw.cursorpos.dx / g_plaf_glfw.width, (f32) g_plaf_glfw.cursorpos.dy / g_plaf_glfw.height }; }
+inline char GetChar() { return g_plaf_glfw.keys.Get(); }
+inline bool GetEscape() { return g_plaf_glfw.akeys.esc; }
+inline bool GetEnter() { return g_plaf_glfw.akeys.enter; }
+inline bool GetSpace() { return g_plaf_glfw.akeys.space; }
+inline bool GetBackspace() { return g_plaf_glfw.akeys.backspace; }
+inline bool GetDelete() { return g_plaf_glfw.akeys.del; }
 
 bool GetFKey(u32 *fval) {
     assert(fval != NULL);
@@ -403,9 +390,12 @@ bool GetFKey(u32 fval) {
     }
 }
 
-bool GetWindowShouldClose(PlafGlfw *plf) {
-    return glfwWindowShouldClose(plf->window);
-}
+inline bool ModCtrl() { return g_plaf_glfw.akeys.mod_ctrl; }
+inline bool ModShift() { return g_plaf_glfw.akeys.mod_shift; }
+inline bool ModAlt() { return g_plaf_glfw.akeys.mod_alt; }
+inline bool ModCaps() { return g_plaf_glfw.akeys.mod_caps; }
+
+bool GetWindowShouldClose(PlafGlfw *plf) { return glfwWindowShouldClose(plf->window); }
 
 
 #endif

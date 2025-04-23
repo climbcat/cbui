@@ -101,43 +101,58 @@ Wireframe CreateAAAxes(f32 len = 1.0f) {
     axis.transform = Matrix4f_Identity();
     axis.type = WFT_AXIS;
     axis.dimensions = { len, len, len };
-    axis.color = COLOR_BLACK;
+    axis.color = COLOR_GRAY;
 
     return axis;
 }
 
+
+inline
+bool FZero(f32 f) {
+    bool result = abs(f) < 0.0001f;
+    return result;
+}
+inline
+bool FRange(f32 val, f32 min, f32 max) {
+    bool result = val >= min && val <= max;
+    return result;
+}
 bool BoxCollideSLAB(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3f *hit_out = NULL) {
-    // TODO: slab method; handle axis-aligned rays
+    TimeFunction;
 
     Ray loc = TransformInverseRay(wf.transform, global);
+    Vector3f p = loc.pos;
+    Vector3f d = loc.dir;
+    Vector3f dims = wf.dimensions;
 
-    Vector3f o = loc.position;
-    Vector3f d = loc.direction;
+    bool intersect;
+    f32 t_close;
+    f32 t_far;
 
-    f32 tl_x = (-wf.dimensions.x - o.x) / d.x;
-    f32 th_x = (wf.dimensions.x - o.x) / d.x;
-    f32 tl_y = (- wf.dimensions.y - o.y) / d.y;
-    f32 th_y = (wf.dimensions.y - o.y) / d.y;
-    f32 tl_z = (- wf.dimensions.z - o.z) / d.z;
-    f32 th_z = (wf.dimensions.z - o.z) / d.z;
+    bool zero_x = FZero(d.x);
+    bool zero_y = FZero(d.y);
+    bool zero_z = FZero(d.z);
 
-    f32 t_cls_x = MinF32(tl_x, th_x);
-    f32 t_far_x = MaxF32(tl_x, th_x);
-    f32 t_cls_y = MinF32(tl_y, th_y);
-    f32 t_far_y = MaxF32(tl_y, th_y);
-    f32 t_cls_z = MinF32(tl_z, th_z);
-    f32 t_far_z = MaxF32(tl_z, th_z);
+    f32 t_low_x = (-dims.x - p.x) / d.x;
+    f32 t_high_x = (dims.x - p.x) / d.x;
+    f32 t_low_y = (- dims.y - p.y) / d.y;
+    f32 t_high_y = (dims.y - p.y) / d.y;
+    f32 t_low_z = (- dims.z - p.z) / d.z;
+    f32 t_high_z = (dims.z - p.z) / d.z;
 
-    f32 t_cls = MaxF32(MaxF32(t_cls_x, t_cls_y), t_cls_z);
-    f32 t_far = MinF32(MinF32(t_far_x, t_far_y), t_far_z);
+    f32 t_close_x = MinF32(t_low_x, t_high_x);
+    f32 t_far_x = MaxF32(t_low_x, t_high_x);
+    f32 t_close_y = MinF32(t_low_y, t_high_y);
+    f32 t_far_y = MaxF32(t_low_y, t_high_y);
+    f32 t_close_z = MinF32(t_low_z, t_high_z);
+    f32 t_far_z = MaxF32(t_low_z, t_high_z);
 
-    bool intersect = t_cls <= t_far;
-    if (intersect && hit_in) {
-        *hit_in = TransformPoint(wf.transform, loc.position + t_cls * loc.direction);
-    }
-    if (intersect && hit_out) {
-        *hit_out = TransformPoint(wf.transform, loc.position + t_far * loc.direction);
-    }
+    t_close = MaxF32(MaxF32(t_close_x, t_close_y), t_close_z);
+    t_far = MinF32(MinF32(t_far_x, t_far_y), t_far_z);
+    intersect = t_close <= t_far;
+
+    if (intersect && hit_in) { *hit_in = TransformPoint(wf.transform, loc.pos + t_close * loc.dir); }
+    if (intersect && hit_out) { *hit_out = TransformPoint(wf.transform, loc.pos + t_far * loc.dir); }
 
     return intersect;
 }
@@ -162,9 +177,9 @@ bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3
         //  2) calc. the line-to-line distance between the cylinder axis and the ray, check with radius
         //  3) check any end-cap intersection point's distance to cylinder axis, check with radius
 
-        return BoxCollideSLAB(global, wf, hit_in, hit_out);
+        bool boxed = BoxCollideSLAB(global, wf, hit_in, hit_out);
 
-        return false;
+        return boxed;
     }
 
     else if (wf.type == WFT_EYE) {
@@ -173,27 +188,31 @@ bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3
         //  Can we develop some generic triangle-based intersection scheme?
         //  Might be an easier approach, generally.
 
-        return BoxCollideSLAB(global, wf, hit_in, hit_out);
+        bool boxed = BoxCollideSLAB(global, wf, hit_in, hit_out);
 
-        return false;
+        return boxed;
     }
 
     else if (wf.type == WFT_SPHERE) {
 
         Vector3f center = {};
-        Vector3f closest = PointToLine(center, loc.position, loc.direction);
+        Vector3f closest = PointToLine(center, loc.pos, loc.dir);
         f32 dist = (center - closest).Norm();
         f32 radius = wf.dimensions.x;
         if (dist <= radius) {
+
+            //  Consider the triangle [center, closest, hit_in], then:
+            //  dist^2 + surf_2^2 == radius^2
+
+            f32 surf_2 = sqrt(radius*radius - dist*dist);
             if (hit_in) {
-                *hit_in = TransformPoint(wf.transform, center);
+                Vector3f hit_in_loc = closest - surf_2 * loc.dir;
+                *hit_in = TransformPoint(wf.transform, hit_in_loc);
             }
             if (hit_out) {
-                *hit_out = TransformPoint(wf.transform, center);
+                Vector3f hit_out_loc = closest + surf_2 * loc.dir;
+                *hit_out = TransformPoint(wf.transform, hit_out_loc);
             }
-
-            // TODO: calc hit_in and hit_out, an easy quadratic equation
-            //      (or, rethink the drag implementation)
 
             return true;
         }
@@ -238,7 +257,7 @@ Array<Vector3f> WireframeRawSegments(MArena *a_dest, Wireframe *wf) {
         // local coordinates is the x-z plane at y == 0 with nbeams internal cross-lines x and z
         f32 rx = 0.5f * sz.x;
         f32 rz = 0.5f * sz.z;
-        s32 nbeams = 5;
+        s32 nbeams = 4;
 
         anchors = InitArray<Vector3f>(a_dest, (nbeams + 1) * 4 + 8);
 

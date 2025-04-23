@@ -17,8 +17,8 @@ Ray CameraGetRay(Matrix4f view, f32 fov, f32 aspect, f32 x_frac = 0, f32 y_frac 
     dir.Normalize();
 
     Ray shoot = {};
-    shoot.position = TransformPoint(view, Vector3f_Zero());
-    shoot.direction = TransformDirection(view, dir);
+    shoot.pos = TransformPoint(view, Vector3f_Zero());
+    shoot.dir = TransformDirection(view, dir);
 
     return shoot;
 }
@@ -36,6 +36,7 @@ Vector3f CameraGetPointAtDepth(Matrix4f view, f32 fov, f32 aspect, Vector3f at_d
 struct OrbitCamera {
     Vector3f center;
     Vector3f position;
+    Vector3f position_world;
     f32 theta;
     f32 phi;
     f32 radius;
@@ -110,6 +111,7 @@ void OrbitCameraUpdate(OrbitCamera *cam, f32 dx, f32 dy, bool do_rotate, bool do
     // build orbit transform
     
     cam->view = TransformBuildOrbitCam(cam->center, cam->theta, cam->phi, cam->radius, &cam->position);
+    cam->position_world = TransformPoint(cam->view, {});
 }
 
 #endif

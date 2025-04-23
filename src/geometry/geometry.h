@@ -76,6 +76,13 @@ struct Vector3f {
     float z;
 
     inline
+    bool IsNonZero() {
+        return abs(x) > 0.0001f || abs(y) > 0.0001f || abs(z) > 0.0001f;
+    }
+    inline bool IsZero() {
+        return ! IsNonZero();
+    }
+    inline
     float Norm() {
         return sqrt(x*x + y*y + z*z);
     }
@@ -130,18 +137,6 @@ struct Vector3f {
     inline
     Vector3f Cross(Vector3f v) {
         return Vector3f { y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x };
-    }
-    inline bool IsNonZero() {
-        // TODO: how should epsilon be done in general?
-        float epsilon = 0.0000000001f;
-        bool x_nzero = abs(x) - epsilon >= 0;
-        bool y_nzero = abs(y) - epsilon >= 0;
-        bool z_nzero = abs(z) - epsilon >= 0;
-        bool result = x_nzero || y_nzero || z_nzero;
-        return result;
-    }
-    inline bool IsZero() {
-        return ! IsNonZero();
     }
 
     // static versions
@@ -496,7 +491,10 @@ Matrix4f TransformBuildRotateZ(float angle_rads) {
 }
 
 Matrix4f TransformBuildTranslationOnly(Vector3f translate) {
-    // TODO: TEST: should be equal to a matrix with identity rot, built manually
+    return TransformBuild(Vector3f {1, 0, 0}, 0, translate);
+}
+
+Matrix4f TransformBuildTranslation(Vector3f translate) {
     return TransformBuild(Vector3f {1, 0, 0}, 0, translate);
 }
 
@@ -808,7 +806,7 @@ struct Perspective {
     float aspect; // [1] (width divided by height)
     float dist_near; // [m]
     float dist_far; // [m]
-    Matrix4f p;
+    Matrix4f proj;
 };
 
 Matrix4f PerspectiveMatrixOpenGL(f32 farr, f32 nearr, f32 fov, f32 aspect, bool flip_x = true, bool flip_y = false, bool flip_z = true) {
@@ -854,7 +852,7 @@ void PerspectiveSetAspectAndP(Perspective *proj, u32 width = 0, u32 height = 0) 
 
         if (aspect_new != proj->aspect) {
             proj->aspect = aspect_new;
-            proj->p = PerspectiveMatrixOpenGL(proj->dist_near, proj->dist_far, proj->fov, proj->aspect, false, true, false);
+            proj->proj = PerspectiveMatrixOpenGL(proj->dist_near, proj->dist_far, proj->fov, proj->aspect, false, true, false);
         }
     }
 }
@@ -915,8 +913,8 @@ Vector3f TransformPerspective(Matrix4f p, Vector3f v) {
 struct Ray {
     // points: (x, y, z, 1)
     // directions: (x, y, z, 0)
-    Vector3f position;
-    Vector3f direction;
+    Vector3f pos;
+    Vector3f dir;
 
     inline
     static Ray Zero() {
@@ -924,15 +922,15 @@ struct Ray {
     }
 };
 Ray TransformRay(Matrix4f *a, Ray *r) {
-    return Ray { TransformPoint(a, &r->position), TransformDirection(a, &r->direction) };
+    return Ray { TransformPoint(a, &r->pos), TransformDirection(a, &r->dir) };
 }
 inline
 Ray TransformRay(Matrix4f a, Ray r) {
-    return Ray { TransformPoint(a, r.position), TransformDirection(a, r.direction) };
+    return Ray { TransformPoint(a, r.pos), TransformDirection(a, r.dir) };
 }
 inline
 Ray TransformInverseRay(Matrix4f a, Ray r) {
-    return Ray { TransformInversePoint(a, r.position), TransformInverseDirection(a, r.direction) };
+    return Ray { TransformInversePoint(a, r.pos), TransformInverseDirection(a, r.dir) };
 }
 
 
@@ -940,15 +938,30 @@ Ray TransformInverseRay(Matrix4f a, Ray r) {
 // Plane / Line / Point / Triangle Helpers
 
 
+bool PointSideOfPlane(Vector3f point, Ray plane) {
+    // returns true if point is in the R3-halfspace defined by plane normal
+
+    Vector3f diff = (plane.pos - point);
+    diff.Normalize();
+    f32 cos_angle = diff.Dot(plane.dir);
+
+    if (cos_angle <= 0) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 Vector3f RayPlaneIntersect(Ray ray, Vector3f plane_origo, Vector3f plane_normal, f32 *t_at = NULL) {
-    f32 dot = plane_normal.Dot(ray.direction);
+    f32 dot = plane_normal.Dot(ray.dir);
     if (abs(dot) > 0.0001f) {
-        f32 t = (plane_origo - ray.position).Dot(plane_normal) / dot;
+        f32 t = (plane_origo - ray.pos).Dot(plane_normal) / dot;
         if (t_at) {
             *t_at = t;
         }
 
-        Vector3f result = ray.position + t * ray.direction;
+        Vector3f result = ray.pos + t * ray.dir;
         return result;
     }
     else {
