@@ -101,7 +101,7 @@ Wireframe CreateAAAxes(f32 len = 1.0f) {
     axis.transform = Matrix4f_Identity();
     axis.type = WFT_AXIS;
     axis.dimensions = { len, len, len };
-    axis.color = COLOR_BLACK;
+    axis.color = COLOR_GRAY;
 
     return axis;
 }
@@ -257,7 +257,7 @@ Array<Vector3f> WireframeRawSegments(MArena *a_dest, Wireframe *wf) {
         // local coordinates is the x-z plane at y == 0 with nbeams internal cross-lines x and z
         f32 rx = 0.5f * sz.x;
         f32 rz = 0.5f * sz.z;
-        s32 nbeams = 5;
+        s32 nbeams = 4;
 
         anchors = InitArray<Vector3f>(a_dest, (nbeams + 1) * 4 + 8);
 

@@ -405,29 +405,31 @@ void RunWireframe() {
     PlafGlfw *plf = PlafGlfwInit();
     Perspective proj = ProjectionInit(plf->width, plf->height);
     OrbitCamera cam = OrbitCameraInit( proj.aspect );
+    cam.radius = 10;
+    cam.theta = 50;
+    cam.phi = -40;
     DragState drag = {};
 
     // scene objects
     Array<Wireframe> objs = InitArray<Wireframe>(ctx->a_pers, 100);
 
-    Wireframe box = CreateAABox( 0.5, 0.5, 0.5 );
-    box.transform = TransformBuildTranslationOnly({ 0.7, 0.7, 0.7 });
-    objs.Add(box);
-
     objs.Add(CreateAAAxes());
     objs.Add(CreatePlane(10));
 
-    Wireframe ball = CreateSphere( 0.5 );
-    ball.transform = TransformBuildTranslationOnly({ 0.7, 0.7, -0.7 });
+    Wireframe box = CreateAABox( 0.5, 0.5, 0.5 );
+    box.transform = TransformBuildTranslation({ 0.7, 0.5, -0.7 });
+    box.color = COLOR_RED;
+    objs.Add(box);
+
+    Wireframe ball = CreateSphere( 0.4 );
+    ball.transform = TransformBuildTranslation({ 0.7, 0.5, 0.7 });
+    ball.color = COLOR_BLUE;
     objs.Add(ball);
 
-    Wireframe cylinder = CreateCylinder( 0.2, 0.7 );
-    cylinder.transform = TransformBuildTranslationOnly({ -0.5, 0.5, -0.5 });
+    Wireframe cylinder = CreateCylinder( 0.3, 0.6 );
+    cylinder.transform = TransformBuildTranslation({ -0.7, 0.5, 0 });
+    cylinder.color = COLOR_GREEN;
     objs.Add(cylinder);
-
-    Wireframe eye = CreateEye( 0.05, 0.1 );
-    eye.transform = TransformBuildTranslationOnly({ -0.5, 1, 1 });
-    objs.Add(eye);
 
     // graphics loop
     bool running = true;

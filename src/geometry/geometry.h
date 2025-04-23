@@ -491,7 +491,10 @@ Matrix4f TransformBuildRotateZ(float angle_rads) {
 }
 
 Matrix4f TransformBuildTranslationOnly(Vector3f translate) {
-    // TODO: TEST: should be equal to a matrix with identity rot, built manually
+    return TransformBuild(Vector3f {1, 0, 0}, 0, translate);
+}
+
+Matrix4f TransformBuildTranslation(Vector3f translate) {
     return TransformBuild(Vector3f {1, 0, 0}, 0, translate);
 }
 
