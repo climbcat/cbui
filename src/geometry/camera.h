@@ -43,6 +43,12 @@ struct OrbitCamera {
     f32 mouse2rot = 0.4f;
     f32 mouse2pan = 0.01f;
     Matrix4f view;
+
+    // pan
+    Vector3f anchor;
+    Vector3f center_anchor;
+    Matrix4f view_anchor;
+    bool drag;
 };
 
 OrbitCamera OrbitCameraInit(f32 aspect) {
@@ -57,55 +63,32 @@ OrbitCamera OrbitCameraInit(f32 aspect) {
     return cam;
 }
 
-inline f32 _PositiveSqrtMultiplier(f32 value) {
+inline f32 _ScrollMult(f32 value) {
     if (value == 0) {
-        value = 1;
+        return 1.0;
     }
-    else if (value < 0) {
-        value = -1 * value;
+    else {
+        return sqrt(abs(value));
     }
-    return sqrt(value);
 }
 static f32 _ClampTheta(f32 theta_degs, f32 min = 0.0001f, f32 max = 180 - 0.0001f) {
     f32 clamp_up = MinF32(theta_degs, max);
     f32 result = MaxF32(clamp_up, min);
     return result;
 }
-void OrbitCameraUpdate(OrbitCamera *cam, f32 dx, f32 dy, bool do_rotate, bool do_pan, f32 scroll_y_offset) {
-    f32 sign_x = 1;
 
-    // why
-    bool invert_x = true;
-    if (invert_x) {
-        sign_x = - 1;
-    }
-
+void OrbitCameraUpdate(OrbitCamera *cam, f32 dx, f32 dy, bool do_rotate, f32 scroll_y_offset) {
     if (do_rotate) {
-        // orbit
         cam->theta = _ClampTheta(cam->theta - dy * cam->mouse2rot);
-        cam->phi += sign_x * dx * cam->mouse2rot;
+        cam->phi += - dx * cam->mouse2rot;
     }
     else if (scroll_y_offset < 0) {
-        // zoom in
-        f32 mult = _PositiveSqrtMultiplier((f32) scroll_y_offset);
+        f32 mult = _ScrollMult((f32) scroll_y_offset);
         cam->radius *= 1.1f * mult;
     }
     else if (scroll_y_offset > 0) {
-        // zoom out
-        f32 mult = _PositiveSqrtMultiplier((f32) scroll_y_offset);
+        f32 mult = _ScrollMult((f32) scroll_y_offset);
         cam->radius /= 1.1f * mult;
-    }
-    else if (do_pan) {
-        // pan
-        Vector3f forward = - SphericalCoordsY(cam->theta*deg2rad, cam->phi*deg2rad, cam->radius);
-        forward.Normalize();
-        Vector3f left = y_hat.Cross(forward);
-        left.Normalize();
-        Vector3f right = - left;
-        Vector3f up = forward.Cross(left);
-        up.Normalize();
-        cam->center = cam->center + cam->mouse2pan * dx * right;
-        cam->center = cam->center + cam->mouse2pan * dy * up;
     }
 
     // build orbit transform
@@ -113,5 +96,24 @@ void OrbitCameraUpdate(OrbitCamera *cam, f32 dx, f32 dy, bool do_rotate, bool do
     cam->view = TransformBuildOrbitCam(cam->center, cam->theta, cam->phi, cam->radius, &cam->position);
     cam->position_world = TransformPoint(cam->view, {});
 }
+void OrbitCameraPan(OrbitCamera *cam, f32 fov, f32 aspect, f32 cursor_x_frac, f32 cursor_y_frac, bool enable, bool disable) {
+    if (disable) {
+        cam->view_anchor = {};
+        cam->anchor = {};
+        cam->center_anchor = {};
+        cam->drag = false;
+    }
+    else if (enable) {
+        cam->view_anchor = cam->view;
+        cam->anchor = CameraGetPointAtDepth(cam->view_anchor, fov, aspect, Vector3f_Zero(), cursor_x_frac, cursor_y_frac);
+        cam->center_anchor = cam->center;
+        cam->drag = true;
+    }
+    else if (cam->drag == true) {
+        Vector3f cam_drag = CameraGetPointAtDepth(cam->view_anchor, fov, aspect, Vector3f_Zero(), cursor_x_frac, cursor_y_frac);
+        cam->center = cam->center_anchor - (cam_drag - cam->anchor);
+    }
+}
+
 
 #endif

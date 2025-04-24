@@ -314,7 +314,7 @@ Vector3f DragStateUpdate(DragState *sd, Array<Wireframe> objs, Matrix4f view, Ve
 
     Vector3f delta = Vector3f_Zero();
     if (drag_enabled && MouseLeft().ended_down) {
-        Vector3f drag_nxt = CameraGetPointAtDepth( view, fov, aspect, drag_push, x_frac, y_frac);
+        Vector3f drag_nxt = CameraGetPointAtDepth(view, fov, aspect, drag_push, x_frac, y_frac);
         delta = drag_nxt - drag;
         drag = drag_nxt;
     }
@@ -426,6 +426,7 @@ void RunWireframe() {
     cylinder.color = COLOR_GREEN;
     objs.Add(cylinder);
 
+
     // graphics loop
     bool running = true;
     while (running) {
@@ -465,7 +466,8 @@ void RunWireframe() {
         }
 
         if (drag.drag_enabled == false) {
-            OrbitCameraUpdate(&cam, plf->cursorpos.dx, plf->cursorpos.dy, plf->left.ended_down, plf->right.ended_down, plf->scroll.yoffset_acc);
+            OrbitCameraUpdate(&cam, plf->cursorpos.dx, plf->cursorpos.dy, plf->left.ended_down, plf->scroll.yoffset_acc);
+            OrbitCameraPan(&cam, app.persp.fov, app.persp.aspect, plf->cursorpos.x_frac, plf->cursorpos.y_frac, MouseRight().pushed, MouseRight().released);
         }
 
         // render objects
