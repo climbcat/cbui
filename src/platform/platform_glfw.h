@@ -63,19 +63,16 @@ struct ActionKeys {
     bool mod_ctrl;
     bool mod_shift;
     bool mod_alt;
-    bool mod_caps;
     u8 fkey;
 
     void ResetButKeepMods() {
         bool _mod_ctrl = mod_ctrl;
         bool _mod_shift = mod_shift;
         bool _mod_alt = mod_alt;
-        bool _mod_caps = mod_caps;
         *this = {};
         this->mod_ctrl = _mod_ctrl;
         this->mod_shift = _mod_shift;
         this->mod_alt = _mod_alt;
-        this->mod_caps = _mod_caps;
     }
 };
 
@@ -158,14 +155,11 @@ void KeyCallBack(GLFWwindow* window,  int key, int scancode, int action, int mod
     if (key == GLFW_KEY_LEFT_CONTROL || key == GLFW_KEY_LEFT_CONTROL) {
         plf->akeys.mod_ctrl = (action == GLFW_PRESS);
     }
-    if (mods == GLFW_KEY_LEFT_ALT || mods == GLFW_KEY_RIGHT_ALT) {
+    if (key == GLFW_KEY_LEFT_ALT || key == GLFW_KEY_RIGHT_ALT) {
         plf->akeys.mod_alt = (action == GLFW_PRESS);
     }
-    if (mods == GLFW_KEY_LEFT_SHIFT || mods == GLFW_KEY_RIGHT_SHIFT) {
+    if (key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT) {
         plf->akeys.mod_shift = (action == GLFW_PRESS);
-    }
-    if (mods == GLFW_MOD_CAPS_LOCK) {
-        plf->akeys.mod_caps = (action == GLFW_PRESS);
     }
 
     if (action == GLFW_PRESS) {
@@ -393,7 +387,6 @@ bool GetFKey(u32 fval) {
 inline bool ModCtrl() { return g_plaf_glfw.akeys.mod_ctrl; }
 inline bool ModShift() { return g_plaf_glfw.akeys.mod_shift; }
 inline bool ModAlt() { return g_plaf_glfw.akeys.mod_alt; }
-inline bool ModCaps() { return g_plaf_glfw.akeys.mod_caps; }
 
 bool GetWindowShouldClose(PlafGlfw *plf) { return glfwWindowShouldClose(plf->window); }
 
