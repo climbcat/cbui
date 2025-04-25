@@ -46,6 +46,55 @@ GLFWwindow *InitGLFW(u32 width, u32 height, const char *title, bool fullscreen_m
 
 
 //
+//  Old orbitcam update / pan function
+
+
+void OrbitCameraUpdate(OrbitCamera *cam, f32 dx, f32 dy, bool do_rotate, bool do_pan, f32 scroll_y_offset) {
+    f32 sign_x = 1;
+
+    // why
+    bool invert_x = true;
+    if (invert_x) {
+        sign_x = - 1;
+    }
+
+    if (do_rotate) {
+        // orbit
+        cam->theta = _ClampTheta(cam->theta - dy * cam->mouse2rot);
+        cam->phi += sign_x * dx * cam->mouse2rot;
+    }
+    else if (scroll_y_offset < 0) {
+        // zoom in
+        f32 mult = _ScrollMult((f32) scroll_y_offset);
+        cam->radius *= 1.1f * mult;
+    }
+    else if (scroll_y_offset > 0) {
+        // zoom out
+        f32 mult = _ScrollMult((f32) scroll_y_offset);
+        cam->radius /= 1.1f * mult;
+    }
+    else if (do_pan) {
+        // pan
+        Vector3f forward = - SphericalCoordsY(cam->theta*deg2rad, cam->phi*deg2rad, cam->radius);
+        forward.Normalize();
+        Vector3f left = y_hat.Cross(forward);
+        left.Normalize();
+        Vector3f right = - left;
+        Vector3f up = forward.Cross(left);
+        up.Normalize();
+        cam->center = cam->center + cam->mouse2pan * dx * right;
+        cam->center = cam->center + cam->mouse2pan * dy * up;
+    }
+
+    // build orbit transform
+    
+    cam->view = TransformBuildOrbitCam(cam->center, cam->theta, cam->phi, cam->radius, &cam->position);
+    cam->position_world = TransformPoint(cam->view, {});
+}
+
+
+
+//
 // Game / frame loop glue object
 
 
