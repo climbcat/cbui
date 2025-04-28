@@ -3,6 +3,7 @@
 #include "src/geometry/wireframe.h"
 #include "src/platform/platform_glfw.h"
 #include "src/geometry/camera.h"
+#include "src/imui/imui.h"
 
 #include "test/test_02.cpp"
 
@@ -390,8 +391,59 @@ Vector3f DragStateUpdate(DragState *sd, Array<Wireframe> objs, Vector3f campos, 
 }
 
 
+void InitResources(u32 w, u32 h, u8* image_buffer, u64 *frameno) {
+    MContext *ctx = GetContext();
+
+    InitImUi(w, h, frameno);
+    ImageRGBA render_target = { (s32) w, (s32) h, (Color*) image_buffer };
+    InitSpriteRenderer(render_target);
+
+    g_texture_map = InitMap(ctx->a_life, MAX_RESOURCE_CNT);
+    g_resource_map = InitMap(ctx->a_life, MAX_RESOURCE_CNT);
+
+    // load & check resource file
+    ResourceStreamHandle hdl = ResourceStreamLoadAndOpen(ctx->a_tmp, ctx->a_life, "all.res");
+    g_font_names = hdl.names[RST_FONT];
+
+    bool log_verbose = false;
+
+    // map out the resources
+    ResourceHdr *res = hdl.first;
+    while (res) {
+        // fonts
+        if (res->tpe == RST_FONT) {
+            FontAtlas *font = FontAtlasLoadBinaryStream(res->GetInlinedData(), res->data_sz);
+            if (log_verbose) { font->Print(); }
+
+            MapPut(&g_resource_map, font->GetKey(), font);
+            MapPut(&g_texture_map, font->GetKey(), &font->texture);
+        }
+
+        // sprite maps
+        else if (res->tpe == RST_SPRITE) {
+            SpriteMap *smap = SpriteMapLoadStream((u8*) res->GetInlinedData(), res->data_sz);
+            if (log_verbose) {
+                printf("sprite map: %s, %s, count: %u, atlas w: %u, atlas h: %u\n", smap->map_name, smap->key_name, smap->sprites.len, smap->texture.width, smap->texture.height);
+            }
+
+            MapPut(&g_resource_map, smap->GetKey(), smap);
+            MapPut(&g_texture_map, smap->GetKey(), &smap->texture);
+        }
+
+        // other
+        else {
+            printf("WARN: unknown resource detected\n");
+        }
+
+        // iter
+        res = res->GetInlinedNext();
+    }
+    SetFontAndSize(FS_48, g_font_names->GetStr());
+
+}
+
+
 void RunWireframe() {
-    printf("Running wireframe program ...\n");
 
     // init
     MContext *ctx = InitBaselayer();
@@ -404,8 +456,13 @@ void RunWireframe() {
     cam.theta = 50;
     cam.phi = -40;
     DragState drag = {};
+    u64 frameno = 0;
 
-    // scene objects
+
+    // LEGACY init graphics 
+    InitResources(plf->width, plf->height, g_image_buffer, &frameno);
+
+    // test scene setup
     Array<Wireframe> objs = InitArray<Wireframe>(ctx->a_pers, 100);
 
     objs.Add(CreateAAAxes());
@@ -427,9 +484,14 @@ void RunWireframe() {
     objs.Add(cylinder);
 
 
+    // app mode
+    u32 mode = 0;
+
+
     // graphics loop
     bool running = true;
     while (running) {
+        //
         // frame start
         ArenaClear(ctx->a_tmp);
         PlafGlfwUpdate(plf);
@@ -438,50 +500,71 @@ void RunWireframe() {
         running = running && !GetEscape() && !GetWindowShouldClose(plf);
         AppStateUpdate(cam.view, proj, plf->width, plf->height);
 
+        //
         // frame body
-        Vector3f drag_delta = DragStateUpdate(&drag, objs, cam.position, plf->cursorpos.x_frac, plf->cursorpos.y_frac);
-        if (drag.selected && drag.drag_enabled) {
+        if (mode == 0) {
+            Vector3f drag_delta = DragStateUpdate(&drag, objs, cam.position, plf->cursorpos.x_frac, plf->cursorpos.y_frac);
+            if (drag.selected && drag.drag_enabled) {
 
-            if (ModCtrl()) {
-                drag.selected->transform.m[0][3] += 0;
-                drag.selected->transform.m[1][3] += drag_delta.y;
-                drag.selected->transform.m[2][3] += 0;
-            }
-            else if (ModAlt()) {
-                drag.selected->transform.m[0][3] += drag_delta.x;
-                drag.selected->transform.m[1][3] += drag_delta.y;
-                drag.selected->transform.m[2][3] += drag_delta.z;
-            }
-            else {
-                Vector3f plane_origo = { 0, drag.drag_push.y, 0 };
-                Vector3f plane_normal = y_hat;
+                if (ModCtrl()) {
+                    drag.selected->transform.m[0][3] += 0;
+                    drag.selected->transform.m[1][3] += drag_delta.y;
+                    drag.selected->transform.m[2][3] += 0;
+                }
+                else if (ModAlt()) {
+                    drag.selected->transform.m[0][3] += drag_delta.x;
+                    drag.selected->transform.m[1][3] += drag_delta.y;
+                    drag.selected->transform.m[2][3] += drag_delta.z;
+                }
+                else {
+                    Vector3f plane_origo = { 0, drag.drag_push.y, 0 };
+                    Vector3f plane_normal = y_hat;
 
-                Vector3f proj = RayPlaneIntersect(RayFromTo(cam.position_world, drag.drag), plane_origo, plane_normal); 
-                Vector3f new_pos = proj + (drag.drag_push_objzero - drag.drag_push);
+                    Vector3f proj = RayPlaneIntersect(RayFromTo(cam.position_world, drag.drag), plane_origo, plane_normal); 
+                    Vector3f new_pos = proj + (drag.drag_push_objzero - drag.drag_push);
 
-                drag.selected->transform.m[0][3] = new_pos.x;
-                drag.selected->transform.m[1][3] = new_pos.y;
-                drag.selected->transform.m[2][3] = new_pos.z;
+                    drag.selected->transform.m[0][3] = new_pos.x;
+                    drag.selected->transform.m[1][3] = new_pos.y;
+                    drag.selected->transform.m[2][3] = new_pos.z;
+                }
             }
+
+            if (drag.drag_enabled == false) {
+                OrbitCameraUpdate(&cam, plf->cursorpos.dx, plf->cursorpos.dy, plf->left.ended_down, plf->scroll.yoffset_acc);
+                OrbitCameraPan(&cam, app.persp.fov, app.persp.aspect, plf->cursorpos.x_frac, plf->cursorpos.y_frac, MouseRight().pushed, MouseRight().released);
+            }
+
+            // render objects
+            RenderWireframes(objs);
+
+            // render DBG
+            RenderFatPoint3x3(drag.drag, COLOR_BLACK);
+
+            if (drag.drag.IsNonZero()) {
+                RenderFatPoint3x3(drag.drag, COLOR_RED);
+                RenderLineSegment(drag.drag - drag_delta, drag.drag, COLOR_BLACK);
+            }
+
+            if (GetFKey(1)) { mode = 1; }
         }
 
-        if (drag.drag_enabled == false) {
-            OrbitCameraUpdate(&cam, plf->cursorpos.dx, plf->cursorpos.dy, plf->left.ended_down, plf->scroll.yoffset_acc);
-            OrbitCameraPan(&cam, app.persp.fov, app.persp.aspect, plf->cursorpos.x_frac, plf->cursorpos.y_frac, MouseRight().pushed, MouseRight().released);
+        else if (mode == 1) {
+            UI_CoolPanel(plf->width, plf->height);
+            UI_FrameEnd(app.a_tmp);
+
+            for (u32 i = 0; i < g_drawcalls.len; ++i) {   // do not reverse
+                BlitQuads(g_drawcalls.lst[i], &g_render_target);
+            }
+
+            if (GetFKey(1)) { mode = 0; }
         }
 
-        // render objects
-        RenderWireframes(objs);
-
-        // render DBG
-        RenderFatPoint3x3(drag.drag, COLOR_BLACK);
-
-        if (drag.drag.IsNonZero()) {
-            RenderFatPoint3x3(drag.drag, COLOR_RED);
-            RenderLineSegment(drag.drag - drag_delta, drag.drag, COLOR_BLACK);
+        else {
+            mode = 0;
         }
 
-        // frae end
+        //
+        // frame end
         XSleep(1);
     }
 

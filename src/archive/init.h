@@ -30,7 +30,8 @@ GameLoopOne *InitGraphics(MContext *ctx, u32 width = 1280, u32 height = 800, con
 
     GameLoopOne *loop = InitGameLoopOne(width, height, window_title);
     ImageRGBA render_target = loop->GetRenderer()->GetImageAsRGBA();
-    InitImUi(render_target.width, render_target.height, g_mouse, &loop->frameno);
+    //InitImUi(render_target.width, render_target.height, g_mouse, &loop->frameno);
+    InitImUi(render_target.width, render_target.height, &loop->frameno);
     InitSpriteRenderer(render_target);
 
     //

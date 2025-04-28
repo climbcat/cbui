@@ -2,6 +2,8 @@
 #define __IMUI_H__
 
 
+#include "font.h"
+
 
 //
 //  UI Panel quad layout
@@ -137,6 +139,10 @@ struct Widget {
     }
 };
 
+void WidgetSetFlag(Widget *wgt, u32 flag) {
+    wgt->features |= flag;
+}
+
 
 //
 //  Core
@@ -158,7 +164,7 @@ static Widget *g_w_hot;
 static Widget *g_w_active;
 
 static u64 *g_frameno_imui;
-static MouseTrap *g_mouse_imui;
+//static MouseTrap *g_mouse_imui;
 
 
 void TreeSibling(Widget *w) {
@@ -197,16 +203,16 @@ void TreePop() {
 }
 
 
-void InitImUi(u32 width, u32 height, MouseTrap *mouse, u64 *frameno) {
+void InitImUi(u32 width, u32 height, /*MouseTrap *mouse,*/ u64 *frameno) {
     if (g_a_imui != NULL) {
         printf("WARN: imui re-initialize\nd");
 
         // TODO: reset / clear
     }
     else {
-        assert(mouse != NULL);
-        assert(frameno != NULL);
-        g_mouse_imui = mouse;
+        //assert(mouse != NULL);
+        //assert(frameno != NULL);
+        //g_mouse_imui = mouse;
         g_frameno_imui = frameno;
 
         MArena _g_a_imui = ArenaCreate();
@@ -456,8 +462,14 @@ void WidgetTreeRenderToDrawcalls(List<Widget*> all_widgets) {
 }
 
 
+static f32 g_mouse_x;
+static f32 g_mouse_y;
+static f32 g_mouse_l;
+static f32 g_mouse_dl;
+
+
 void UI_FrameEnd(MArena *a_tmp) {
-    if (g_mouse_imui->l == false) {
+    if (g_mouse_l == false) {
         g_w_active = NULL;
     }
 
@@ -540,14 +552,14 @@ bool UI_Button(const char *text_key, Widget **w_out = NULL) {
     w->frame_touched = *g_frameno_imui;
     w->text = Str { (char*) text_key, _strlen( (char*) text_key) };
 
-    bool hot = w->rect.DidCollide( g_mouse_imui->x, g_mouse_imui->y ) && (g_w_active == NULL || g_w_active == w);
+    bool hot = w->rect.DidCollide( g_mouse_x, g_mouse_y ) && (g_w_active == NULL || g_w_active == w);
     if (hot) {
-        if (g_mouse_imui->l) {
+        if (g_mouse_l) {
             g_w_active = w;
         }
     }
     bool active = (g_w_active == w);
-    bool clicked = active && hot && (g_mouse_imui->dl == 1 || g_mouse_imui->ClickedRecently());
+    bool clicked = active && hot && (g_mouse_dl == 1 || g_mouse_l);
 
     if (active) {
         // ACTIVE: mouse-down was engaged on this element
@@ -607,14 +619,14 @@ bool UI_ToggleButton(const char *text_key, bool *pushed, Widget **w_out = NULL, 
     w->frame_touched = *g_frameno_imui;
     w->text = Str { (char*) text_key, _strlen( (char*) text_key) };
 
-    bool hot = w->rect.DidCollide( g_mouse_imui->x, g_mouse_imui->y ) && (g_w_active == NULL || g_w_active == w);
+    bool hot = w->rect.DidCollide( g_mouse_x, g_mouse_y ) && (g_w_active == NULL || g_w_active == w);
     if (hot) {
-        if (g_mouse_imui->l) {
+        if (g_mouse_l) {
             g_w_active = w;
         }
     }
     bool active = (g_w_active == w) || *pushed;
-    bool clicked = active && hot && (g_mouse_imui->dl == 1 || g_mouse_imui->ClickedRecently());
+    bool clicked = active && hot && (g_mouse_dl == 1 || g_mouse_l);
 
     if (clicked) {
         *pushed = !(*pushed);
