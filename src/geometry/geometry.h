@@ -976,6 +976,37 @@ Vector3f PointToLine(Vector3f point, Vector3f line_origo, Vector3f line_directio
     return proj;
 }
 
+f32 PointToLineDist(Vector3f point, Vector3f line_origo, Vector3f line_direction) {
+    Vector3f diff = point - line_origo;
+    f32 coeff = diff.Dot(line_direction);
+    Vector3f proj = line_origo + coeff * line_direction;
+    return proj.Norm();
+}
+
+bool PerpendicularUnitVectors(Vector3f v1, Vector3f v2) {
+    bool perpendicular = abs(v1.Dot(v2) - 1) > 0.000f;
+    return perpendicular;
+}
+
+bool LineToLineDist(Vector3f line1_origo, Vector3f line1_dir, Vector3f line2_origo, Vector3f line2_dir, f32 *dist) {
+    if (PerpendicularUnitVectors(line1_dir, line2_dir)) {
+        if (dist) {
+            *dist = PointToLineDist(line1_origo, line2_origo, line2_dir);
+        }
+
+        return false;
+    }
+    else {
+        Vector3f n = line1_dir.Cross(line2_dir);
+        n.Normalize();
+        if (dist) {
+            *dist = n.Dot(line1_origo - line2_origo);
+        }
+
+        return true;
+    }
+}
+
 Vector3f PointToPlane(Vector3f point, Vector3f plane_origo, Vector3f plane_normal) {
     Vector3f delta = point - plane_origo;
     f32 dot = delta.Dot(plane_normal);

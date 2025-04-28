@@ -171,26 +171,24 @@ bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3
     }
 
     else if (wf.type == WFT_CYLINDER) {
-        // TODO: impl.
-
-        //  1) box collide (SLAB)
-        //  2) calc. the line-to-line distance between the cylinder axis and the ray, check with radius
-        //  3) check any end-cap intersection point's distance to cylinder axis, check with radius
+        // TODO: improve cylinder intersection to be exact
 
         bool boxed = BoxCollideSLAB(global, wf, hit_in, hit_out);
+        bool cylhit = true;
+        if (hit_in && hit_out) {
+            f32 dist;
+            LineToLineDist(global.pos, global.dir, {0, 1, 0}, {}, &dist);
+            f32 radius = sz.x;
+            cylhit = dist < radius;
+        }
 
-        return boxed;
+        return boxed && cylhit;
     }
 
     else if (wf.type == WFT_EYE) {
-        // TODO: impl.
+        // TODO: impl. triangle-based scheme
 
-        //  Can we develop some generic triangle-based intersection scheme?
-        //  Might be an easier approach, generally.
-
-        bool boxed = BoxCollideSLAB(global, wf, hit_in, hit_out);
-
-        return boxed;
+        return BoxCollideSLAB(global, wf, hit_in, hit_out);
     }
 
     else if (wf.type == WFT_SPHERE) {
