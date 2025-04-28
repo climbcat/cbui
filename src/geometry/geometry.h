@@ -973,6 +973,7 @@ Vector3f PointToLine(Vector3f point, Vector3f line_origo, Vector3f line_directio
     Vector3f diff = point - line_origo;
     f32 coeff = diff.Dot(line_direction);
     Vector3f proj = line_origo + coeff * line_direction;
+
     return proj;
 }
 
@@ -980,11 +981,13 @@ f32 PointToLineDist(Vector3f point, Vector3f line_origo, Vector3f line_direction
     Vector3f diff = point - line_origo;
     f32 coeff = diff.Dot(line_direction);
     Vector3f proj = line_origo + coeff * line_direction;
+
     return proj.Norm();
 }
 
 bool PerpendicularUnitVectors(Vector3f v1, Vector3f v2) {
     bool perpendicular = abs(v1.Dot(v2) - 1) > 0.000f;
+
     return perpendicular;
 }
 
@@ -1011,6 +1014,7 @@ Vector3f PointToPlane(Vector3f point, Vector3f plane_origo, Vector3f plane_norma
     Vector3f delta = point - plane_origo;
     f32 dot = delta.Dot(plane_normal);
     Vector3f result = point - dot * plane_normal;
+
     return result;
 }
 
@@ -1036,7 +1040,6 @@ bool RayCastTriangle(Ray r, Vector3f v1, Vector3f v2, Vector3f v3, Vector3f *hit
     }
     return did_hit;
 }
-
 
 
 //
