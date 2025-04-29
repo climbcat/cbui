@@ -435,12 +435,11 @@ void WidgetTreeRenderToDrawcalls(List<Widget*> all_widgets) {
 
 static f32 g_mouse_x;
 static f32 g_mouse_y;
-static f32 g_mouse_l;
-static f32 g_mouse_dl;
+static f32 g_mouse_down;
 
 
 void UI_FrameEnd(MArena *a_tmp, u64 frameno) {
-    if (g_mouse_l == false) {
+    if (g_mouse_down == false) {
         g_w_active = NULL;
     }
 
@@ -518,12 +517,12 @@ bool UI_Button(const char *text_key, Widget **w_out = NULL) {
 
     bool hot = w->rect.DidCollide( g_mouse_x, g_mouse_y ) && (g_w_active == NULL || g_w_active == w);
     if (hot) {
-        if (g_mouse_l) {
+        if (g_mouse_down) {
             g_w_active = w;
         }
     }
     bool active = (g_w_active == w);
-    bool clicked = active && hot && (g_mouse_dl == 1 || g_mouse_l);
+    bool clicked = active && hot && g_mouse_down;
 
     if (active) {
         // ACTIVE: mouse-down was engaged on this element
@@ -585,12 +584,12 @@ bool UI_ToggleButton(const char *text_key, bool *pushed, Widget **w_out = NULL, 
 
     bool hot = w->rect.DidCollide( g_mouse_x, g_mouse_y ) && (g_w_active == NULL || g_w_active == w);
     if (hot) {
-        if (g_mouse_l) {
+        if (g_mouse_down) {
             g_w_active = w;
         }
     }
     bool active = (g_w_active == w) || *pushed;
-    bool clicked = active && hot && (g_mouse_dl == 1 || g_mouse_l);
+    bool clicked = active && hot && g_mouse_down;
 
     if (clicked) {
         *pushed = !(*pushed);

@@ -555,6 +555,10 @@ void RunWireframe() {
         }
 
         else if (mode == 1) {
+            g_mouse_x = plf->cursorpos.x;
+            g_mouse_y = plf->cursorpos.y;
+            g_mouse_down = MouseLeft().ended_down;
+
             Widget *cp = UI_CoolPanel(plf->width, plf->height);
             cp->features |= WF_LAYOUT_VERTICAL_CENTERING;
 
@@ -563,6 +567,7 @@ void RunWireframe() {
             UI_Label("Line2");
 
             UI_Button("Ok");
+            UI_Button("Cancel");
 
             UI_FrameEnd(app.a_tmp, frameno);
             SpriteRender_BlitAndCLear(InitImageRGBA(app.w, app.h, g_image_buffer));
