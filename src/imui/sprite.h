@@ -197,37 +197,17 @@ QuadHexaVertex QuadCookTextured(Sprite s, s32 x0, s32 y0, u64 texture_id) {
 }
 
 inline
-QuadHexaVertex QuadOffset(QuadHexaVertex *q, Vector2f os) {
-    QuadHexaVertex out = {};
-    for (u32 i = 0; i < 6; ++i) {
-        QuadVertex v = *(q->verts + i);
-        v.pos.x += os.x;
-        v.pos.y += os.y;
-        out.verts[i] = v;
-    }
-    return out;
-}
-
-inline
-QuadHexaVertex QuadOffset(QuadHexaVertex *q, s16 x, s16 y, Color color) {
+QuadHexaVertex QuadOffset(QuadHexaVertex *q, s16 x, s16 y, Color color, u64 texture_id) {
     QuadHexaVertex out = {};
     for (u32 i = 0; i < 6; ++i) {
         QuadVertex v = *(q->verts + i);
         v.pos.x += x;
         v.pos.y += y;
         v.col = color;
+        v.tex_id = texture_id;
         out.verts[i] = v;
     }
     return out;
-}
-
-inline
-void QuadOffset(QuadHexaVertex *q, f32 x, f32 y) {
-    for (u32 i = 0; i < 6; ++i) {
-        QuadVertex *v = q->verts + i;
-        v->pos.x += x;
-        v->pos.y += y;
-    }
 }
 
 
@@ -473,7 +453,7 @@ void BlitQuads(Array<QuadHexaVertex> quads, ImageRGBA *img) {
         //
         // byte-texture / glyphs
         //
-        if (q_texture != 0 && q_color.IsZero()) {
+        if (q_texture != 0 && q_color.IsNonZero()) {
             assert(texture_b != NULL);
 
             f32 q_scale_x = q->GetTextureScaleX(q_w);

@@ -34,6 +34,9 @@ struct FontAtlas {
     s8 y_ascend_mem[128];
     QuadHexaVertex cooked_mem[128];
 
+    s32 GetLineBaseOffset() {
+        return ln_measured - ln_descend;
+    }
     u64 GetKey() {
         return HashStringValue(key_name);
     }
@@ -204,6 +207,14 @@ FontSize GetFontSize() {
     }
 }
 
+static FontSize g_font_sz_default;
+FontSize GetDefaultFontSize() {
+    return g_font_sz_default;
+}
+void SetDefaultFontSize(FontSize fs) {
+    g_font_sz_default = fs;
+}
+
 
 //
 //  Text layout
@@ -304,6 +315,8 @@ enum TextAlign {
 };
 inline
 void AlignQuadsH(List<QuadHexaVertex> line_quads, s32 cx, TextAlign ta) {
+    // TODO: re-impl.
+    /*
     if (ta != TAL_LEFT && line_quads.len > 0) {
         QuadHexaVertex *ql = line_quads.lst;
         QuadHexaVertex *qr = line_quads.LastPtr();
@@ -321,6 +334,7 @@ void AlignQuadsH(List<QuadHexaVertex> line_quads, s32 cx, TextAlign ta) {
             QuadOffset(line_quads.lst + i, (f32) offset_x, 0.0f);
         }
     }
+    */
 }
 
 
@@ -387,7 +401,11 @@ List<QuadHexaVertex> LayoutTextAutowrap(MArena *a_dest, FontAtlas *plt, Str txt,
         // lay out word
         for (u32 j = 0; j < w_len; ++j) {
             char c = s.str[j];
-            QuadHexaVertex q = QuadOffset(plt->cooked.lst + c, pt_x, pt_y, color);
+
+            // TODO: re-impl.
+            //QuadHexaVertex q = QuadOffset(plt->cooked.lst + c, pt_x, pt_y, color);
+            QuadHexaVertex q = {};
+
             pt_x += plt->advance_x.lst[c];
             ArenaAlloc(a_dest, sizeof(QuadHexaVertex));
             quads.Add(q);
@@ -421,15 +439,6 @@ List<QuadHexaVertex> LayoutTextAutowrap(MArena *a_dest, FontAtlas *plt, Str txt,
     return quads;
 }
 
-
-// TODO: remove, replace with TextPosition function that does more stuff
-s32 GetLineCenterVOffset() {
-    s32 result = g_text_plotter->ln_measured / 2 - g_text_plotter->ln_descend;
-    return result;
-}
-
-
-// TODO: remove, replace with TextPosition function that does more stuff
 s32 TextLineWidth(FontAtlas *plt, Str txt) {
     s32 pt_x = 0;
     s32 w_space = plt->advance_x.lst[' '];
@@ -451,13 +460,15 @@ s32 TextLineWidth(FontAtlas *plt, Str txt) {
 
     return pt_x;
 }
+s32 TextLineHeight(FontAtlas *plt) {
+    return plt->ln_measured;
+}
 
-
-void TextPosition(Str txt, s32 box_l, s32 box_t, s32 box_w, s32 box_h, s32 align_horiz, s32 align_vert, s32 *txt_l, s32 *txt_t, s32 *txt_w, s32 *txt_h) {
+void TextPositionLine(Str txt, s32 box_l, s32 box_t, s32 box_w, s32 box_h, s32 align_horiz, s32 align_vert, s32 *txt_l, s32 *txt_t, s32 *txt_w, s32 *txt_h) {
     FontAtlas *plt = g_text_plotter;
 
     *txt_w = 0;
-    *txt_h = plt->ln_measured;
+    *txt_h = plt->ln_measured; // single-line height
 
     s32 w_space = plt->advance_x.lst[' '];
     for (u32 i = 0; i < txt.len; ++i) {
@@ -502,9 +513,6 @@ void TextPosition(Str txt, s32 box_l, s32 box_t, s32 box_w, s32 box_h, s32 align
         txt_y = box_b - *txt_h / 2;
     }
 
-    // 
-    txt_y - plt->ln_ascend;
-
     *txt_l = txt_x - *txt_w / 2;
     *txt_t = txt_y - *txt_h / 2;
 }
@@ -516,19 +524,15 @@ void TextPlot(Str txt, s32 box_l, s32 box_t, s32 box_w, s32 box_h, s32 *sz_x, s3
 
     s32 txt_l;
     s32 txt_t;
-    TextPosition(txt, box_l, box_t, box_w, box_h, 0, 0, &txt_l, &txt_t, sz_x, sz_y);
+    TextPositionLine(txt, box_l, box_t, box_w, box_h, 0, 0, &txt_l, &txt_t, sz_x, sz_y);
 
     // position the quads
     s32 pt_x = txt_l;
-    s32 pt_y = txt_t;
+    s32 pt_y = txt_t + plt->GetLineBaseOffset();
     s32 w_space = plt->advance_x.lst[' '];
+    u64 plt_key = plt->GetKey();
 
     for (u32 i = 0; i < txt.len; ++i) {
-
-
-        // TODO: tighten up the impl.
-
-
         char c = txt.str[i];
 
         if (c == ' ') {
@@ -539,7 +543,7 @@ void TextPlot(Str txt, s32 box_l, s32 box_t, s32 box_w, s32 box_h, s32 *sz_x, s3
             continue;
         }
 
-        QuadHexaVertex q = QuadOffset(plt->cooked.lst + c, pt_x, pt_y, color);
+        QuadHexaVertex q = QuadOffset(plt->cooked.lst + c, pt_x, pt_y, color, plt_key);
         pt_x += plt->advance_x.lst[c];
         SpriteRender_PushQuad(q);
     }

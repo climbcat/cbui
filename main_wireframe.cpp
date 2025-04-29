@@ -490,7 +490,7 @@ void RunWireframe() {
 
 
     // app mode
-    u32 mode = 0;
+    u32 mode = 1;
 
 
     // graphics loop
@@ -555,9 +555,16 @@ void RunWireframe() {
         }
 
         else if (mode == 1) {
-            UI_CoolPanel(plf->width, plf->height);
-            UI_FrameEnd(app.a_tmp);
+            Widget *cp = UI_CoolPanel(plf->width, plf->height);
+            cp->features |= WF_LAYOUT_VERTICAL_CENTERING;
 
+            UI_Label("Text layout");
+            UI_Label("Line1");
+            UI_Label("Line2");
+
+            UI_Button("Ok");
+
+            UI_FrameEnd(app.a_tmp, frameno);
             SpriteRender_BlitAndCLear(InitImageRGBA(app.w, app.h, g_image_buffer));
 
             if (GetFKey(1)) { mode = 0; }
@@ -569,6 +576,7 @@ void RunWireframe() {
 
         //
         // frame end
+        ++frameno;
         XSleep(1);
     }
 

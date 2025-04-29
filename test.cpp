@@ -502,7 +502,7 @@ void TestUIDragPanel() {
                     //show_pnl = false;
                 }
             }
-            LayoutPanel(l, t, w, h, border, ColorBlack(), ColorGray(graynexx));
+            PanelPlot(l, t, w, h, border, ColorBlack(), ColorGray(graynexx));
             SetFontSize(FS_48);
             LayoutTextLine("The other quick brown fox jumps over the other lazy dog", l, t, ColorBlack());
             // TODO: align, e.g. TAL_CENTER

@@ -10,7 +10,7 @@
 //
 
 
-void LayoutPanel(
+void PanelPlot(
     s32 l, s32 t, s32 w, s32 h,
     s32 thic_border, Color col_border = { RGBA_GRAY_75 }, Color col_pnl = { RGBA_WHITE } )
 {
@@ -187,29 +187,23 @@ void TreePop() {
 }
 
 
-void InitImUi(u32 width, u32 height, /*MouseTrap *mouse,*/ u64 *frameno) {
+void InitImUi(u32 width, u32 height, u64 *frameno) {
     if (g_a_imui != NULL) {
-        printf("WARN: imui re-initialize\nd");
-
-        // TODO: reset / clear
+        assert(1 == 0 && "don't re-initialize imui");
     }
     else {
-        //assert(mouse != NULL);
-        //assert(frameno != NULL);
-        //g_mouse_imui = mouse;
         g_frameno_imui = frameno;
 
         MArena _g_a_imui = ArenaCreate();
         g_a_imui = &_g_a_imui;
 
-        u32 max_widgets = 1000;
+        u32 max_widgets = 1024;
         _g_p_widgets = PoolCreate<Widget>(max_widgets);
         g_p_widgets = &_g_p_widgets;
 
         _g_s_widgets = InitStack<Widget*>(g_a_imui, max_widgets);
         g_s_widgets = &_g_s_widgets;
 
-        // TODO: It seems we do need to remove from the hash-map, thus impl. MapDelete()
         _g_m_widgets = InitMap(g_a_imui, max_widgets);
         g_m_widgets = &_g_m_widgets;
 
@@ -222,6 +216,8 @@ void InitImUi(u32 width, u32 height, /*MouseTrap *mouse,*/ u64 *frameno) {
 
         g_w_layout = &_g_w_root;
     }
+
+    SetDefaultFontSize(FS_24);
 }
 
 
@@ -423,20 +419,13 @@ void WidgetTreeRenderToDrawcalls(List<Widget*> all_widgets) {
         Widget *w = all_widgets.lst[i];
 
         if (w->features & WF_DRAW_BACKGROUND_AND_BORDER) {
-            LayoutPanel(w->x0, w->y0, w->w, w->h, w->sz_border, w->col_border, w->col_bckgrnd);
+            PanelPlot(w->x0, w->y0, w->w, w->h, w->sz_border, w->col_border, w->col_bckgrnd);
         }
 
         if (w->features & WF_DRAW_TEXT) {
             SetFontSize(w->sz_font);
             s32 w_out;
             s32 h_out;
-
-            // position text at widget center
-            s32 w_center_x = w->x0 + w->w / 2;
-            s32 w_center_y = w->y0 + w->h / 2;
-
-            s32 offset_x = (w->w - w_out) / 2;
-            s32 offset_y = (w->h - h_out) / 2;
 
             TextPlot(w->text, w->x0, w->y0, w->w, w->h, &w_out, &h_out, w->col_text);
         }
@@ -450,7 +439,7 @@ static f32 g_mouse_l;
 static f32 g_mouse_dl;
 
 
-void UI_FrameEnd(MArena *a_tmp) {
+void UI_FrameEnd(MArena *a_tmp, u64 frameno) {
     if (g_mouse_l == false) {
         g_w_active = NULL;
     }
@@ -459,7 +448,6 @@ void UI_FrameEnd(MArena *a_tmp) {
     w->w = w->w_max;
     w->h = w->h_max;
 
-
     // size widgets to wrap tightly
     s32 w_sum_ch;
     s32 h_sum_ch;
@@ -467,29 +455,23 @@ void UI_FrameEnd(MArena *a_tmp) {
     s32 h_max_ch;
     WidgetTreeSizeWrap_Rec(w, &w_sum_ch, &h_sum_ch, &w_max_ch, &h_max_ch);
 
-
     // size expanders to max possible sizes
     WidgetTreeExpand_Rec(w);
-
 
     // position the now wrapped and expanded widgets
     List<Widget*> all_widgets = WidgetTreePositioning(a_tmp, w);
 
-
     // render pass
     WidgetTreeRenderToDrawcalls(all_widgets);
 
-
     // clean up pass
-    // TODO: use MapRemove instaed
-    MapClear(g_m_widgets);
-    _g_w_root.frame_touched = *g_frameno_imui;
+    _g_w_root.frame_touched = frameno;
     g_w_layout = &_g_w_root;
     for (u32 i = 0; i < all_widgets.len; ++i) {
         Widget *w = all_widgets.lst[i];
 
         // prune
-        if (w->frame_touched < *g_frameno_imui) {
+        if (w->frame_touched < frameno) {
             MapRemove(g_m_widgets, w->hash_key, w); 
             g_p_widgets->Free(w);
         }
@@ -655,8 +637,6 @@ bool UI_ToggleButton(const char *text_key, bool *pushed, Widget **w_out = NULL, 
 
 
 Widget *UI_CoolPanel(s32 width, s32 height) {
-    // no frame persistence
-
     Widget *w = g_p_widgets->Alloc();
     w->frame_touched = 0;
     w->features |= WF_DRAW_BACKGROUND_AND_BORDER;
@@ -704,7 +684,7 @@ Widget *UI_Label(const char *text, Color color = Color { RGBA_BLACK }) {
     w->features |= WF_DRAW_TEXT;
 
     w->text = Str { (char*) text, _strlen( (char*) text) };
-    w->sz_font = GetFontSize();
+    w->sz_font = GetDefaultFontSize();
     w->col_bckgrnd = ColorGray(0.9f);
     w->col_border = ColorBlack();
     w->col_text = color;
