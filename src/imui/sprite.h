@@ -24,21 +24,35 @@ void PrintSprite(Sprite s) {
 struct QuadVertex {  // vertex layout
     Vector2f pos;
     Vector2f tex;
+
+    // TODO: we can pack this by using just some flags or bytes that refer 
+    //      to (pre-packated / matching / uniform) values
+    //      In which case we should rename these to 
+    //          u_texture_idx
+    //          u_color_idx
+    //      or some such.
+
+    u64 tex_id;
     Color col;
 };
 
 inline
-QuadVertex InitQuadVertex(Vector2f pos, Vector2f tex, Color col) {
-    QuadVertex v;
+QuadVertex InitQuadVertex(Vector2f pos, Vector2f tex, Color color, u64 texture_id) {
+    QuadVertex v = {};
     v.pos = pos;
     v.tex = tex;
-    v.col = col;
+    v.col = color;
+    v.tex_id = texture_id;
     return v;
 }
 
 struct QuadHexaVertex { // renderable six-vertex quad
     QuadVertex verts[6];
 
+    inline
+    u64 GetTextureId() {
+        return verts[0].tex_id;
+    }
     inline
     Color GetColor() {
         return verts[0].col;
@@ -142,20 +156,21 @@ QuadHexaVertex QuadCookSolid(s32 w, s32 h, s32 x0, s32 y0, Color c) {
     Vector2f lrc_pos { (f32) x1, (f32) y1 };
     Vector2f llc_pos { (f32) x0, (f32) y1 };
 
-    qh.verts[0] = InitQuadVertex( urc_pos, { 0, 0 }, c );
-    qh.verts[1] = InitQuadVertex( lrc_pos, { 0, 0 }, c );
-    qh.verts[2] = InitQuadVertex( llc_pos, { 0, 0 }, c );
-    qh.verts[3] = InitQuadVertex( llc_pos, { 0, 0 }, c );
-    qh.verts[4] = InitQuadVertex( ulc_pos, { 0, 0 }, c );
-    qh.verts[5] = InitQuadVertex( urc_pos, { 0, 0 }, c );
+    qh.verts[0] = InitQuadVertex( urc_pos, { 0, 0 }, c, 0 );
+    qh.verts[1] = InitQuadVertex( lrc_pos, { 0, 0 }, c, 0 );
+    qh.verts[2] = InitQuadVertex( llc_pos, { 0, 0 }, c, 0 );
+    qh.verts[3] = InitQuadVertex( llc_pos, { 0, 0 }, c, 0 );
+    qh.verts[4] = InitQuadVertex( ulc_pos, { 0, 0 }, c, 0 );
+    qh.verts[5] = InitQuadVertex( urc_pos, { 0, 0 }, c, 0 );
 
     return qh;
 }
 
-QuadHexaVertex QuadCookTextured(Sprite s, s32 x0, s32 y0) {
+QuadHexaVertex QuadCookTextured(Sprite s, s32 x0, s32 y0, u64 texture_id) {
     // lays down two three-vertex triangles: T1 = [ urc->lrc->llc ] and T2 = [ llc->ulc->urc ]
     // ulc: upper-left corner (etc.)
-    QuadHexaVertex qh;
+
+    QuadHexaVertex qh = {};
     s32 x1 = x0 + s.w;
     s32 y1 = y0 + s.h;
 
@@ -169,21 +184,21 @@ QuadHexaVertex QuadCookTextured(Sprite s, s32 x0, s32 y0) {
     Vector2f lrc_tex { (f32) s.u1, (f32) s.v1 };
     Vector2f llc_tex { (f32) s.u0, (f32) s.v1 };
 
-    Color nope = { 0, 0, 0, 255 };
+    Color no_color = { 0, 0, 0, 255 };
 
-    qh.verts[0] = InitQuadVertex( urc_pos, urc_tex, nope );
-    qh.verts[1] = InitQuadVertex( lrc_pos, lrc_tex, nope );
-    qh.verts[2] = InitQuadVertex( llc_pos, llc_tex, nope );
-    qh.verts[3] = InitQuadVertex( llc_pos, llc_tex, nope );
-    qh.verts[4] = InitQuadVertex( ulc_pos, ulc_tex, nope );
-    qh.verts[5] = InitQuadVertex( urc_pos, urc_tex, nope );
+    qh.verts[0] = InitQuadVertex( urc_pos, urc_tex, no_color, texture_id );
+    qh.verts[1] = InitQuadVertex( lrc_pos, lrc_tex, no_color, texture_id );
+    qh.verts[2] = InitQuadVertex( llc_pos, llc_tex, no_color, texture_id );
+    qh.verts[3] = InitQuadVertex( llc_pos, llc_tex, no_color, texture_id );
+    qh.verts[4] = InitQuadVertex( ulc_pos, ulc_tex, no_color, texture_id );
+    qh.verts[5] = InitQuadVertex( urc_pos, urc_tex, no_color, texture_id );
 
     return qh;
 }
 
 inline
 QuadHexaVertex QuadOffset(QuadHexaVertex *q, Vector2f os) {
-    QuadHexaVertex out;
+    QuadHexaVertex out = {};
     for (u32 i = 0; i < 6; ++i) {
         QuadVertex v = *(q->verts + i);
         v.pos.x += os.x;
@@ -195,7 +210,7 @@ QuadHexaVertex QuadOffset(QuadHexaVertex *q, Vector2f os) {
 
 inline
 QuadHexaVertex QuadOffset(QuadHexaVertex *q, s16 x, s16 y, Color color) {
-    QuadHexaVertex out;
+    QuadHexaVertex out = {};
     for (u32 i = 0; i < 6; ++i) {
         QuadVertex v = *(q->verts + i);
         v.pos.x += x;
@@ -424,32 +439,41 @@ u8 SampleTexture(ImageB *tex, f32 x, f32 y) {
     u8 b = tex->img[idx];
     return b;
 }
-void BlitQuads(DrawCall call, ImageRGBA *img) {
+
+void BlitQuads(Array<QuadHexaVertex> quads, ImageRGBA *img) {
+
+
+    // TODO: Don't blit a drawcall, just blit the frekkin quads directly:
+    //      We can do the type switch below from raw quad data (as OGL would).
+
 
     // get the texture
-    void *texture = GetTexture(call.texture_key);
-    ImageB *texture_b = (ImageB*) texture;
-    ImageRGBA *texture_rgba = (ImageRGBA*) texture;
 
 
-    for (u32 i = 0; i < call.quads.len; ++i) {
-        QuadHexaVertex *q = call.quads.lst + i;
+    for (u32 i = 0; i < quads.len; ++i) {
+        QuadHexaVertex *q = quads.arr + i;
 
         s32 q_w = q->GetWidth();
         s32 q_h = q->GetHeight();
         s32 q_x0 = q->GetX0();
         s32 q_y0 = q->GetY0();
+        u64 q_texture = q->GetTextureId();
+        Color q_color = q->GetColor();
 
         assert(img->height >= q_h);
         assert(img->width >= q_w);
 
         u32 stride_img = img->width;
 
+        void *texture = GetTexture(q_texture);
+        ImageB *texture_b = (ImageB*) texture;
+        ImageRGBA *texture_rgba = (ImageRGBA*) texture;
+
+
         //
-        // byte-texture / font glyph blitting
+        // byte-texture / glyphs
         //
-        Color color_quad = q->GetColor();
-        if (call.tpe == DCT_TEXTURE_BYTE) {
+        if (q_texture != 0 && q_color.IsZero()) {
             assert(texture_b != NULL);
 
             f32 q_scale_x = q->GetTextureScaleX(q_w);
@@ -480,9 +504,9 @@ void BlitQuads(DrawCall call, ImageRGBA *img) {
 
                         f32 alpha = (1.0f * alpha_byte) / 255;
                         Color color_blended;
-                        color_blended.r = (u8) (floor( alpha*color_quad.r ) + floor( (1-alpha)*color_background.r ));
-                        color_blended.g = (u8) (floor( alpha*color_quad.g ) + floor( (1-alpha)*color_background.g ));
-                        color_blended.b = (u8) (floor( alpha*color_quad.b ) + floor( (1-alpha)*color_background.b ));
+                        color_blended.r = (u8) (floor( alpha*q_color.r ) + floor( (1-alpha)*color_background.r ));
+                        color_blended.g = (u8) (floor( alpha*q_color.g ) + floor( (1-alpha)*color_background.g ));
+                        color_blended.b = (u8) (floor( alpha*q_color.b ) + floor( (1-alpha)*color_background.b ));
                         color_blended.a = 255;
 
                         img->img[idx] = color_blended;
@@ -494,9 +518,7 @@ void BlitQuads(DrawCall call, ImageRGBA *img) {
         //
         // mono-color quads
         //
-        else if (call.tpe == DCT_SOLID) {
-            assert(call.texture_key == 0);
-
+        else if (q_texture == 0 && q_color.IsNonZero()) {
             s32 j_img;
             s32 i_img;
             u32 idx;
@@ -513,15 +535,15 @@ void BlitQuads(DrawCall call, ImageRGBA *img) {
                     }
 
                     idx = j_img * stride_img + i_img;
-                    img->img[idx] = color_quad;
+                    img->img[idx] = q_color;
                 }
             }
         }
 
         //
-        // TODO: blit a full-color (32bit) texture
+        // blit 32bit texture
         //
-        else if (call.tpe == DCT_TEXTURE_RGBA) {
+        else if (q_texture != 0 && q_color.IsZero()) {
             assert(texture_rgba != NULL);
 
             // TODO: integrate
@@ -539,56 +561,22 @@ void BlitQuads(DrawCall call, ImageRGBA *img) {
 
 
 //
-// sprite renderer memory system
+// sprite render API (hides the drawcall buffer)
 
 
-// TODO: collect the sprite renderer into a struct to keep the loose ends tied, limiting the amount of globals to one
-
-
-static ImageRGBA g_render_target;
-static MArena _g_a_drawcalls;
-static MArena *g_a_drawcalls;
-static List<DrawCall> g_drawcalls;
-static MArena _g_a_quadbuffer;
-static MArena *g_a_quadbuffer;
-static List<DrawCall> g_quadbuffer;
-void SR_Clear() {
-    ArenaClear(g_a_drawcalls);
-    g_drawcalls = InitList<DrawCall>(g_a_drawcalls, 0);
-
-    ArenaClear(g_a_quadbuffer);
-    g_quadbuffer = InitList<DrawCall>(g_a_quadbuffer, 0);
+static Array<QuadHexaVertex> g_quad_buffer;
+void SpriteRender_Init(MArena *a_life, u32 max_quads = 2048) {
+    g_quad_buffer = InitArray<QuadHexaVertex>(a_life, max_quads);
 }
-void InitSpriteRenderer(ImageRGBA render_target) {
-    assert(render_target.img != NULL);
-
-    g_render_target = render_target;
-    if (g_a_drawcalls == NULL) {
-        _g_a_drawcalls = ArenaCreate();
-        g_a_drawcalls = &_g_a_drawcalls;
-        g_drawcalls = InitList<DrawCall>(g_a_drawcalls, 0);
-
-        _g_a_quadbuffer = ArenaCreate();
-        g_a_quadbuffer = &_g_a_quadbuffer;
-        g_quadbuffer = InitList<DrawCall>(g_a_quadbuffer, 0);
-    }
-    else {
-        SR_Clear();
-        printf("WARN: re-initialized sprite rendering\n");
-    }
+void SpriteRender_PushDrawCall(DrawCall dc) {
+    // TODO: do something with this for OGL
 }
-List<QuadHexaVertex> SR_Push(DrawCall dc) {
-    ArenaAlloc(g_a_drawcalls, sizeof(DrawCall));
-    g_drawcalls.Add(dc);
-    return dc.quads;
+void SpriteRender_PushQuad(QuadHexaVertex quad) {
+    g_quad_buffer.Add(quad);
 }
-void SR_Render() {
-    assert(g_render_target.img != NULL && "init render target first");
-
-    //for (s32 i = g_drawcalls.len - 1; i >= 0; --i) {   // reverse
-    for (u32 i = 0; i < g_drawcalls.len; ++i) {   // do not reverse
-        BlitQuads(g_drawcalls.lst[i], &g_render_target);
-    }
+void SpriteRender_BlitAndCLear(ImageRGBA render_target) {
+    BlitQuads(g_quad_buffer, &render_target);
+    g_quad_buffer.len = 0;
 }
 
 

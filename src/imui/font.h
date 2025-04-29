@@ -152,9 +152,15 @@ FontSize FontSizeFromPx(u32 sz_px) {
     return fs;
 }
 
+
+//
+//  Font related globals
+
 static HashMap g_resource_map;
 static StrLst *g_font_names;
 static FontAtlas *g_text_plotter;
+
+
 FontAtlas *SetFontAndSize(FontSize font_size, Str font_name) {
     // font name
     font_name = StrCat(font_name, "_");
@@ -410,18 +416,20 @@ List<QuadHexaVertex> LayoutTextAutowrap(MArena *a_dest, FontAtlas *plt, Str txt,
     dc.tpe = DCT_TEXTURE_BYTE;
     dc.texture_key = plt->GetKey();
     dc.quads = quads;
-    SR_Push(dc);
+    SpriteRender_PushDrawCall(dc);
 
     return quads;
 }
 
 
+// TODO: remove, replace with TextPosition function that does more stuff
 s32 GetLineCenterVOffset() {
     s32 result = g_text_plotter->ln_measured / 2 - g_text_plotter->ln_descend;
     return result;
 }
 
 
+// TODO: remove, replace with TextPosition function that does more stuff
 s32 TextLineWidth(FontAtlas *plt, Str txt) {
     s32 pt_x = 0;
     s32 w_space = plt->advance_x.lst[' '];
@@ -445,16 +453,82 @@ s32 TextLineWidth(FontAtlas *plt, Str txt) {
 }
 
 
-List<QuadHexaVertex> LayoutTextLine(MArena *a_dest, FontAtlas *plt, Str txt, s32 x0, s32 y0, s32 *sz_x, Color color) {
-    assert(g_text_plotter != NULL && "init text plotters first");
+void TextPosition(Str txt, s32 box_l, s32 box_t, s32 box_w, s32 box_h, s32 align_horiz, s32 align_vert, s32 *txt_l, s32 *txt_t, s32 *txt_w, s32 *txt_h) {
+    FontAtlas *plt = g_text_plotter;
 
-    s32 pt_x = x0;
-    s32 pt_y = y0 - plt->ln_ascend;
+    *txt_w = 0;
+    *txt_h = plt->ln_measured;
+
+    s32 w_space = plt->advance_x.lst[' '];
+    for (u32 i = 0; i < txt.len; ++i) {
+
+        char c = txt.str[i];
+        if (c == ' ') {
+            *txt_w += w_space;
+            continue;
+        }
+        if (IsAscii(c) == false) {
+            continue;
+        }
+
+        *txt_w += plt->advance_x.lst[c];
+    }
+
+    s32 box_x = box_l + box_w / 2;
+    s32 box_y = box_t + box_h / 2;
+
+    // text rect center
+    s32 txt_x;
+    s32 txt_y;
+
+    if (align_horiz == 0) { // alight horizontal center
+        txt_x = box_x;
+    }
+    else if (align_horiz > 0) { // alight horizontal left
+        txt_x = box_l + *txt_w / 2;
+    }
+    else if (align_horiz < 0) { // alight horizontal right
+        s32 box_r = box_l + box_w;
+        txt_x = box_r - *txt_w / 2;
+    }
+    if (align_vert == 0) { // alight vertical center
+        txt_y = box_y;
+    }
+    else if (align_vert > 0) { // alight vertical left
+        txt_y = box_l + *txt_w / 2;
+    }
+    else if (align_vert < 0) { // alight vertical right
+        s32 box_b = box_t + box_h;
+        txt_y = box_b - *txt_h / 2;
+    }
+
+    // 
+    txt_y - plt->ln_ascend;
+
+    *txt_l = txt_x - *txt_w / 2;
+    *txt_t = txt_y - *txt_h / 2;
+}
+
+
+void TextPlot(Str txt, s32 box_l, s32 box_t, s32 box_w, s32 box_h, s32 *sz_x, s32 *sz_y, Color color) {
+    assert(g_text_plotter != NULL && "init text plotters first");
+    FontAtlas *plt = g_text_plotter;
+
+    s32 txt_l;
+    s32 txt_t;
+    TextPosition(txt, box_l, box_t, box_w, box_h, 0, 0, &txt_l, &txt_t, sz_x, sz_y);
+
+    // position the quads
+    s32 pt_x = txt_l;
+    s32 pt_y = txt_t;
     s32 w_space = plt->advance_x.lst[' '];
 
-    List<QuadHexaVertex> quads = InitList<QuadHexaVertex>(a_dest, 0);
     for (u32 i = 0; i < txt.len; ++i) {
-        // while words
+
+
+        // TODO: tighten up the impl.
+
+
         char c = txt.str[i];
 
         if (c == ' ') {
@@ -467,36 +541,9 @@ List<QuadHexaVertex> LayoutTextLine(MArena *a_dest, FontAtlas *plt, Str txt, s32
 
         QuadHexaVertex q = QuadOffset(plt->cooked.lst + c, pt_x, pt_y, color);
         pt_x += plt->advance_x.lst[c];
-        ArenaAlloc(a_dest, sizeof(QuadHexaVertex));
-        quads.Add(q);
+        SpriteRender_PushQuad(q);
     }
-    *sz_x = pt_x - x0;
-
-
-    // TODO: update this hack to be more organized -> e.g. put assembling the drawcall outside of
-    //      this function somehow, maybe in the UI_xxx calls.
-    DrawCall dc = {};
-    dc.tpe = DCT_TEXTURE_BYTE;
-    dc.texture_key = plt->GetKey();
-    dc.quads = quads;
-    SR_Push(dc);
-
-    return quads;
 }
-
-List<QuadHexaVertex> LayoutTextLine(const char *txt, s32 x0, s32 y0, Color color) {
-    s32 sz_x;
-    Str txts = { (char *) txt, _strlen((char*) txt) };
-
-    return LayoutTextLine(g_a_quadbuffer, g_text_plotter, txts, x0, y0, &sz_x, color);
-}
-
-List<QuadHexaVertex> LayoutTextLine(Str txt, s32 x0, s32 y0, s32 *sz_x, s32 *sz_y, Color color) {
-    *sz_y = g_text_plotter->ln_measured;
-    return LayoutTextLine(g_a_quadbuffer, g_text_plotter, txt, x0, y0, sz_x, color);
-}
-
-
 
 
 #endif

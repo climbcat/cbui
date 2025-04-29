@@ -30,6 +30,17 @@ struct Color {
     u8 g;
     u8 b;
     u8 a;
+    u32 GetAsU32() {
+        return * (u32*) this;
+    }
+    inline
+    bool IsZero() {
+        return r == 0 && g == 0 && b == 0 && a == 0;
+    }
+    inline
+    bool IsNonZero() {
+        return ! IsZero();
+    }
 };
 void PrintColorInline(Color c) {
     printf("%hhx %hhx %hhx %hhx", c.r, c.g, c.b, c.a);
@@ -171,6 +182,9 @@ struct ImageRGBA {
     s32 height;
     Color *img;
 };
+ImageRGBA InitImageRGBA(s32 w, s32 h, void *buffer) {
+    return ImageRGBA { w, h, (Color*) buffer };
+}
 
 struct ImageF32 {
     s32 width;

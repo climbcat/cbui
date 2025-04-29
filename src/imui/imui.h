@@ -10,32 +10,16 @@
 //
 
 
-List<QuadHexaVertex> LayoutPanel(
-    MArena *a_dest,
+void LayoutPanel(
     s32 l, s32 t, s32 w, s32 h,
     s32 thic_border, Color col_border = { RGBA_GRAY_75 }, Color col_pnl = { RGBA_WHITE } )
 {
     if (thic_border >= w / 2 || thic_border >= w / 2) {
-        return List<QuadHexaVertex> { NULL, 0 };
+        return;
     }
 
-    DrawCall dc = {};
-    dc.tpe = DCT_SOLID;
-    dc.texture_key = 0;
-    dc.quads = InitList<QuadHexaVertex>(a_dest, 2);
-    dc.quads.Add(QuadCookSolid(w, h, l, t, col_border));
-    dc.quads.Add(QuadCookSolid(w - 2*thic_border, h - 2*thic_border, l + thic_border, t + thic_border, col_pnl));
-
-    List<QuadHexaVertex> quads = SR_Push(dc);
-    return quads;
-}
-inline
-List<QuadHexaVertex> LayoutPanel(
-    s32 l, s32 t, s32 w, s32 h,
-    s32 border,
-    Color col_border = { RGBA_GRAY_75 }, Color col_pnl = { RGBA_WHITE } )
-{
-    return LayoutPanel(g_a_quadbuffer, l, t, w, h, border, col_border, col_pnl);
+    SpriteRender_PushQuad(QuadCookSolid(w, h, l, t, col_border));
+    SpriteRender_PushQuad(QuadCookSolid(w - 2*thic_border, h - 2*thic_border, l + thic_border, t + thic_border, col_pnl));
 }
 
 
@@ -446,7 +430,6 @@ void WidgetTreeRenderToDrawcalls(List<Widget*> all_widgets) {
             SetFontSize(w->sz_font);
             s32 w_out;
             s32 h_out;
-            List<QuadHexaVertex> txt_quads = LayoutTextLine(w->text, w->x0, w->y0, &w_out, &h_out, w->col_text);
 
             // position text at widget center
             s32 w_center_x = w->x0 + w->w / 2;
@@ -454,9 +437,8 @@ void WidgetTreeRenderToDrawcalls(List<Widget*> all_widgets) {
 
             s32 offset_x = (w->w - w_out) / 2;
             s32 offset_y = (w->h - h_out) / 2;
-            for (u32 i = 0; i < txt_quads.len; ++i) {
-                QuadOffset(txt_quads.lst + i, (f32) offset_x, (f32) offset_y);
-            }
+
+            TextPlot(w->text, w->x0, w->y0, w->w, w->h, &w_out, &h_out, w->col_text);
         }
     }
 }

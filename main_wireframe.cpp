@@ -13,21 +13,28 @@
 
 
 struct WireframeAppState {
+    OrbitCamera cam;
     Perspective persp;
-    Matrix4f v;
     u32 w;
     u32 h;
     MArena *a_tmp;
+    Matrix4f GetView() {
+        return cam.view;
+    }
+    Matrix4f *GetViewPtr() {
+        return &cam.view;
+    }
+    Matrix4f GetProj() {
+        return persp.proj;
+    }
+    Matrix4f *GetProjPtr() {
+        return &persp.proj;
+    }
 };
 static WireframeAppState app;
-void AppStateUpdate(Matrix4f v, Perspective p, u32 w, u32 h) {
-    app.v = v;
-    app.persp = p;
+void AppStateUpdate(u32 w, u32 h) {
     app.w = w;
     app.h = h;
-}
-void AppInit(MArena *a_tmp) {
-    app.a_tmp = a_tmp;
 }
 
 
@@ -154,7 +161,7 @@ void RenderFatPoint3x3(u8 *image_buffer, Matrix4f view, Matrix4f proj, Vector3f 
 }
 inline
 void RenderFatPoint3x3(Vector3f point, Color color = COLOR_RED) {
-    RenderFatPoint3x3(g_image_buffer, app.v, app.persp.proj, point, app.w, app.h, color);
+    RenderFatPoint3x3(g_image_buffer, app.cam.view, app.persp.proj, point, app.w, app.h, color);
 }
 
 inline
@@ -194,7 +201,7 @@ void RenderLineSegment(u8 *image_buffer, Matrix4f view, Matrix4f proj, Vector3f 
 }
 inline
 void RenderLineSegment(Vector3f p1, Vector3f p2, Color color) {
-    RenderLineSegment(g_image_buffer, app.v, app.persp.proj, p1, p2, app.w, app.h, color);
+    RenderLineSegment(g_image_buffer, app.cam.view, app.persp.proj, p1, p2, app.w, app.h, color);
 }
 
 inline
@@ -285,7 +292,7 @@ void RenderWireframes(Array<Wireframe> wireframes) {
     Array<Vector3f> segments = WireframeLineSegments(app.a_tmp, wireframes);
 
     // insert the globals
-    RenderLineSegmentList(g_image_buffer, app.v, app.persp.proj, app.w, app.h, wireframes, segments);
+    RenderLineSegmentList(g_image_buffer, app.cam.view, app.persp.proj, app.w, app.h, wireframes, segments);
 }
 
 struct DragState {
@@ -387,24 +394,21 @@ Vector3f DragStateUpdate(DragState *sd, Array<Wireframe> objs, Matrix4f view, Ve
 }
 inline
 Vector3f DragStateUpdate(DragState *sd, Array<Wireframe> objs, Vector3f campos, f32 x_frac, f32 y_frac) {
-    return DragStateUpdate(sd, objs, app.v, campos, app.persp.fov, app.persp.aspect, x_frac, y_frac);
+    return DragStateUpdate(sd, objs, app.persp.proj, campos, app.persp.fov, app.persp.aspect, x_frac, y_frac);
 }
 
 
-void InitResources(u32 w, u32 h, u8* image_buffer, u64 *frameno) {
-    MContext *ctx = GetContext();
-
+void InitResources(MArena *a_tmp, MArena *a_life, u32 w, u32 h, u8* image_buffer, u64 *frameno) {
     InitImUi(w, h, frameno);
     ImageRGBA render_target = { (s32) w, (s32) h, (Color*) image_buffer };
-    InitSpriteRenderer(render_target);
+    SpriteRender_Init(a_life);
 
-    g_texture_map = InitMap(ctx->a_life, MAX_RESOURCE_CNT);
-    g_resource_map = InitMap(ctx->a_life, MAX_RESOURCE_CNT);
+    g_texture_map = InitMap(a_life, MAX_RESOURCE_CNT);
+    g_resource_map = InitMap(a_life, MAX_RESOURCE_CNT);
 
     // load & check resource file
-    ResourceStreamHandle hdl = ResourceStreamLoadAndOpen(ctx->a_tmp, ctx->a_life, "all.res");
+    ResourceStreamHandle hdl = ResourceStreamLoadAndOpen(a_tmp, a_life, "all.res");
     g_font_names = hdl.names[RST_FONT];
-
     bool log_verbose = false;
 
     // map out the resources
@@ -423,6 +427,7 @@ void InitResources(u32 w, u32 h, u8* image_buffer, u64 *frameno) {
         else if (res->tpe == RST_SPRITE) {
             SpriteMap *smap = SpriteMapLoadStream((u8*) res->GetInlinedData(), res->data_sz);
             if (log_verbose) {
+
                 printf("sprite map: %s, %s, count: %u, atlas w: %u, atlas h: %u\n", smap->map_name, smap->key_name, smap->sprites.len, smap->texture.width, smap->texture.height);
             }
 
@@ -439,7 +444,6 @@ void InitResources(u32 w, u32 h, u8* image_buffer, u64 *frameno) {
         res = res->GetInlinedNext();
     }
     SetFontAndSize(FS_48, g_font_names->GetStr());
-
 }
 
 
@@ -447,20 +451,21 @@ void RunWireframe() {
 
     // init
     MContext *ctx = InitBaselayer();
-    AppInit(ctx->a_tmp);
     ImageBufferInit(ctx->a_life);
     PlafGlfw *plf = PlafGlfwInit();
-    Perspective proj = ProjectionInit(plf->width, plf->height);
-    OrbitCamera cam = OrbitCameraInit( proj.aspect );
-    cam.radius = 10;
-    cam.theta = 50;
-    cam.phi = -40;
+    app = {};
+    app.a_tmp = ctx->a_tmp;
+    app.persp = ProjectionInit(plf->width, plf->height);
+    app.cam = OrbitCameraInit( app.persp.aspect );
+    app.cam.radius = 10;
+    app.cam.theta = 50;
+    app.cam.phi = -40;
     DragState drag = {};
     u64 frameno = 0;
 
 
     // LEGACY init graphics 
-    InitResources(plf->width, plf->height, g_image_buffer, &frameno);
+    InitResources(ctx->a_tmp, ctx->a_life, plf->width, plf->height, g_image_buffer, &frameno);
 
     // test scene setup
     Array<Wireframe> objs = InitArray<Wireframe>(ctx->a_pers, 100);
@@ -495,43 +500,44 @@ void RunWireframe() {
         // frame start
         ArenaClear(ctx->a_tmp);
         PlafGlfwUpdate(plf);
-        PerspectiveSetAspectAndP(&proj, plf->width, plf->height);
+        PerspectiveSetAspectAndP(&app.persp, plf->width, plf->height);
         ImageBufferClear(plf->width, plf->height);
         running = running && !GetEscape() && !GetWindowShouldClose(plf);
-        AppStateUpdate(cam.view, proj, plf->width, plf->height);
+        AppStateUpdate(plf->width, plf->height);
 
         //
         // frame body
         if (mode == 0) {
-            Vector3f drag_delta = DragStateUpdate(&drag, objs, cam.position, plf->cursorpos.x_frac, plf->cursorpos.y_frac);
-            if (drag.selected && drag.drag_enabled) {
+            Vector3f drag_delta = DragStateUpdate(&drag, objs, app.cam.position, plf->cursorpos.x_frac, plf->cursorpos.y_frac);
+            Wireframe *seln = drag.selected;
+            if (seln && drag.drag_enabled) {
 
                 if (ModCtrl()) {
-                    drag.selected->transform.m[0][3] += 0;
-                    drag.selected->transform.m[1][3] += drag_delta.y;
-                    drag.selected->transform.m[2][3] += 0;
+                    seln->transform.m[0][3] += 0;
+                    seln->transform.m[1][3] += drag_delta.y;
+                    seln->transform.m[2][3] += 0;
                 }
                 else if (ModAlt()) {
-                    drag.selected->transform.m[0][3] += drag_delta.x;
-                    drag.selected->transform.m[1][3] += drag_delta.y;
-                    drag.selected->transform.m[2][3] += drag_delta.z;
+                    seln->transform.m[0][3] += drag_delta.x;
+                    seln->transform.m[1][3] += drag_delta.y;
+                    seln->transform.m[2][3] += drag_delta.z;
                 }
                 else {
                     Vector3f plane_origo = { 0, drag.drag_push.y, 0 };
                     Vector3f plane_normal = y_hat;
 
-                    Vector3f proj = RayPlaneIntersect(RayFromTo(cam.position_world, drag.drag), plane_origo, plane_normal); 
+                    Vector3f proj = RayPlaneIntersect(RayFromTo(app.cam.position_world, drag.drag), plane_origo, plane_normal); 
                     Vector3f new_pos = proj + (drag.drag_push_objzero - drag.drag_push);
 
-                    drag.selected->transform.m[0][3] = new_pos.x;
-                    drag.selected->transform.m[1][3] = new_pos.y;
-                    drag.selected->transform.m[2][3] = new_pos.z;
+                    seln->transform.m[0][3] = new_pos.x;
+                    seln->transform.m[1][3] = new_pos.y;
+                    seln->transform.m[2][3] = new_pos.z;
                 }
             }
 
             if (drag.drag_enabled == false) {
-                OrbitCameraUpdate(&cam, plf->cursorpos.dx, plf->cursorpos.dy, plf->left.ended_down, plf->scroll.yoffset_acc);
-                OrbitCameraPan(&cam, app.persp.fov, app.persp.aspect, plf->cursorpos.x_frac, plf->cursorpos.y_frac, MouseRight().pushed, MouseRight().released);
+                OrbitCameraUpdate(&app.cam, plf->cursorpos.dx, plf->cursorpos.dy, plf->left.ended_down, plf->scroll.yoffset_acc);
+                OrbitCameraPan(&app.cam, app.persp.fov, app.persp.aspect, plf->cursorpos.x_frac, plf->cursorpos.y_frac, MouseRight().pushed, MouseRight().released);
             }
 
             // render objects
@@ -552,9 +558,7 @@ void RunWireframe() {
             UI_CoolPanel(plf->width, plf->height);
             UI_FrameEnd(app.a_tmp);
 
-            for (u32 i = 0; i < g_drawcalls.len; ++i) {   // do not reverse
-                BlitQuads(g_drawcalls.lst[i], &g_render_target);
-            }
+            SpriteRender_BlitAndCLear(InitImageRGBA(app.w, app.h, g_image_buffer));
 
             if (GetFKey(1)) { mode = 0; }
         }

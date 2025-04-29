@@ -1,10 +1,11 @@
 #include <math.h>
 #include <assert.h>
 
-#include "../../baselayer.h"
-#include "../gtypes.h"
-#include "../font.h"
-#include "../resource.h"
+#include "../../lib/jg_baselayer.h"
+#include "../../src/geometry/gtypes.h"
+#include "../../src/geometry/geometry.h"
+#include "../../src/imui/resource.h"
+#include "../../src/imui/font.h"
 
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -114,7 +115,7 @@ FontAtlas CreateCharAtlas(MArena *a_dest, u8 *font, s32 line_height) {
     // set up convenient helper data; cooked quads and advance_x list
     for (u32 i = 0; i < 128; ++i) {
         Sprite g = atlas.glyphs.lst[i];
-        QuadHexaVertex q = QuadCookTextured(g, atlas.x_lsb.lst[i], atlas.y_ascend.lst[i]);
+        QuadHexaVertex q = QuadCookTextured(g, atlas.x_lsb.lst[i], atlas.y_ascend.lst[i], 0);
         atlas.cooked.lst[i] = q;
     }
 
@@ -184,7 +185,7 @@ void CompileFontAndPushToStream(MArena *a_tmp, MArena *a_stream, ResourceStreamH
         printf("\n");
 
         // push to stream
-        ResourceStreamPushData(a_stream, stream, RT_FONT, loaded->font_name, loaded->key_name, &atlas, sizeof(atlas));
+        ResourceStreamPushData(a_stream, stream, RST_FONT, loaded->font_name, loaded->key_name, &atlas, sizeof(atlas));
         ResourceStreamPushDataExtra(a_stream, stream, atlas.texture.img, atlas.texture.width * atlas.texture.height);
     }
 }
