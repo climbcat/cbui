@@ -107,8 +107,8 @@ struct Widget {
     // everything below belongs in the layout algorithm
     s32 x;
     s32 y;
-
     CollRect rect;
+
     void CollRectClear() {
         rect = {};
     }
@@ -497,10 +497,21 @@ void UI_FrameEnd(MArena *a_tmp, u64 frameno) {
 //  Builder API
 
 
+void WidgetAssertUniqueFrameTouchedDuringTreeBuild(Widget *w, u64 *frameno, const char* tag) {
+    bool check = (w == NULL || w->frame_touched != *g_frameno_imui);
+    if (check == false) {
+        printf("ERROR - %s: Widget must have a unique name\n", tag);
+        assert(check && "WidgetAssertUniqueKeyDuringTreeBuild");
+    }
+}
+
+
 bool UI_Button(const char *text_key, Widget **w_out = NULL) {
     u64 key = HashStringValue(text_key);
 
     Widget *w = (Widget*) MapGet(g_m_widgets, key);
+    WidgetAssertUniqueFrameTouchedDuringTreeBuild(w, g_frameno_imui, "UI_Button");
+
     if (w == NULL) {
         w = g_p_widgets->Alloc();
         w->features |= WF_DRAW_TEXT;
@@ -530,9 +541,9 @@ bool UI_Button(const char *text_key, Widget **w_out = NULL) {
 
         // configure active properties
         w->sz_border = 3;
-        w->col_bckgrnd = ColorGray(0.8f);
-        w->col_text = ColorBlack();
-        w->col_border = ColorBlack();
+        w->col_bckgrnd = COLOR_GRAY_75;
+        w->col_text = COLOR_BLACK;
+        w->col_border = COLOR_BLACK;
     }
     else if (hot) {
         // HOT: currently hovering the mouse
@@ -540,16 +551,16 @@ bool UI_Button(const char *text_key, Widget **w_out = NULL) {
 
         // configure hot properties
         w->sz_border = 3;
-        w->col_bckgrnd = ColorWhite();
-        w->col_text = ColorBlack();
-        w->col_border = ColorBlack();
+        w->col_bckgrnd = COLOR_WHITE;
+        w->col_text = COLOR_BLACK;
+        w->col_border = COLOR_BLACK;
     }
     else {
         // configure cold properties
         w->sz_border = 1;
-        w->col_bckgrnd = ColorWhite();
-        w->col_text = ColorBlack();
-        w->col_border = ColorBlack();
+        w->col_bckgrnd = COLOR_WHITE;
+        w->col_text = COLOR_BLACK;
+        w->col_border = COLOR_BLACK;
     }
 
     TreeSibling(w);
@@ -561,12 +572,13 @@ bool UI_Button(const char *text_key, Widget **w_out = NULL) {
 }
 
 
-bool UI_ToggleButton(const char *text_key, bool *pushed, Widget **w_out = NULL, u64 key = 0, Color color_cold = { RGBA_WHITE }) {
+bool UI_ToggleButton(const char *text_key, bool *state, Widget **w_out = NULL, u64 key = 0, Color color_cold = { RGBA_WHITE }) {
     if (key == 0) {
         key = HashStringValue(text_key);
     }
 
     Widget *w = (Widget*) MapGet(g_m_widgets, key);
+    WidgetAssertUniqueFrameTouchedDuringTreeBuild(w, g_frameno_imui, "UI_ToggleButton");
     if (w == NULL) {
         w = g_p_widgets->Alloc();
         w->features |= WF_DRAW_TEXT;
@@ -589,11 +601,11 @@ bool UI_ToggleButton(const char *text_key, bool *pushed, Widget **w_out = NULL, 
             g_w_active = w;
         }
     }
-    bool active = (g_w_active == w) || *pushed;
-    bool clicked = active && hot && g_mouse_down;
+    bool active = (g_w_active == w) || *state;
+    bool clicked = active && hot && g_mouse_pushed;
 
     if (clicked) {
-        *pushed = !(*pushed);
+        *state = !(*state);
     }
 
     if (active) {

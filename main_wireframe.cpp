@@ -491,13 +491,14 @@ void RunWireframe() {
 
     // app mode
     u32 mode = 1;
-
+    bool dbg_tpush = false;
 
     // graphics loop
     bool running = true;
     while (running) {
         //
         // frame start
+        ++frameno;
         ArenaClear(ctx->a_tmp);
         PlafGlfwUpdate(plf);
         PerspectiveSetAspectAndP(&app.persp, plf->width, plf->height);
@@ -568,7 +569,12 @@ void RunWireframe() {
             UI_Label("Line1");
 
             if (UI_Button("Ok")) printf("Ok\n");
+            if (UI_Button("Ok2")) printf("Ok2\n");
             if (UI_Button("Cancel")) printf("Cancel\n");
+
+            if (UI_ToggleButton("Toggle", &dbg_tpush)) printf("Toggle\n");
+            if (UI_ToggleButton("Toggle2", &dbg_tpush)) printf("Toggle2\n");
+
 
             UI_FrameEnd(app.a_tmp, frameno);
             SpriteRender_BlitAndCLear(InitImageRGBA(app.w, app.h, g_image_buffer));
@@ -582,7 +588,6 @@ void RunWireframe() {
 
         //
         // frame end
-        ++frameno;
         XSleep(1);
     }
 

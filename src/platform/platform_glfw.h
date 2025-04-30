@@ -78,7 +78,6 @@ struct ActionKeys {
 
 
 struct PlafGlfw {
-    u64 frame_no;
     GLFWwindow* window;
     bool fullscreen;
 
@@ -346,8 +345,6 @@ void PlafGlfwUpdate(PlafGlfw* plf) {
     plf->cursorpos.y_frac = y_frac;
 
     glfwPollEvents();
-
-    plf->frame_no++;
 }
 
 
