@@ -435,7 +435,8 @@ void WidgetTreeRenderToDrawcalls(List<Widget*> all_widgets) {
 
 static f32 g_mouse_x;
 static f32 g_mouse_y;
-static f32 g_mouse_down;
+static bool g_mouse_down;
+static bool g_mouse_pushed;
 
 
 void UI_FrameEnd(MArena *a_tmp, u64 frameno) {
@@ -522,7 +523,7 @@ bool UI_Button(const char *text_key, Widget **w_out = NULL) {
         }
     }
     bool active = (g_w_active == w);
-    bool clicked = active && hot && g_mouse_down;
+    bool clicked = active && hot && g_mouse_pushed;
 
     if (active) {
         // ACTIVE: mouse-down was engaged on this element
