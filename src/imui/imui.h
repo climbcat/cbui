@@ -61,8 +61,8 @@ enum WidgetFlags {
 
     WF_LAYOUT_HORIZONTAL = 1 << 10,
     WF_LAYOUT_VERTICAL = 1 << 11,
-    WF_LAYOUT_HORIZONTAL_CENTERING = 1 << 12,
-    WF_LAYOUT_VERTICAL_CENTERING = 1 << 13,
+    WF_LAYOUT_HORIZONTAL_CENTER_VERTICAL = 1 << 12,
+    WF_LAYOUT_VERTICAL_CENTER_HORIZONTAL = 1 << 13,
 
     WF_EXPAND_HORIZONTAL = 1 << 15,
     WF_EXPAND_VERTICAL = 1 << 16,
@@ -73,8 +73,8 @@ bool WidgetIsLayout(u32 features) {
     bool result =
         features & WF_LAYOUT_HORIZONTAL ||
         features & WF_LAYOUT_VERTICAL ||
-        features & WF_LAYOUT_HORIZONTAL_CENTERING ||
-        features & WF_LAYOUT_VERTICAL_CENTERING ||
+        features & WF_LAYOUT_HORIZONTAL_CENTER_VERTICAL ||
+        features & WF_LAYOUT_VERTICAL_CENTER_HORIZONTAL ||
     false;
     return result;
 }
@@ -270,11 +270,19 @@ void WidgetTreeSizeWrap_Rec(Widget *w, s32 *w_sum, s32 *h_sum, s32 *w_max, s32 *
             w->w = *w_sum;
             w->h = *h_max;
         }
-        if (w->features & WF_LAYOUT_VERTICAL) {
+        else if (w->features & WF_LAYOUT_VERTICAL) {
             w->w = *w_max;
             w->h = *h_sum;
         }
-        if ((w->features & WF_LAYOUT_HORIZONTAL_CENTERING) || (w->features & WF_LAYOUT_VERTICAL_CENTERING)) {
+        else if (w->features & WF_LAYOUT_HORIZONTAL_CENTER_VERTICAL) {
+            w->w = *w_sum;
+            w->h = *h_max;
+        }
+        else if (w->features & WF_LAYOUT_VERTICAL_CENTER_HORIZONTAL) {
+            w->w = *w_max;
+            w->h = *h_sum;
+        }
+        else if ((w->features & WF_LAYOUT_VERTICAL_CENTER_HORIZONTAL) && (w->features & WF_LAYOUT_VERTICAL_CENTER_HORIZONTAL)) {
             w->w = *w_max;
             w->h = *h_max;
         }
@@ -369,7 +377,7 @@ List<Widget*> WidgetTreePositioning(MArena *a_tmp, Widget *w_root) {
                     ch->x0 = w->x0 + pt_x;
                     pt_x += ch->w;
                 }
-                else if (w->features & WF_LAYOUT_HORIZONTAL_CENTERING) {
+                else if (w->features & WF_LAYOUT_HORIZONTAL_CENTER_VERTICAL) {
                     ch->x0 = w->x0 + (w->w - ch->w) / 2;
                 }
 
@@ -377,7 +385,7 @@ List<Widget*> WidgetTreePositioning(MArena *a_tmp, Widget *w_root) {
                     ch->y0 = w->y0 + pt_y;
                     pt_y += ch->h;
                 }
-                else if (w->features & WF_LAYOUT_VERTICAL_CENTERING) {
+                else if (w->features & WF_LAYOUT_VERTICAL_CENTER_HORIZONTAL) {
                     ch->y0 = w->y0 + (w->h - ch->h) / 2;
                 }
             }
@@ -504,7 +512,6 @@ void WidgetAssertUniqueFrameTouchedDuringTreeBuild(Widget *w, u64 *frameno, cons
         assert(check && "WidgetAssertUniqueKeyDuringTreeBuild");
     }
 }
-
 
 bool UI_Button(const char *text_key, Widget **w_out = NULL) {
     u64 key = HashStringValue(text_key);
@@ -648,11 +655,13 @@ bool UI_ToggleButton(const char *text_key, bool *state, Widget **w_out = NULL, u
 }
 
 
-Widget *UI_CoolPanel(s32 width, s32 height) {
+Widget *UI_CoolPanel(s32 width, s32 height, bool center_h = true) {
     Widget *w = g_p_widgets->Alloc();
     w->frame_touched = 0;
     w->features |= WF_DRAW_BACKGROUND_AND_BORDER;
-    w->features |= WF_LAYOUT_HORIZONTAL_CENTERING;
+    if (center_h) {
+        w->features |= WF_LAYOUT_HORIZONTAL_CENTER_VERTICAL;
+    }
     w->features |= WF_LAYOUT_VERTICAL;
     w->w = width;
     w->h = height;
@@ -665,6 +674,68 @@ Widget *UI_CoolPanel(s32 width, s32 height) {
     return w;
 }
 
+Widget *UI_CoolPanelPadded(s32 width, s32 height, s32 padding = 20) {
+    Widget *w = g_p_widgets->Alloc();
+    w->frame_touched = 0;
+    w->features |= WF_DRAW_BACKGROUND_AND_BORDER;
+    w->features |= WF_LAYOUT_HORIZONTAL_CENTER_VERTICAL;
+    w->features |= WF_LAYOUT_VERTICAL_CENTER_HORIZONTAL;
+    w->w = width;
+    w->h = height;
+    w->sz_border = 20;
+    w->col_bckgrnd = ColorGray(0.9f);
+    w->col_border = ColorGray(0.7f);
+
+    TreeBranch(w);
+
+    Widget *i = g_p_widgets->Alloc();
+    i->frame_touched = 0;
+    i->features |= WF_LAYOUT_VERTICAL;
+    i->w = width - padding * 2;
+    i->h = height - padding * 2;
+
+    TreeBranch(i);
+
+    return i;
+}
+
+Widget *UI_Layout() {
+    Widget *w = g_p_widgets->Alloc();
+    w->frame_touched = 0;
+
+    TreeBranch(w);
+    return w;
+}
+
+Widget *UI_LayoutExpandCenter() {
+    Widget *w = g_p_widgets->Alloc();
+    w->frame_touched = 0;
+    w->features |= WF_EXPAND_VERTICAL;
+    w->features |= WF_EXPAND_HORIZONTAL;
+    w->features |= WF_LAYOUT_HORIZONTAL_CENTER_VERTICAL;
+    w->features |= WF_LAYOUT_VERTICAL_CENTER_HORIZONTAL;
+
+    TreeBranch(w);
+    return w;
+}
+
+Widget *UI_LayoutHorizontal() {
+    Widget *w = g_p_widgets->Alloc();
+    w->frame_touched = 0;
+    w->features |= WF_LAYOUT_HORIZONTAL;
+
+    TreeBranch(w);
+    return w;
+}
+
+Widget *UI_LayoutVertical() {
+    Widget *w = g_p_widgets->Alloc();
+    w->frame_touched = 0;
+    w->features |= WF_LAYOUT_VERTICAL;
+
+    TreeBranch(w);
+    return w;
+}
 
 void UI_SpaceH(u32 width) {
     // no frame persistence
@@ -710,53 +781,6 @@ Widget *UI_Label(const char *text, Color color = Color { RGBA_BLACK }) {
     TreeSibling(w);
     return w;
 }
-
-
-Widget *UI_LayoutHorizontal() {
-    Widget *w = g_p_widgets->Alloc();
-    w->frame_touched = 0;
-    w->features |= WF_LAYOUT_HORIZONTAL;
-
-    TreeBranch(w);
-    return w;
-}
-
-
-Widget *UI_LayoutVertical() {
-    Widget *w = g_p_widgets->Alloc();
-    w->frame_touched = 0;
-    w->features |= WF_LAYOUT_VERTICAL;
-
-    TreeBranch(w);
-    return w;
-}
-
-
-Widget *UI_LayoutVerticalCenterX() {
-    // no frame persistence
-
-    Widget *w = g_p_widgets->Alloc();
-    w->frame_touched = 0;
-    w->features |= WF_LAYOUT_HORIZONTAL_CENTERING;
-    w->features |= WF_LAYOUT_VERTICAL;
-
-    TreeBranch(w);
-    return w;
-}
-
-
-Widget *UI_LayoutHorizontalCenterY() {
-    // no frame persistence
-
-    Widget *w = g_p_widgets->Alloc();
-    w->frame_touched = 0;
-    w->features |= WF_LAYOUT_VERTICAL_CENTERING;
-    w->features |= WF_LAYOUT_HORIZONTAL;
-
-    TreeBranch(w);
-    return w;
-}
-
 
 void UI_Pop() {
     TreePop();

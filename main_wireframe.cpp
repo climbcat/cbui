@@ -488,10 +488,10 @@ void RunWireframe() {
     cylinder.color = COLOR_GREEN;
     objs.Add(cylinder);
 
-
     // app mode
     u32 mode = 1;
     bool dbg_tpush = false;
+    bool dbg_tpush2 = false;
 
     // graphics loop
     bool running = true;
@@ -561,19 +561,44 @@ void RunWireframe() {
             g_mouse_down = MouseLeft().ended_down;
             g_mouse_pushed = MouseLeft().pushed;
 
+            /*
             Widget *cp = UI_CoolPanel(plf->width, plf->height);
-            cp->features |= WF_LAYOUT_VERTICAL_CENTERING;
+            cp->features |= WF_LAYOUT_HORIZONTAL_CENTERING;
+            */
 
+            /*
             UI_Label("Text layout");
             UI_Label("Line1");
             UI_Label("Line1");
 
+            if (UI_ToggleButton("Toggle", &dbg_tpush)) printf("Toggle\n");
+            if (UI_ToggleButton("Toggle2", &dbg_tpush2)) printf("Toggle2\n");
+            */
+
+            UI_LayoutExpandCenter();
+
+            UI_CoolPanelPadded(400, 170, 20);
+
+            UI_Label("Rotate         Mouse Left");
+            UI_Label("Pan            Mouse Right");
+            UI_Label("Drag Object    Mouse Left");
+            UI_Label("Drag Vertical  Hold Ctrl");
+            UI_Label("F1             Help Menu");
+            UI_Label("Esc            Quit");
+
+            /*
+            UI_LayoutHorizontal();
             if (UI_Button("Ok")) printf("Ok\n");
             if (UI_Button("Ok2")) printf("Ok2\n");
             if (UI_Button("Cancel")) printf("Cancel\n");
+            UI_Pop();
 
-            if (UI_ToggleButton("Toggle", &dbg_tpush)) printf("Toggle\n");
-            if (UI_ToggleButton("Toggle2", &dbg_tpush)) printf("Toggle2\n");
+            UI_LayoutVertical();
+            if (UI_Button("Row1")) printf("Row1\n");
+            if (UI_Button("Row2")) printf("Row2\n");
+            if (UI_Button("Row3")) printf("Row3\n");
+            UI_Pop();
+            */
 
 
             UI_FrameEnd(app.a_tmp, frameno);
