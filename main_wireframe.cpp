@@ -14,24 +14,23 @@
 
 struct WireframeAppState {
     Perspective persp;
+    OrbitCamera cam;
     Matrix4f v;
     u32 w;
     u32 h;
     MArena *a_tmp;
-
-
-    Perspective proj;
-    OrbitCamera cam;
 };
 static WireframeAppState app;
-void AppStateUpdate(Matrix4f v, Perspective p, u32 w, u32 h) {
+void AppStateUpdate(Matrix4f v, u32 w, u32 h) {
+    PerspectiveSetAspectAndP(&app.persp, w, h);
     app.v = v;
-    app.persp = p;
     app.w = w;
     app.h = h;
 }
-void AppInit(MArena *a_tmp) {
+void AppInit(MArena *a_tmp, u32 w, u32 h) {
     app.a_tmp = a_tmp;
+    app.persp = ProjectionInit(w, h);
+    app.cam = OrbitCameraInit(app.persp.aspect);
 }
 
 
@@ -449,9 +448,7 @@ void RunWireframe() {
     MContext *ctx = InitBaselayer();
     ImageBufferInit(ctx->a_life);
     PlafGlfw *plf = PlafGlfwInit();
-    AppInit(ctx->a_tmp);
-    app.proj = ProjectionInit(plf->width, plf->height);
-    app.cam = OrbitCameraInit( app.proj.aspect );
+    AppInit(ctx->a_tmp, plf->width, plf->height);
     app.cam.radius = 10;
     app.cam.theta = 50;
     app.cam.phi = -40;
@@ -498,10 +495,9 @@ void RunWireframe() {
         ArenaClear(ctx->a_tmp);
         frameno++;
         PlafGlfwUpdate(plf);
-        PerspectiveSetAspectAndP(&app.proj, plf->width, plf->height);
         ImageBufferClear(plf->width, plf->height);
         running = running && !GetEscape() && !GetWindowShouldClose(plf);
-        AppStateUpdate(app.cam.view, app.proj, plf->width, plf->height);
+        AppStateUpdate(app.cam.view, plf->width, plf->height);
 
         // frame body
         if (mode == 0) {
