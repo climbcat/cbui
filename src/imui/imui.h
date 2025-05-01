@@ -54,14 +54,18 @@ struct CollRect {
 
 
 enum WidgetAlignmentFLags {
+    WA_PASSIVE = 0,
+
     WA_TOP_LEFT = 1 << 0,
     WA_TOP_RIGHT = 1 << 1,
     WA_BOTTOM_LEFT = 1 << 2,
     WA_BOTTOM_RIGHT = 1 << 3,
+
     WA_CENTV_LEFT = 1 << 4,
     WA_CENTV_RIGHT = 1 << 5,
     WA_TOP_CENTH = 1 << 6,
     WA_BOTTOM_CENTH = 1 << 7,
+
     WA_CENTER = 1 << 8
 };
 
@@ -71,6 +75,7 @@ enum WidgetFlags {
 
     WF_DRAW_BACKGROUND_AND_BORDER = 1 << 0,
     WF_DRAW_TEXT = 1 << 1,
+    WF_CAN_COLLIDE = 1 << 2,
 
     WF_LAYOUT_HORIZONTAL = 1 << 10,
     WF_LAYOUT_VERTICAL = 1 << 11,
@@ -199,6 +204,12 @@ void TreePop() {
         g_w_layout = parent;
     }
 }
+
+
+static f32 g_mouse_x;
+static f32 g_mouse_y;
+static bool g_mouse_down;
+static bool g_mouse_pushed;
 
 
 void InitImUi(u32 width, u32 height, u64 *frameno) {
@@ -453,6 +464,12 @@ List<Widget*> WidgetTreePositioning(MArena *a_tmp, Widget *w_root) {
             // set the collision rect for next frame code-interleaved mouse collision
             ch->SetCollisionRectUsingX0Y0WH();
 
+            if (ch->features_flg & WF_CAN_COLLIDE) {
+                if (ch->rect.DidCollide( g_mouse_x, g_mouse_y )) {
+                    printf("we can collide!\n");
+                }
+            }
+
             // iter
             ch = ch->next;
         }
@@ -501,12 +518,6 @@ void WidgetTreeRenderToDrawcalls(List<Widget*> all_widgets) {
 }
 
 
-static f32 g_mouse_x;
-static f32 g_mouse_y;
-static bool g_mouse_down;
-static bool g_mouse_pushed;
-
-
 void UI_FrameEnd(MArena *a_tmp, u64 frameno) {
     if (g_mouse_down == false) {
         g_w_active = NULL;
@@ -523,10 +534,10 @@ void UI_FrameEnd(MArena *a_tmp, u64 frameno) {
     s32 h_max_ch;
     WidgetTreeSizeWrap_Rec(w, &w_sum_ch, &h_sum_ch, &w_max_ch, &h_max_ch);
 
-    // size expanders to max possible sizes
+    // size pass
     WidgetTreeExpand_Rec(w);
 
-    // position the now wrapped and expanded widgets
+    // position pass
     List<Widget*> all_widgets = WidgetTreePositioning(a_tmp, w);
 
     // render pass
@@ -753,6 +764,7 @@ Widget *UI_CoolPanelPadded(s32 width, s32 height, s32 padding = 20) {
     x->features_flg |= WF_ABSREL_POSITION;
     x->features_flg |= WF_DRAW_TEXT;
     x->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
+    x->features_flg |= WF_CAN_COLLIDE;
     x->alignment_flg |= WA_TOP_RIGHT;
     x->sz_border = 1;
     x->col_border = COLOR_BLACK;
