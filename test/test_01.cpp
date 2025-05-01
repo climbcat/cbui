@@ -649,7 +649,7 @@ void TestRenderSprites() {
                 dc.quads.Add(QuadCookTextured(s, x, y));
 
                 Widget *frame = UI_CoolPanel(s.w + 2, s.h + 2);
-                frame->SetFeature(WF_ABSOLUTE_POSITION);
+                frame->SetFeature(WF_ABSREL_POSITION);
                 frame->col_bckgrnd = ColorBlack();
                 frame->col_border = ColorWhite();
                 frame->sz_border = 1;
@@ -694,23 +694,23 @@ void TestLayoutPanels() {
 
         // wrapper
         Widget *w0 = UI_LayoutVertical();
-        w0->features |= WF_EXPAND_VERTICAL;
-        w0->features |= WF_EXPAND_HORIZONTAL;
+        w0->features_flg |= WF_EXPAND_VERTICAL;
+        w0->features_flg |= WF_EXPAND_HORIZONTAL;
 
         {
             // wrapper
             Widget *w1 = UI_LayoutHorizontal();
-            w1->features |= WF_EXPAND_VERTICAL;
-            w1->features |= WF_EXPAND_HORIZONTAL;
+            w1->features_flg |= WF_EXPAND_VERTICAL;
+            w1->features_flg |= WF_EXPAND_HORIZONTAL;
 
             {
                 // list view
                 Widget *l_nodes = UI_LayoutVertical();
-                   l_nodes->features |= WF_DRAW_BACKGROUND_AND_BORDER;
+                   l_nodes->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
                 l_nodes->col_bckgrnd = ColorRed();
                 l_nodes->col_border = ColorGray(0.9f);
                 l_nodes->sz_border = 5;
-                l_nodes->features |= WF_EXPAND_VERTICAL;
+                l_nodes->features_flg |= WF_EXPAND_VERTICAL;
                 l_nodes->w = 740;
 
                 {
@@ -722,7 +722,7 @@ void TestLayoutPanels() {
                         btn_slct[0] = 1;
                         printf("item 1 pushed\n");
                     }
-                    itm_1->features |= WF_EXPAND_HORIZONTAL;
+                    itm_1->features_flg |= WF_EXPAND_HORIZONTAL;
                     itm_1->h = 20;
                 }
                 {
@@ -734,7 +734,7 @@ void TestLayoutPanels() {
                         btn_slct[1] = 1;
                         printf("item 2 pushed\n");
                     }
-                    itm_1->features |= WF_EXPAND_HORIZONTAL;
+                    itm_1->features_flg |= WF_EXPAND_HORIZONTAL;
                     itm_1->h = 20;
                 }
                 {
@@ -746,7 +746,7 @@ void TestLayoutPanels() {
                         btn_slct[2] = 1;
                         printf("item 3 pushed\n");
                     }
-                    itm_1->features |= WF_EXPAND_HORIZONTAL;
+                    itm_1->features_flg |= WF_EXPAND_HORIZONTAL;
                     itm_1->h = 20;
                 }
 
@@ -756,12 +756,12 @@ void TestLayoutPanels() {
             {
                 // action btns
                 Widget *l_btns = UI_LayoutVertical();
-                l_btns->features |= WF_DRAW_BACKGROUND_AND_BORDER;
+                l_btns->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
                 l_btns->col_bckgrnd = ColorBlue();
                 l_btns->col_border = ColorGray(0.7f);
                 l_btns->sz_border = 5;
-                l_btns->features |= WF_EXPAND_HORIZONTAL;
-                l_btns->features |= WF_EXPAND_VERTICAL;
+                l_btns->features_flg |= WF_EXPAND_HORIZONTAL;
+                l_btns->features_flg |= WF_EXPAND_VERTICAL;
 
                 UI_Label("action 1", ColorWhite());
                 UI_Label("action 2", ColorWhite());
@@ -774,12 +774,12 @@ void TestLayoutPanels() {
         }
 
         Widget *l_status = UI_LayoutHorizontal();
-        l_status->features |= WF_DRAW_BACKGROUND_AND_BORDER;
+        l_status->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
         l_status->col_border = ColorGray(0.5f);
         l_status->sz_border = 5;
         l_status->col_bckgrnd = ColorGreen();
         l_status->h = 50;
-        l_status->features |= WF_EXPAND_HORIZONTAL;
+        l_status->features_flg |= WF_EXPAND_HORIZONTAL;
 
 
         UI_Label("status bar", ColorWhite());
