@@ -388,10 +388,10 @@ void TestLayoutGlyphQuads() {
     MContext *ctx = InitBaselayer();
     GameLoopOne *loop = InitGraphics(ctx);
 
-    LayoutTextLine("The quick brown fox jumps over the lazy dog", 50, 100, ColorRandom());
-    LayoutTextLine("The other quick brown fox jumps over the other lazy dog", 100, 200, ColorRandom());
+    //LayoutTextLine("The quick brown fox jumps over the lazy dog", 50, 100, ColorRandom());
+    //LayoutTextLine("The other quick brown fox jumps over the other lazy dog", 100, 200, ColorRandom());
 
-    SR_Render();
+    //SR_Render();
     loop->JustShowBuffer();
 }
 
@@ -453,8 +453,8 @@ void TestBrownianGlyphs() {
         }
 
         // render
-        LayoutTextLine("press space/up/down", 50, 50, clbl);
-        SR_Push(dc);
+        //LayoutTextLine("press space/up/down", 50, 50, clbl);
+        //SR_Push(dc);
 
         loop->FrameEnd2D();
     }
@@ -481,7 +481,7 @@ void TestUIDragPanel() {
         loop->FrameStart2D(ColorGray(0.9f));
 
         SetFontSize(FS_72);
-        LayoutTextLine("The quick brown fox jumps over the lazy dog", 50, 80, ColorBlack());
+        //LayoutTextLine("The quick brown fox jumps over the lazy dog", 50, 80, ColorBlack());
 
         // bordered drag-panel
         if (show_pnl) {
@@ -504,7 +504,7 @@ void TestUIDragPanel() {
             }
             PanelPlot(l, t, w, h, border, ColorBlack(), ColorGray(graynexx));
             SetFontSize(FS_48);
-            LayoutTextLine("The other quick brown fox jumps over the other lazy dog", l, t, ColorBlack());
+            //LayoutTextLine("The other quick brown fox jumps over the other lazy dog", l, t, ColorBlack());
             // TODO: align, e.g. TAL_CENTER
         }
 
@@ -595,7 +595,7 @@ void TestUILayoutWidgetAPI() {
 
 
         // frame end
-        UI_FrameEnd(ctx->a_tmp);
+        //UI_FrameEnd(ctx->a_tmp);
         loop->FrameEnd2D();
     }
     loop->Terminate();
@@ -646,7 +646,7 @@ void TestRenderSprites() {
                 s32 x = i * 50 + 20;
                 s32 y = j * 50 + 10;
                 Sprite s = smap->sprites.lst[i + j*naliens_x];
-                dc.quads.Add(QuadCookTextured(s, x, y));
+                //dc.quads.Add(QuadCookTextured(s, x, y));
 
                 Widget *frame = UI_CoolPanel(s.w + 2, s.h + 2);
                 frame->SetFeature(WF_ABSREL_POSITION);
@@ -658,7 +658,7 @@ void TestRenderSprites() {
             }
         }
 
-        UI_FrameEnd(ctx->a_tmp);
+        //UI_FrameEnd(ctx->a_tmp);
 
         // NOTE!: here we put the sprite ddraw call (SR_Push(dc)) after UI_FrameEnd, which puts the widget 
         //      draw calls onto the draw list.
@@ -668,7 +668,7 @@ void TestRenderSprites() {
         //      drawn on top of that, but also below other widgets that are on top, e.g.:
         // TODO:  Interleaving
 
-        SR_Push(dc);
+        //SR_Push(dc);
 
         loop->FrameEnd2D();
     }
@@ -784,7 +784,7 @@ void TestLayoutPanels() {
 
         UI_Label("status bar", ColorWhite());
 
-        UI_FrameEnd(ctx->a_tmp);
+        //UI_FrameEnd(ctx->a_tmp);
         loop->FrameEnd2D();
     }
     loop->Terminate();
@@ -837,6 +837,6 @@ void Test() {
     //TestUILayoutWidgetAPI();
     //TestResourceLoad();
     //TestRenderSprites();
-    TestLayoutPanels();
+    //TestLayoutPanels();
     TestRotatingBoxes();
 }

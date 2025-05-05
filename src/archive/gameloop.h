@@ -197,12 +197,12 @@ struct GameLoopOne {
         for (s32 i = 0; i < renderer.w * renderer.h; ++i) {
             img[i] = clear;
         }
-        SR_Clear();
+        //SR_Clear();
     }
     void FrameEnd2D() {
         mouse.FrameEnd(frameno);
 
-        SR_Render();
+        //SR_Render();
         ImageBufferDrawAndSwap();
 
         frameno++;
@@ -214,7 +214,7 @@ struct GameLoopOne {
 
         Matrix4f vp = proj.proj * TransformGetInverse( cam.view );
         SwRenderFrame(&renderer, es, &vp, frameno);
-        SR_Render();
+        //SR_Render();
         ImageBufferDrawAndSwap();
 
         frameno++;

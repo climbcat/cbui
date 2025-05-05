@@ -2,6 +2,7 @@
 #define __IMUI_H__
 
 
+#include "color.h"
 #include "font.h"
 
 
