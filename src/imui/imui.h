@@ -550,12 +550,14 @@ void WidgetTreeRenderToDrawcalls(List<Widget*> all_widgets) {
 }
 
 
-void UI_FrameEnd(MArena *a_tmp, u64 frameno) {
+void UI_FrameEnd(MArena *a_tmp, s32 width, s32 height) {
     if (g_mouse_down == false) {
         g_w_active = NULL;
     }
 
     Widget *w = &_g_w_root;
+    w->w_max = width;
+    w->h_max = height;
     w->w = w->w_max;
     w->h = w->h_max;
 
@@ -576,13 +578,13 @@ void UI_FrameEnd(MArena *a_tmp, u64 frameno) {
     WidgetTreeRenderToDrawcalls(all_widgets);
 
     // clean up pass
-    _g_w_root.frame_touched = frameno;
+    _g_w_root.frame_touched = *g_frameno_imui;
     g_w_layout = &_g_w_root;
     for (u32 i = 0; i < all_widgets.len; ++i) {
         Widget *w = all_widgets.lst[i];
 
         // prune
-        if (w->frame_touched < frameno) {
+        if (w->frame_touched < *g_frameno_imui) {
             MapRemove(g_m_widgets, w->hash_key, w); 
             g_p_widgets->Free(w);
         }
@@ -739,7 +741,35 @@ Widget *UI_CoolPanel(s32 width, s32 height, bool center_h = true) {
     return w;
 }
 
-Widget *UI_CoolPanelPadded(s32 width, s32 height, s32 padding = 20, bool *close = NULL) {
+
+bool UI_CrossButton(const char *symbol, Widget **w_out = NULL) {
+    Widget *x = WidgetGetCached(symbol);
+    if (w_out) *w_out = x;
+
+    x->features_flg |= WF_ABSREL_POSITION;
+    x->features_flg |= WF_DRAW_TEXT;
+    x->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
+    x->features_flg |= WF_CAN_COLLIDE;
+    x->alignment_flg |= WA_TOP_RIGHT;
+    x->sz_border = 1;
+    x->col_border = COLOR_BLACK;
+    x->col_bckgrnd = COLOR_WHITE;
+    if (x->hot) {
+        x->col_bckgrnd = COLOR_GRAY_75;
+    }
+    x->col_text = COLOR_BLACK;
+    x->text = Str { (char*) symbol, 1 };
+    x->sz_font = FS_18;
+    x->w = 25;
+    x->h = 25;
+
+    TreeSibling(x);
+
+    return x->clicked;
+}
+
+
+Widget *UI_CoolPopUp(s32 width, s32 height, s32 padding = 20, bool *close = NULL) {
     Widget *w = WidgetGetNew();
     w->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
     w->features_flg |= WF_LAYOUT_HORIZONTAL_CENTER_VERTICAL;
@@ -753,32 +783,20 @@ Widget *UI_CoolPanelPadded(s32 width, s32 height, s32 padding = 20, bool *close 
     TreeBranch(w);
 
 
-    Widget *x = WidgetGetCached("x");
-    if (close) *close = x->clicked;
-
-    x->features_flg |= WF_ABSREL_POSITION;
-    x->features_flg |= WF_DRAW_TEXT;
-    x->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
-    x->features_flg |= WF_CAN_COLLIDE;
-    x->alignment_flg |= WA_TOP_RIGHT;
-    x->sz_border = 1;
-    x->col_border = COLOR_BLACK;
-    x->col_bckgrnd = COLOR_WHITE;
-    if (x->active) {
+    Widget *x;
+    bool cross_clicked = UI_CrossButton("x", &x);
+    if (close) *close = cross_clicked;
+    x->w = 18;
+    x->h = 18;
+    x->x0 = -1;
+    x->y0 = 1;
+    x->sz_border = 0;
+    if (x->hot) {
         x->col_bckgrnd = COLOR_GRAY_50;
     }
-    else if (x->hot) {
-        x->col_bckgrnd = COLOR_GRAY_75;
+    else {
+        x->col_bckgrnd = w->col_border;
     }
-    x->col_text = COLOR_BLACK;
-    x->text = Str { (char*) "x", 1 };
-    x->sz_font = FS_18;
-    x->w = 25;
-    x->h = 25;
-    x->x0 = -5;
-    x->y0 = 5;
-
-    TreeSibling(x);
 
 
     Widget *i = WidgetGetNew(); 

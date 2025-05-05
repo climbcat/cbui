@@ -542,6 +542,25 @@ void RunWireframe() {
                 RenderFatPoint3x3(drag.drag, COLOR_RED);
                 RenderLineSegment(drag.drag - drag_delta, drag.drag, COLOR_BLACK);
             }
+
+
+            g_mouse_x = plf->cursorpos.x;
+            g_mouse_y = plf->cursorpos.y;
+            g_mouse_down = MouseLeft().ended_down;
+            g_mouse_pushed = MouseLeft().pushed;
+
+            Widget *x;
+            if (UI_CrossButton("?", &x)) {
+                mode = 1;
+            }
+            x->w = 25;
+            x->w = 25;
+            x->x0 = -2;
+            x->y0 = 2;
+            UI_FrameEnd(app.a_tmp, app.w, app.h);
+            SpriteRender_BlitAndCLear(InitImageRGBA(app.w, app.h, g_image_buffer));
+
+            if (GetFKey(1)) { mode = 1; }
         }
 
         else if (mode == 1) {
@@ -550,24 +569,10 @@ void RunWireframe() {
             g_mouse_down = MouseLeft().ended_down;
             g_mouse_pushed = MouseLeft().pushed;
 
-            /*
-            Widget *cp = UI_CoolPanel(plf->width, plf->height);
-            cp->features |= WF_LAYOUT_HORIZONTAL_CENTERING;
-            */
-
-            /*
-            UI_Label("Text layout");
-            UI_Label("Line1");
-            UI_Label("Line1");
-
-            if (UI_ToggleButton("Toggle", &dbg_tpush)) printf("Toggle\n");
-            if (UI_ToggleButton("Toggle2", &dbg_tpush2)) printf("Toggle2\n");
-            */
-
             UI_LayoutExpandCenter();
 
             bool close;
-            UI_CoolPanelPadded(400, 170, 20, &close);
+            UI_CoolPopUp(400, 170, 20, &close);
             if (close) {
                 mode = 0;
             }
@@ -579,24 +584,7 @@ void RunWireframe() {
             UI_Label("F1             Help Menu");
             UI_Label("Esc            Quit");
 
-            if (UI_Button("Ok")) printf("Ok\n");
-            if (UI_ToggleButton("Toggle", &dbg_tpush)) printf("Toggle\n");
-            /*
-            UI_LayoutHorizontal();
-            if (UI_Button("Ok")) printf("Ok\n");
-            if (UI_Button("Ok2")) printf("Ok2\n");
-            if (UI_Button("Cancel")) printf("Cancel\n");
-            UI_Pop();
-
-            UI_LayoutVertical();
-            if (UI_Button("Row1")) printf("Row1\n");
-            if (UI_Button("Row2")) printf("Row2\n");
-            if (UI_Button("Row3")) printf("Row3\n");
-            UI_Pop();
-            */
-
-
-            UI_FrameEnd(app.a_tmp, frameno);
+            UI_FrameEnd(app.a_tmp, app.w, app.h);
             SpriteRender_BlitAndCLear(InitImageRGBA(app.w, app.h, g_image_buffer));
 
             if (GetFKey(1)) { mode = 0; }
