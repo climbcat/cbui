@@ -120,6 +120,13 @@ struct Widget {
     Color col_text;
     Color col_border;
 
+    // DBG / experimental
+    Color col_hot;
+    Color col_active;
+    bool hot;
+    bool active;
+    bool clicked;
+
     u32 features_flg;
     u32 alignment_flg;
 
@@ -163,7 +170,6 @@ static HashMap *g_m_widgets;
 
 static Widget _g_w_root;
 static Widget *g_w_layout;
-static Widget *g_w_hot;
 static Widget *g_w_active;
 
 static u64 *g_frameno_imui;
@@ -464,9 +470,35 @@ List<Widget*> WidgetTreePositioning(MArena *a_tmp, Widget *w_root) {
             // set the collision rect for next frame code-interleaved mouse collision
             ch->SetCollisionRectUsingX0Y0WH();
 
+            ch->hot = false;
+            ch->clicked = false;
+
             if (ch->features_flg & WF_CAN_COLLIDE) {
                 if (ch->rect.DidCollide( g_mouse_x, g_mouse_y )) {
-                    printf("we can collide!\n");
+                    if (g_w_active == NULL) {
+                        ch->hot = true;
+                        if (g_mouse_down) {
+                            // enable active mode
+                            g_w_active = ch;
+                            ch->active = true;
+                        }
+                    }
+                    else {
+                        // disable active mode
+                        ch->active == false;
+                    }
+                }
+                else {
+                    ch->hot = false;
+                }
+
+                if (g_mouse_down == false) {
+                    ch->active = false;
+                    g_w_active = NULL;
+                }
+
+                if (g_mouse_pushed && ch->active) {
+                    ch->clicked = true;
                 }
             }
 
@@ -576,65 +608,63 @@ void UI_FrameEnd(MArena *a_tmp, u64 frameno) {
 //  Builder API
 
 
-void WidgetAssertUniqueFrameTouchedDuringTreeBuild(Widget *w, u64 *frameno, const char* tag) {
-    bool check = (w == NULL || w->frame_touched != *g_frameno_imui);
-    if (check == false) {
-        printf("ERROR - %s: Widget must have a unique name\n", tag);
-        assert(check && "WidgetAssertUniqueKeyDuringTreeBuild");
-    }
-}
-
-bool UI_Button(const char *text_key, Widget **w_out = NULL) {
-    u64 key = HashStringValue(text_key);
-
+Widget *WidgetGetCached(const char *text, bool *was_new = NULL) {
+    u64 key = HashStringValue(text);
     Widget *w = (Widget*) MapGet(g_m_widgets, key);
-    WidgetAssertUniqueFrameTouchedDuringTreeBuild(w, g_frameno_imui, "UI_Button");
 
     if (w == NULL) {
         w = g_p_widgets->Alloc();
-        w->features_flg |= WF_DRAW_TEXT;
-        w->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
-
-        w->w = 120;
-        w->h = 50;
-        w->sz_font = FS_24;
+        MapPut(g_m_widgets, key, w);
         w->hash_key = key;
 
-        MapPut(g_m_widgets, key, w);
+        // TODO: impl. the hash # string key features
+        w->text = Str { (char*) text, _strlen( (char*) text) };
+        if (was_new) *was_new = true;
     }
+    else {
+        assert(key == w->hash_key);
+        assert(w->frame_touched != *g_frameno_imui);
+        if (was_new) *was_new = false;
+    }
+
     w->frame_touched = *g_frameno_imui;
-    w->text = Str { (char*) text_key, _strlen( (char*) text_key) };
 
-    bool hot = w->rect.DidCollide( g_mouse_x, g_mouse_y ) && (g_w_active == NULL || g_w_active == w);
-    if (hot) {
-        if (g_mouse_down) {
-            g_w_active = w;
-        }
+    return w;
+}
+
+Widget *WidgetGetNew(const char *text = NULL) {
+    Widget *w = g_p_widgets->Alloc();
+    assert(w->frame_touched == 0);
+    if (text) {
+        w->text = Str { (char*) text, _strlen( (char*) text) };
     }
-    bool active = (g_w_active == w);
-    bool clicked = active && hot && g_mouse_pushed;
 
-    if (active) {
-        // ACTIVE: mouse-down was engaged on this element
+    return w;
+}
 
-        // configure active properties
+
+bool UI_Button(const char *text, Widget **w_out = NULL) {
+    Widget *w  = WidgetGetCached(text);
+    w->features_flg |= WF_DRAW_TEXT;
+    w->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
+    w->features_flg |= WF_CAN_COLLIDE;
+    w->w = 120;
+    w->h = 50;
+    w->sz_font = FS_24;
+
+    if (w->active) {
         w->sz_border = 3;
         w->col_bckgrnd = COLOR_GRAY_75;
         w->col_text = COLOR_BLACK;
         w->col_border = COLOR_BLACK;
     }
-    else if (hot) {
-        // HOT: currently hovering the mouse
-        g_w_hot = w;
-
-        // configure hot properties
+    else if (w->hot) {
         w->sz_border = 3;
         w->col_bckgrnd = COLOR_WHITE;
         w->col_text = COLOR_BLACK;
         w->col_border = COLOR_BLACK;
     }
     else {
-        // configure cold properties
         w->sz_border = 1;
         w->col_bckgrnd = COLOR_WHITE;
         w->col_text = COLOR_BLACK;
@@ -646,73 +676,38 @@ bool UI_Button(const char *text_key, Widget **w_out = NULL) {
     if (w_out != NULL) {
         *w_out = w;
     }
-    return clicked;
+    return w->clicked;
 }
 
 
-bool UI_ToggleButton(const char *text_key, bool *state, Widget **w_out = NULL, u64 key = 0, Color color_cold = { RGBA_WHITE }) {
-    if (key == 0) {
-        key = HashStringValue(text_key);
-    }
+bool UI_ToggleButton(const char *text, bool *state, Widget **w_out = NULL) {
+    Widget *w  = WidgetGetCached(text);
+    w->features_flg |= WF_DRAW_TEXT;
+    w->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
+    w->features_flg |= WF_CAN_COLLIDE;
+    w->w = 120;
+    w->h = 50;
+    w->sz_font = FS_24;
 
-    Widget *w = (Widget*) MapGet(g_m_widgets, key);
-    WidgetAssertUniqueFrameTouchedDuringTreeBuild(w, g_frameno_imui, "UI_ToggleButton");
-    if (w == NULL) {
-        w = g_p_widgets->Alloc();
-        w->features_flg |= WF_DRAW_TEXT;
-        w->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
-
-        w->w = 120;
-        w->h = 50;
-        
-        w->sz_font = FS_24;
-        w->hash_key = key;
-
-        MapPut(g_m_widgets, w->hash_key, w);
-    }
-    w->frame_touched = *g_frameno_imui;
-    w->text = Str { (char*) text_key, _strlen( (char*) text_key) };
-
-    bool hot = w->rect.DidCollide( g_mouse_x, g_mouse_y ) && (g_w_active == NULL || g_w_active == w);
-    if (hot) {
-        if (g_mouse_down) {
-            g_w_active = w;
-        }
-    }
-    bool active = (g_w_active == w) || *state;
-    bool clicked = active && hot && g_mouse_pushed;
-
-    if (clicked) {
+    if (w->clicked) {
         *state = !(*state);
     }
 
-    if (active) {
-        // ACTIVE: mouse-down was engaged on this element
-
-        // configure active properties
-        w->sz_border = 1;
+    if (*state == true) {
+        w->sz_border = 3;
         w->col_bckgrnd = ColorGray(0.8f);
         w->col_text = ColorBlack();
         w->col_border = ColorBlack();
-
-        if (hot) {
-            w->sz_border = 3;
-        }
     }
-    else if (hot) {
-        // HOT: currently hovering the mouse
-        g_w_hot = w;
-
-        // configure hot properties
+    else if (w->hot) {
         w->sz_border = 3;
         w->col_bckgrnd = ColorWhite();
         w->col_text = ColorBlack();
         w->col_border = ColorBlack();
     }
     else {
-        // configure cold properties
         w->sz_border = 1;
-        w->col_bckgrnd = color_cold;
+        w->col_bckgrnd = COLOR_WHITE;
         w->col_text = ColorBlack();
         w->col_border = ColorBlack();
     }
@@ -722,13 +717,12 @@ bool UI_ToggleButton(const char *text_key, bool *state, Widget **w_out = NULL, u
     if (w_out != NULL) {
         *w_out = w;
     }
-    return clicked;
+    return w->clicked;
 }
 
 
 Widget *UI_CoolPanel(s32 width, s32 height, bool center_h = true) {
-    Widget *w = g_p_widgets->Alloc();
-    w->frame_touched = 0;
+    Widget *w = WidgetGetNew();
     w->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
     if (center_h) {
         w->features_flg |= WF_LAYOUT_HORIZONTAL_CENTER_VERTICAL;
@@ -745,9 +739,8 @@ Widget *UI_CoolPanel(s32 width, s32 height, bool center_h = true) {
     return w;
 }
 
-Widget *UI_CoolPanelPadded(s32 width, s32 height, s32 padding = 20) {
-    Widget *w = g_p_widgets->Alloc();
-    w->frame_touched = 0;
+Widget *UI_CoolPanelPadded(s32 width, s32 height, s32 padding = 20, bool *close = NULL) {
+    Widget *w = WidgetGetNew();
     w->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
     w->features_flg |= WF_LAYOUT_HORIZONTAL_CENTER_VERTICAL;
     w->features_flg |= WF_LAYOUT_VERTICAL_CENTER_HORIZONTAL;
@@ -759,8 +752,10 @@ Widget *UI_CoolPanelPadded(s32 width, s32 height, s32 padding = 20) {
 
     TreeBranch(w);
 
-    Widget *x = g_p_widgets->Alloc();
-    x->frame_touched = 0;
+
+    Widget *x = WidgetGetCached("x");
+    if (close) *close = x->clicked;
+
     x->features_flg |= WF_ABSREL_POSITION;
     x->features_flg |= WF_DRAW_TEXT;
     x->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
@@ -769,6 +764,12 @@ Widget *UI_CoolPanelPadded(s32 width, s32 height, s32 padding = 20) {
     x->sz_border = 1;
     x->col_border = COLOR_BLACK;
     x->col_bckgrnd = COLOR_WHITE;
+    if (x->active) {
+        x->col_bckgrnd = COLOR_GRAY_50;
+    }
+    else if (x->hot) {
+        x->col_bckgrnd = COLOR_GRAY_75;
+    }
     x->col_text = COLOR_BLACK;
     x->text = Str { (char*) "x", 1 };
     x->sz_font = FS_18;
@@ -780,8 +781,7 @@ Widget *UI_CoolPanelPadded(s32 width, s32 height, s32 padding = 20) {
     TreeSibling(x);
 
 
-    Widget *i = g_p_widgets->Alloc();
-    i->frame_touched = 0;
+    Widget *i = WidgetGetNew(); 
     i->features_flg |= WF_LAYOUT_VERTICAL;
     i->w = width - padding * 2;
     i->h = height - padding * 2;
@@ -792,16 +792,15 @@ Widget *UI_CoolPanelPadded(s32 width, s32 height, s32 padding = 20) {
 }
 
 Widget *UI_Plain() {
-    Widget *w = g_p_widgets->Alloc();
-    w->frame_touched = 0;
+    Widget *w = WidgetGetNew();
 
     TreeBranch(w);
     return w;
 }
 
 Widget *UI_LayoutExpandCenter() {
-    Widget *w = g_p_widgets->Alloc();
-    w->frame_touched = 0;
+    Widget *w = WidgetGetNew();
+
     w->features_flg |= WF_EXPAND_VERTICAL;
     w->features_flg |= WF_EXPAND_HORIZONTAL;
     w->features_flg |= WF_LAYOUT_HORIZONTAL_CENTER_VERTICAL;
@@ -812,8 +811,7 @@ Widget *UI_LayoutExpandCenter() {
 }
 
 Widget *UI_LayoutHorizontal() {
-    Widget *w = g_p_widgets->Alloc();
-    w->frame_touched = 0;
+    Widget *w = WidgetGetNew();
     w->features_flg |= WF_LAYOUT_HORIZONTAL;
 
     TreeBranch(w);
@@ -821,8 +819,7 @@ Widget *UI_LayoutHorizontal() {
 }
 
 Widget *UI_LayoutVertical() {
-    Widget *w = g_p_widgets->Alloc();
-    w->frame_touched = 0;
+    Widget *w = WidgetGetNew();
     w->features_flg |= WF_LAYOUT_VERTICAL;
 
     TreeBranch(w);
@@ -830,10 +827,7 @@ Widget *UI_LayoutVertical() {
 }
 
 void UI_SpaceH(u32 width) {
-    // no frame persistence
-
-    Widget *w = g_p_widgets->Alloc();
-    w->frame_touched = 0;
+    Widget *w = WidgetGetNew();
     w->w = width;
 
     TreeSibling(w);
@@ -841,10 +835,7 @@ void UI_SpaceH(u32 width) {
 
 
 void UI_SpaceV(u32 height) {
-    // no frame persistence
-
-    Widget *w = g_p_widgets->Alloc();
-    w->frame_touched = 0;
+    Widget *w = WidgetGetNew();
     w->h = height;
 
     TreeSibling(w);
@@ -852,13 +843,9 @@ void UI_SpaceV(u32 height) {
 
 
 Widget *UI_Label(const char *text, Color color = Color { RGBA_BLACK }) {
-    // no frame persistence
-
-    Widget *w = g_p_widgets->Alloc();
-    w->frame_touched = 0;
+    Widget *w = WidgetGetNew(text);
     w->features_flg |= WF_DRAW_TEXT;
 
-    w->text = Str { (char*) text, _strlen( (char*) text) };
     w->sz_font = GetDefaultFontSize();
     w->col_bckgrnd = ColorGray(0.9f);
     w->col_border = ColorBlack();

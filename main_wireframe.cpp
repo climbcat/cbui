@@ -566,7 +566,11 @@ void RunWireframe() {
 
             UI_LayoutExpandCenter();
 
-            UI_CoolPanelPadded(400, 170, 20);
+            bool close;
+            UI_CoolPanelPadded(400, 170, 20, &close);
+            if (close) {
+                mode = 0;
+            }
 
             UI_Label("Rotate         Mouse Left");
             UI_Label("Pan            Mouse Right");
@@ -575,6 +579,8 @@ void RunWireframe() {
             UI_Label("F1             Help Menu");
             UI_Label("Esc            Quit");
 
+            if (UI_Button("Ok")) printf("Ok\n");
+            if (UI_ToggleButton("Toggle", &dbg_tpush)) printf("Toggle\n");
             /*
             UI_LayoutHorizontal();
             if (UI_Button("Ok")) printf("Ok\n");
