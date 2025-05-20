@@ -20,9 +20,6 @@
 //
 
 
-// TODO: move geometry.h using functions to user code
-
-
 void IndicesAppend(
     MArena *a_dest,
     List<Vector3f> *values_dest,
