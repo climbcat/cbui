@@ -4,11 +4,11 @@
 
 Written in C-style C++:
 
-- Vector & matrix 3D math
-- Software 2D Renderer and immediate-mode UI
-- Font atlas generation & text layout
-- Software 3D Renderer which handles dots and lines
-- Algorithms: Octree, Index sets
+- Vectors & 4x4 matrix transforms
+- Immediate-mode UI with tree-based offline auto-layout algorithm)
+- Font atlas & text layout
+- Sw render for text, UI, dots and lines
+- Octree, Index sets
 
 ## Linux
 
