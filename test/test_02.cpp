@@ -10,7 +10,7 @@ void TestPlatformGlfw() {
 
     MContext *ctx = InitBaselayer();
     ImageBufferInit(ctx->a_life);
-    PlafGlfw *plf = PlafGlfwInit();
+    PlafGlfw *plf = PlafGlfwInit("TestPlatformGlfw");
 
 
     bool running = true;

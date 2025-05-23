@@ -80,6 +80,7 @@ struct ActionKeys {
 struct PlafGlfw {
     GLFWwindow* window;
     bool fullscreen;
+    char *title;
 
     Button left;
     Button right;
@@ -222,18 +223,19 @@ void ImageBufferClear(u32 width, u32 height) {
 
 
 static PlafGlfw g_plaf_glfw;
-PlafGlfw* PlafGlfwInit(u32 window_width = 640, u32 window_height = 480) {
+PlafGlfw* PlafGlfwInit(const char *title, u32 window_width = 640, u32 window_height = 480) {
     g_plaf_glfw = {};
     PlafGlfw *plf = &g_plaf_glfw;
     plf->width = window_width;
     plf->height = window_height;
+    plf->title = (char*) title;
 
     glfwInit();
 
     // opengl window & context
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    plf->window = glfwCreateWindow(plf->width, plf->height, "glew_flfw_window_title", NULL, NULL);
+    plf->window = glfwCreateWindow(plf->width, plf->height, title, NULL, NULL);
     glfwMakeContextCurrent(plf->window);
 
     // glew
@@ -310,7 +312,7 @@ void PlafGlfwUpdate(PlafGlfw* plf) {
             // destroy and re-create everything (!?!)
             glfwDestroyWindow(plf->window);
             glfwTerminate();
-            plf = PlafGlfwInit(plf->width, plf->height);
+            plf = PlafGlfwInit(plf->title, plf->width, plf->height);
         }
 
         plf->screen.SetSize(plf->image_buffer, plf->width, plf->height);

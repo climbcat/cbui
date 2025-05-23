@@ -447,7 +447,7 @@ void RunWireframe() {
     // init
     MContext *ctx = InitBaselayer();
     ImageBufferInit(ctx->a_life);
-    PlafGlfw *plf = PlafGlfwInit();
+    PlafGlfw *plf = PlafGlfwInit("Wireframe Demo");
     AppInit(ctx->a_tmp, plf->width, plf->height);
     app.cam.radius = 10;
     app.cam.theta = 50;
@@ -483,7 +483,7 @@ void RunWireframe() {
 
 
     // app mode
-    u32 mode = 1;
+    u32 mode = 0;
     bool dbg_tpush = false;
     bool dbg_tpush2 = false;
 
