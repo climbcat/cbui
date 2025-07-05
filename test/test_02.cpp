@@ -3,6 +3,8 @@
 #include "../src/geometry/geometry.h"
 #include "../src/geometry/gtypes.h"
 #include "../src/geometry/wireframe.h"
+#include "../src/geometry/scenegraph.h"
+
 
 
 void TestPlatformGlfw() {
@@ -65,6 +67,8 @@ bool FClosePN(f32 val, f32 target_pn) {
 }
 
 Array<Ray> TestSLAB() {
+    printf("TestSLAB\n");
+
     MArena _a = ArenaCreate();
     MArena *a = &_a;
     Array<Ray> error_rays = InitArray<Ray>(a, 10000);
@@ -132,12 +136,30 @@ Array<Ray> TestSLAB() {
     return error_rays;
 }
 
-void TestSLABEdgeCases() {
-    // TODO: impl.
+
+void TestSceneGraph() {
+    printf("TestSceneGraph\n");
+
+    MArena *a_tmp = InitBaselayer()->a_tmp;
+
+    s32 cap = 256;
+    Array<SGNode*> node_handles = InitArray<SGNode*>(a_tmp, cap);
+
+    SceneGraphInit();
+    for (s32 i = 0; i < cap; ++i) {
+        SGNode *n = SceneGraphAlloc();
+        node_handles.Add(n);
+    }
+
+    for (s32 i = 0; i < cap; ++i) {
+        SGNode *n = node_handles.arr[i];
+        SceneGraphFree(n);
+    }
 }
 
-void Test() {
+
+void Test_02() {
     //TestPlatformGlfw();
-    TestSLAB();
-    TestSLABEdgeCases();
+    //TestSLAB();
+    TestSceneGraph();
 }

@@ -649,7 +649,7 @@ int main (int argc, char **argv) {
         printf("--version:       print the application version\n");
     }
     else if (CLAContainsArg("--test", argc, argv)) {
-        Test();
+        Test_02();
     }
     else if (CLAContainsArg("--version", argc, argv)) {
         printf("%d.%d.%d\n", WF_VERSION_MAJOR, WF_VERSION_MINOR, WF_VERSION_PATCH);

@@ -9,7 +9,7 @@
 struct SGNode;
 
 
-static MPool g_p_transforms;
+static MPool g_p_sgnodes;
 static void *g_sg_root_addr;
 
 
@@ -23,18 +23,18 @@ struct SGNode {
 
     inline
     SGNode *Next() {
-        return (SGNode *) PoolIdx2Ptr(&g_p_transforms, next);
+        return (SGNode *) PoolIdx2Ptr(&g_p_sgnodes, next);
     }
 
     inline
     SGNode *First() {
-        return (SGNode *) PoolIdx2Ptr(&g_p_transforms, first);
+        return (SGNode *) PoolIdx2Ptr(&g_p_sgnodes, first);
     }
 
     inline
     SGNode *Parent() {
         if (parent) {
-            return (SGNode *) PoolIdx2Ptr(&g_p_transforms, parent);
+            return (SGNode *) PoolIdx2Ptr(&g_p_sgnodes, parent);
         }
         else{
             return (SGNode*) g_sg_root_addr;
@@ -83,10 +83,12 @@ struct SGNode {
 static SGNode g_sg_root;
 
 
-void InitSceneGraph(s32 cap = 256) {
-    assert(g_p_transforms.mem == NULL);
+void SceneGraphInit(s32 cap = 256) {
+    assert(g_p_sgnodes.mem == NULL);
 
-    g_p_transforms = PoolCreate(sizeof(SGNode), cap);
+    g_p_sgnodes = PoolCreate(sizeof(SGNode), cap + 1);
+    // lock index-0:
+    PoolAlloc(&g_p_sgnodes);
 
     //  The root node is both the zero-stub, the tree root node, and the object of index 0.
     //  Thus every zero-initialized node is already has root as its parent
@@ -99,9 +101,9 @@ void InitSceneGraph(s32 cap = 256) {
 }
 
 
-SGNode *SceneGraphAlloc(SGNode *parent) {
-    SGNode *t = (SGNode*) PoolAlloc(&g_p_transforms);
-    t->index = (u16) PoolPtr2Idx(&g_p_transforms, t);
+SGNode *SceneGraphAlloc(SGNode *parent = NULL) {
+    SGNode *t = (SGNode*) PoolAlloc(&g_p_sgnodes);
+    t->index = (u16) PoolPtr2Idx(&g_p_sgnodes, t);
     t->t_loc = Matrix4f_Identity();
     t->t_world = Matrix4f_Identity();
 
@@ -130,7 +132,7 @@ void SceneGraphFree(SGNode * t) {
         g_sg_root.AppendChild(c);
     }
 
-    PoolFree(&g_p_transforms, t);
+    PoolFree(&g_p_sgnodes, t);
 }
 
 
