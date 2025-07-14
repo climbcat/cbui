@@ -1,5 +1,5 @@
-#ifndef __INIT_H__
-#define __INIT_H__
+#ifndef __INIT_ARCH_H__
+#define __INIT_ARCH_H__
 
 
 #include <math.h>

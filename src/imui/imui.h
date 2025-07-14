@@ -621,7 +621,7 @@ Widget *WidgetGetCached(const char *text, bool *was_new = NULL) {
         w->hash_key = key;
 
         // TODO: impl. the hash # string key features
-        w->text = Str { (char*) text, _strlen( (char*) text) };
+        w->text = Str { (char*) text, (u32) strlen( (char*) text) };
         if (was_new) *was_new = true;
     }
     else {
@@ -639,7 +639,7 @@ Widget *WidgetGetNew(const char *text = NULL) {
     Widget *w = g_p_widgets->Alloc();
     assert(w->frame_touched == 0);
     if (text) {
-        w->text = Str { (char*) text, _strlen( (char*) text) };
+        w->text = Str { (char*) text, (u32) strlen( (char*) text) };
     }
 
     return w;

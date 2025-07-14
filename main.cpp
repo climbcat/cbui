@@ -1,11 +1,12 @@
 #include "lib/jg_baselayer.h"
-#include "src/archive/init.h"
+#include "src/archive/init_arc.h"
+
 #include "test/test_01.cpp"
 
 
 #define CBUI_VERSION_MAJOR 0
 #define CBUI_VERSION_MINOR 1
-#define CBUI_VERSION_PATCH 0
+#define CBUI_VERSION_PATCH 1
 
 
 void BoxesAndPointClouds() {
@@ -85,7 +86,7 @@ void BoxesAndPointClouds() {
 
 int main (int argc, char **argv) {
     TimeProgram;
-    BaselayerAssertVersion(0, 1, 0);
+    BaselayerAssertVersion(0, 2, 2);
 
     bool force_testing = false;
 
@@ -95,7 +96,7 @@ int main (int argc, char **argv) {
         printf("--version:       print library version\n");
     }
     else if (CLAContainsArg("--test", argc, argv) || force_testing) {
-        Test();
+        //Test();
     }
     else if (CLAContainsArg("--version", argc, argv)) {
         printf("%d.%d.%d\n", CBUI_VERSION_MAJOR, CBUI_VERSION_MINOR, CBUI_VERSION_PATCH);

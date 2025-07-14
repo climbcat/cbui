@@ -1,5 +1,5 @@
 #include "../lib/jg_baselayer.h"
-#include "../src/archive/init.h"
+#include "../src/archive/init_arc.h"
 #include "../src/algorithms/octree.h"
 #include "../src/algorithms/indices.h"
 
@@ -443,7 +443,7 @@ void TestBrownianGlyphs() {
         // reset on key_space
         Key k = loop->GetMouseTrap()->last_keypress_frame;
         if (k == OUR_GLFW_KEY_SPACE) {
-            _memcpy(quads.lst, quads_initial.lst, sizeof(QuadHexaVertex) * quads_initial.len);
+            memcpy(quads.lst, quads_initial.lst, sizeof(QuadHexaVertex) * quads_initial.len);
         }
         else if (k == OUR_GLFW_KEY_UP) {
             magnitude *= 1.5f;

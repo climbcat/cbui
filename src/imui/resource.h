@@ -73,6 +73,8 @@ ResourceStreamHandle ResourceStreamLoadAndOpen(MArena *a_tmp, MArena *a_dest, co
     HashMap map_keynames = InitMap(a_tmp, MAX_RESOURCE_CNT);
 
     ResourceHdr *res = hdl.first;
+
+    StrSetArenas(a_dest, NULL);
     while (res) {
         assert(hdl.cnt < MAX_RESOURCE_CNT && "artificial resources load count limit reached");
 
@@ -86,14 +88,14 @@ ResourceStreamHandle ResourceStreamLoadAndOpen(MArena *a_tmp, MArena *a_dest, co
             assert( MapGet(&map_keynames, key) == 0 && "resource key duplicate");
         }
         if (put_strs_inline) {
-            hdl.key_names[res->tpe] = StrLstPut(a_dest, res->key_name, hdl.key_names[res->tpe]);
+            hdl.key_names[res->tpe] = StrLstPush(res->key_name, hdl.key_names[res->tpe]);
         }
         MapPut(&map_names, key, res);
         key = HashStringValue(res->name);
         if (MapGet(&map_names, key) == 0) {
             MapPut(&map_names, key, res);
             if (put_strs_inline) {
-                hdl.names[res->tpe] = StrLstPut(a_dest, res->name, hdl.names[res->tpe]);
+                hdl.names[res->tpe] = StrLstPush(res->name, hdl.names[res->tpe]);
             }
         }
 
@@ -103,6 +105,8 @@ ResourceStreamHandle ResourceStreamLoadAndOpen(MArena *a_tmp, MArena *a_dest, co
         // iter
         res = res->GetInlinedNext();
     }
+    StrPopArenas();
+
     printf("opened resource file '%s': %u entries (", filename, hdl.cnt);
     for (u32 i = 0; i < RST_CNT; ++i) {
         printf("%u", hdl.cnt_tpe[i]);
@@ -125,8 +129,8 @@ void ResourceStreamPushData(MArena *a_dest, ResourceStreamHandle *stream, Resour
     stream->current = (ResourceHdr*) ArenaAlloc(a_dest, sizeof(ResourceHdr));
     stream->current->tpe = tpe;
     stream->current->data_sz = data_sz;
-    _memcpy(stream->current->name, key_name, _strlen(name));
-    _memcpy(stream->current->key_name, key_name, _strlen(key_name));
+    memcpy(stream->current->name, key_name, strlen(name));
+    memcpy(stream->current->key_name, key_name, strlen(key_name));
     if (stream->prev) {
         stream->prev->next = (u32) ((u8*) stream->current - (u8*) stream->prev);
     }

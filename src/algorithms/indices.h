@@ -32,11 +32,11 @@ void IndicesAppend(
     *values_dest = InitList<Vector3f>(a_dest, values.len + values_append.len);
     *indices_dest = InitList<u32>(a_dest, indices.len + indices_append.len);
 
-    _memcpy(values_dest->lst, values.lst, values.len * sizeof(Vector3f));
+    memcpy(values_dest->lst, values.lst, values.len * sizeof(Vector3f));
     values_dest->len = values.len;
-    _memcpy(values_dest->lst + values_dest->len, values_append.lst, values_append.len * sizeof(Vector3f));
+    memcpy(values_dest->lst + values_dest->len, values_append.lst, values_append.len * sizeof(Vector3f));
     values_dest->len += values_append.len;
-    _memcpy(indices_dest->lst, indices.lst, indices.len * sizeof(u32));
+    memcpy(indices_dest->lst, indices.lst, indices.len * sizeof(u32));
     indices_dest->len = indices.len;
 
     // shifted and copy append-indices

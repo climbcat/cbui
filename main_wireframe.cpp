@@ -468,6 +468,9 @@ void RunWireframe() {
     objs.Add(CreateAAAxes());
     objs.Add(CreatePlane(10));
 
+
+    /*
+
     Wireframe box = CreateAABox( 0.5, 0.5, 0.5 );
     box.transform = TransformBuildTranslation({ 0.7, 0.5, -0.7 });
     box.color = COLOR_RED;
@@ -482,6 +485,19 @@ void RunWireframe() {
     cylinder.transform = TransformBuildTranslation({ -0.7, 0.5, 0 });
     cylinder.color = COLOR_GREEN;
     objs.Add(cylinder);
+
+    */
+
+
+    Wireframe axis_1 = CreateAAAxes();
+    axis_1.transform = TransformBuildTranslationOnly( Vector3f { 0, 0, 1} ) * TransformBuildRotateY( deg2rad * 30 );
+    axis_1.color = COLOR_RED;
+    Wireframe axis_2 = CreateAAAxes();
+    axis_2.transform = axis_1.transform * TransformBuildTranslationOnly( Vector3f { 0, 0, 2} ) * TransformBuildRotateY( deg2rad * 30 );
+    axis_2.color = COLOR_BLUE;
+
+    objs.Add(axis_1);
+    objs.Add(axis_2);
 
 
     // app mode
@@ -639,7 +655,7 @@ void RunWireframe() {
 
 
 int main (int argc, char **argv) {
-    BaselayerAssertVersion(0, 1, 0);
+    BaselayerAssertVersion(0, 2, 2);
 
     TimeProgram;
 

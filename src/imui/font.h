@@ -41,7 +41,7 @@ struct FontAtlas {
         return HashStringValue(key_name);
     }
     Str GetFontName() {
-        return Str { this->font_name, _strlen(this->font_name) };
+        return Str { this->font_name, (u32) strlen(this->font_name) };
     }
     void Print() {
         printf("font_sz %u, bitmap_sz %u %u, cell_w %u, ln_height %u, ln_ascend %u, glyphs %u, data ptrs %p %p\n", sz_px, texture.width, texture.height, cell_width, ln_height, ln_ascend, glyphs.len, glyphs.lst, texture.img);
@@ -174,7 +174,7 @@ FontAtlas *SetFontAndSize(FontSize font_size, Str font_name) {
     Str key_name = StrCat(font_name, StrL(buff));
 
     // get by key
-    u64 key = HashStringValue(StrZeroTerm(key_name));
+    u64 key = HashStringValue(StrZ(key_name));
     u64 val = MapGet(&g_resource_map, key);
     g_text_plotter = (FontAtlas*) val;
     return g_text_plotter;
