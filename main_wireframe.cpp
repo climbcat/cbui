@@ -468,9 +468,6 @@ void RunWireframe() {
     objs.Add(CreateAAAxes());
     objs.Add(CreatePlane(10));
 
-
-    /*
-
     Wireframe box = CreateAABox( 0.5, 0.5, 0.5 );
     box.transform = TransformBuildTranslation({ 0.7, 0.5, -0.7 });
     box.color = COLOR_RED;
@@ -485,19 +482,6 @@ void RunWireframe() {
     cylinder.transform = TransformBuildTranslation({ -0.7, 0.5, 0 });
     cylinder.color = COLOR_GREEN;
     objs.Add(cylinder);
-
-    */
-
-
-    Wireframe axis_1 = CreateAAAxes();
-    axis_1.transform = TransformBuildTranslationOnly( Vector3f { 0, 0, 1} ) * TransformBuildRotateY( deg2rad * 30 );
-    axis_1.color = COLOR_RED;
-    Wireframe axis_2 = CreateAAAxes();
-    axis_2.transform = axis_1.transform * TransformBuildTranslationOnly( Vector3f { 0, 0, 2} ) * TransformBuildRotateY( deg2rad * 30 );
-    axis_2.color = COLOR_BLUE;
-
-    objs.Add(axis_1);
-    objs.Add(axis_2);
 
 
     // app mode
@@ -608,42 +592,16 @@ void RunWireframe() {
             if (GetFKey(1)) { mode = 0; }
         }
 
-        else if (mode == 2) {
-            // TODO: automate setting input values
-            g_mouse_x = plf->cursorpos.x;
-            g_mouse_y = plf->cursorpos.y;
-            g_mouse_down = MouseLeft().ended_down;
-            g_mouse_pushed = MouseLeft().pushed;
-
-            Widget *horiz = UI_Plain();
-            //horiz->features_flg |= WF_EXPAND_VERTICAL;
-            horiz->features_flg |= WF_EXPAND_HORIZONTAL;
-            horiz->features_flg |= WF_LAYOUT_HORIZONTAL_CENTER_VERTICAL;
-            horiz->features_flg |= WF_LAYOUT_VERTICAL_CENTER_HORIZONTAL;
-            horiz->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
-            horiz->h = 200;
-            horiz->sz_border = 1;
-            horiz->col_bckgrnd = COLOR_WHITE;
-            horiz->col_border = COLOR_BLACK;
-
-            Widget *w;
-            if (UI_Button("Button", &w)) {
-                printf("clicked\n");
-            }
-            w->h = 100;
-
-            UI_FrameEnd(app.a_tmp, app.w, app.h);
-            SpriteRender_BlitAndCLear(InitImageRGBA(app.w, app.h, g_image_buffer));
-        }
-
         else {
             mode = 0;
         }
 
+        /*
         if (GetFKey(2)) {
             mode++;
-            mode = (mode % 3); printf("mode %d\n", mode);
+            mode = (mode % 2); printf("mode %d\n", mode);
         }
+        */
 
         //
         // frame end

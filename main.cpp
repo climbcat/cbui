@@ -6,7 +6,7 @@
 
 #define CBUI_VERSION_MAJOR 0
 #define CBUI_VERSION_MINOR 1
-#define CBUI_VERSION_PATCH 1
+#define CBUI_VERSION_PATCH 2
 
 
 void BoxesAndPointClouds() {
