@@ -121,6 +121,7 @@ int main (int argc, char **argv) {
         f_sources = StrLstPush("../src/cbui.h", f_sources);
         f_sources = StrLstPush("../src/geometry/gtypes.h", f_sources);
         f_sources = StrLstPush("../src/geometry/geometry.h", f_sources);
+        f_sources = StrLstPush("../src/geometry/camera.h", f_sources);
         f_sources = StrLstPush("../src/geometry/scenegraph.h", f_sources);
         f_sources = StrLstPush("../src/imui/color.h", f_sources);
         f_sources = StrLstPush("../src/imui/sprite.h", f_sources);
