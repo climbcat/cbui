@@ -2,10 +2,6 @@
 #define __ENTITYSYSTEM_H__
 
 
-#include "../geometry/gtypes.h"
-#include "../geometry/geometry.h"
-
-
 //
 // Entity System
 

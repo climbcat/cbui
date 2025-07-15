@@ -223,6 +223,7 @@ Color SampleTextureRGBA(ImageRGBA *tex, f32 x, f32 y) {
     Color b = tex->img[idx];
     return b;
 }
+
 inline
 Color SampleTextureRGBASafe(ImageRGBA *tex, f32 x, f32 y, Color col_default) {
     s32 i = (s32) round(tex->width * x);
@@ -234,6 +235,7 @@ Color SampleTextureRGBASafe(ImageRGBA *tex, f32 x, f32 y, Color col_default) {
     Color b = tex->img[idx];
     return b;
 }
+
 void BlitSprite(Sprite s, s32 x0, s32 y0, ImageRGBA *img_dest, ImageRGBA *img_src) {
     s32 q_w = s.w;
     s32 q_h = s.h;
@@ -295,11 +297,12 @@ struct SpriteMap {
     char key_name[32];
     List<Sprite> sprites;
     ImageRGBA texture;
+
     u64 GetKey() {
         return HashStringValue(key_name);
     }
-
 };
+
 
 SpriteMap *SpriteMapLoadStream(u8 *base_ptr, u32 data_sz) {
     SpriteMap *smap = (SpriteMap*) base_ptr;
@@ -309,7 +312,6 @@ SpriteMap *SpriteMapLoadStream(u8 *base_ptr, u32 data_sz) {
     assert(data_sz = sizeof(SpriteMap) + smap->sprites.len * sizeof(Sprite) + sizeof(Color) * smap->texture.width * smap->texture.height && "sanity check sprite map data size");
     return smap;
 }
-
 
 SpriteMap *CompileSpriteMapInline(MArena *a_dest, const char *name, const char *key_name, List<Sprite> sprites, List<u32> tex_keys, HashMap *texture_map) {
     s16 nx = (s16) floor( (f32) sqrt(sprites.len) );
@@ -409,7 +411,6 @@ void *GetTexture(u64 key) {
     void *result = (void*) MapGet(&g_texture_map, key);
     return result;
 }
-
 
 inline
 u8 SampleTexture(ImageB *tex, f32 x, f32 y) {
@@ -548,12 +549,15 @@ static Array<QuadHexaVertex> g_quad_buffer;
 void SpriteRender_Init(MArena *a_life, u32 max_quads = 2048) {
     g_quad_buffer = InitArray<QuadHexaVertex>(a_life, max_quads);
 }
+
 void SpriteRender_PushDrawCall(DrawCall dc) {
     // TODO: do something with this for OGL
 }
+
 void SpriteRender_PushQuad(QuadHexaVertex quad) {
     g_quad_buffer.Add(quad);
 }
+
 void SpriteRender_BlitAndCLear(ImageRGBA render_target) {
     BlitQuads(g_quad_buffer, &render_target);
     g_quad_buffer.len = 0;

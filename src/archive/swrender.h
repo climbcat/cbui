@@ -2,11 +2,6 @@
 #define __SWRENDER_H__
 
 
-#include "../geometry/geometry.h"
-#include "entity.h"
-#include "../platform/shaders.h"
-
-
 //
 // Screen coords
 

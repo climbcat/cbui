@@ -1,4 +1,11 @@
+#define ENABLE_GLFW
+
+
 #include <math.h>
+#include <assert.h>
+#include <signal.h>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 #include "lib/jg_baselayer.h"
 
@@ -120,9 +127,8 @@ int main (int argc, char **argv) {
         f_sources = StrLstPush("../src/imui/resource.h", f_sources);
         f_sources = StrLstPush("../src/imui/font.h", f_sources);
         f_sources = StrLstPush("../src/imui/imui.h", f_sources);
-        
-        // TODO: put imui, sprites, fontatlas in here
-
+        f_sources = StrLstPush("../src/imui/raster.h", f_sources);
+        f_sources = StrLstPush("../src/platform/platform_glfw.h", f_sources);
         //f_sources = StrLstPush("../indices.h", f_sources);
         //f_sources = StrLstPush("../octree.h", f_sources);
         f_sources = f_sources->first;

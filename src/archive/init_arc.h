@@ -2,23 +2,15 @@
 #define __INIT_ARCH_H__
 
 
-#include <math.h>
-#include <assert.h>
-
 #include "../geometry/gtypes.h"
-#include "entity.h"
 #include "../geometry/geometry.h"
-
-#include "ui.h"
 #include "../geometry/camera.h"
-
+#include "entity.h"
+#include "ui.h"
 #include "../imui/resource.h"
 #include "../imui/sprite.h"
 #include "../imui/font.h"
-
 #include "../imui/imui.h"
-
-#include "../platform/shaders.h"
 #include "../archive/swrender.h"
 #include "../archive/gameloop.h"
 
