@@ -2,10 +2,6 @@
 #define __FONT_H__
 
 
-#include "sprite.h"
-#include "resource.h"
-
-
 //
 //  FontAtlas
 

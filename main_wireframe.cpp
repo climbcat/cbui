@@ -1,11 +1,19 @@
+#include <math.h>
 #include "lib/jg_baselayer.h"
 
 #include "src/geometry/wireframe.h"
 #include "src/platform/platform_glfw.h"
 #include "src/geometry/camera.h"
-#include "src/imui/imui.h"
 
+#include "src/geometry/gtypes.h"
+#include "src/geometry/geometry.h"
 #include "src/geometry/scenegraph.h"
+
+#include "src/imui/color.h"
+#include "src/imui/sprite.h"
+#include "src/imui/resource.h"
+#include "src/imui/font.h"
+#include "src/imui/imui.h"
 
 #include "test/test_02.cpp"
 

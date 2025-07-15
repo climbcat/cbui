@@ -2,10 +2,6 @@
 #define __GEOMETRY_H__
 
 
-#include <math.h>
-#include "../../lib/jg_baselayer.h"
-
-
 //
 // Vector
 

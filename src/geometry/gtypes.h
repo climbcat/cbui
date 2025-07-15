@@ -2,10 +2,6 @@
 #define __GTYPES_H__
 
 
-#include <math.h>
-#include "../../lib/jg_baselayer.h"
-
-
 //
 // Colors
 

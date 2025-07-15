@@ -2,13 +2,10 @@
 #define __CBUI_H__
 
 
-#include <math.h>
-#include "../lib/jg_baselayer.h"
-
-
 #define CBUI_VERSION_MAJOR 0
-#define CBUI_VERSION_MINOR 1
+#define CBUI_VERSION_MINOR 2
 #define CBUI_VERSION_PATCH 0
+
 
 void CbuiAssertVersion(u32 major, u32 minor, u32 patch) {
     if (

@@ -2,10 +2,6 @@
 #define __SCENEGRAPH_H__
 
 
-#include "../geometry/geometry.h"
-#include "../geometry/gtypes.h"
-
-
 struct SGNode;
 
 
