@@ -596,13 +596,6 @@ void RunWireframe() {
             mode = 0;
         }
 
-        /*
-        if (GetFKey(2)) {
-            mode++;
-            mode = (mode % 2); printf("mode %d\n", mode);
-        }
-        */
-
         //
         // frame end
         XSleep(1);
