@@ -17,11 +17,6 @@ target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} ${GLEW_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} glfw)
 
-add_executable(wireframe main_wireframe.cpp)
-target_link_libraries(wireframe ${OPENGL_LIBRARIES})
-target_link_libraries(wireframe ${GLEW_LIBRARIES})
-target_link_libraries(wireframe glfw)
-
 
 # Windows:
 else()
@@ -39,9 +34,5 @@ target_link_libraries(${PROJECT_NAME} glfw3)
 target_link_libraries(${PROJECT_NAME} glew32)
 target_link_libraries(${PROJECT_NAME} OpenGL32)
 
-add_executable(wireframe main_wireframe.cpp)
-target_link_libraries(wireframe glfw3)
-target_link_libraries(wireframe glew32)
-target_link_libraries(wireframe OpenGL32)
 
 endif()

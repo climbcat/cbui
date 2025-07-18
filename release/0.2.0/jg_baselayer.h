@@ -29,7 +29,7 @@ SOFTWARE.
 
 #define BASELAYER_VERSION_MAJOR 0
 #define BASELAYER_VERSION_MINOR 2
-#define BASELAYER_VERSION_PATCH 2
+#define BASELAYER_VERSION_PATCH 3
 
 
 #ifndef __BASE_H__
@@ -1789,33 +1789,42 @@ Str StrBasename(Str path) {
     return StrBasename( StrZ(path) );
 }
 
-Str StrExtension(MArena *a, char *path) {
-    Str s { NULL, 0 };
-    StrLst *lst = StrSplit(StrL(path), '.');
-    if (lst->next != NULL) {
-        s = lst->next->GetStr();
-    }
-    return s;
-}
-
-Str StrExtension(char *path) {
+Str StrExtension(Str path) {
     assert(g_a_strings != NULL && "init strings first");
 
-    Str s { NULL, 0 };
-    StrLst *lst = StrSplit(StrL(path), '.');
+    Str result { NULL, 0 };
+    StrLst *lst = StrSplit(path, '.');
+    bool has_extension = (lst->next != NULL);
+
     while (lst->next != NULL) {
         lst = lst->next;
     }
-    s = lst->GetStr();
-    return s;
+
+    if (has_extension) {
+        result = lst->GetStr();
+    }
+    else {
+        result = {};
+    }
+
+    return result;
 }
 
-Str StrExtension(Str path) {
-    return StrExtension(StrZ(path));
+Str StrExtension(char *path) {
+    return StrExtension(StrL(path));
+}
+
+Str StrExtension(const char *path) {
+    return StrExtension(StrL(path));
 }
 
 Str StrDirPath(Str path) {
     assert(g_a_strings != NULL && "init strings first");
+
+    // with no extension, we assume dir
+    if (StrExtension(path).len == 0) {
+        return path;
+    }
 
     StrLst *slash = StrSplit(path, '/');
     u32 len = StrListLen(slash);
@@ -2518,13 +2527,7 @@ u8 *LoadFileMMAP(const char *filepath, u64 *size_bytes) {
     return LoadFileMMAP((char*) filepath, size_bytes);
 }
 
-StrLst *GetFilesInFolderPaths(MArena *a, char *rootpath);
-
-StrLst *GetFilesInFolderPaths_Rec(char *rootpath, StrLst *first = NULL, StrLst *last = NULL, const char *extension_filter = NULL, bool do_recurse = true);
-
-StrLst *GetFilesInFolderPaths(MArena *a, const char *rootpath) {
-    return GetFilesInFolderPaths(a, (char*) rootpath);
-}
+StrLst *GetFiles(char *rootpath, const char *extension_filter = NULL, bool do_recurse = true);
 
 u32 LoadFileGetSize(char* filepath) {
     FILE * f = fopen(filepath, "r");
@@ -2636,83 +2639,6 @@ bool ArenaSave(MArena *a, char *filename) {
 
 bool ArenaSave(MArena *a, const char *filename) {
     return ArenaSave(a, (char *) filename);
-}
-
-StrLst *GetFilesExt(const char *extension, const char *path = ".") { // filter files in a string list by extension
-    StrLst *all = GetFilesInFolderPaths(StrGetTmpArena(), path);
-    StrLst *filtered = NULL;
-    StrLst *first = NULL;
-    Str ext = StrL(extension);
-    while (all != NULL) {
-        Str _fpath = all->GetStr();
-        Str _ext = StrExtension(_fpath);
-
-        if (StrEqual(_ext, ext)) {
-            filtered = StrLstPush(_fpath, filtered);
-            if (first == NULL) {
-                first = filtered;
-            }
-        }
-        all = all->next;
-    }
-    return first;
-}
-
-
-//
-//  FInfo: file path info, construct file names / paths
-
-
-struct FInfo {
-    Str name;
-    Str ext;
-    Str basename;
-    Str path;
-    Str dirname;
-
-    Str BuildName(const char *prefix, const char *suffix, const char *ext) {
-        Str bn_new = StrL(prefix);
-        bn_new = StrCat(bn_new, basename);
-        bn_new = StrCat(bn_new, StrL(suffix));
-        Str rebuilt = StrPathBuild(dirname, bn_new, StrL(ext));
-        return rebuilt;
-    }
-    char *BuildNameZ(const char *prefix, const char *suffix, const char *ext) {
-        return StrZ( this->BuildName(prefix, suffix, ext) );
-    }
-    Str StripDirname() {
-        Str filename = StrL("");
-        filename = StrCat(filename, basename);
-        filename = StrCat(filename, StrL("."));
-        filename = StrCat(filename, ext);
-        return filename;
-    }
-    void Print() {
-        StrPrint("name      : ", name, "\n");
-        StrPrint("extension : ", ext, "\n");
-        StrPrint("basename  : ", basename, "\n");
-        StrPrint("dirname   : ", dirname, "\n");
-        Str rebuilt = StrPathBuild(dirname, basename, ext);
-        StrPrint("rebuilt   : ", rebuilt, "\n");
-    }
-};
-
-FInfo FInfoGet(Str pathname) {
-    FInfo info;
-    info.name = pathname;
-    info.ext = StrExtension(pathname);
-    info.basename = StrBasename(pathname);
-    info.dirname = StrDirPath(pathname);
-    return info;
-}
-
-FInfo InitFInfo(Str pathname) {
-    return FInfoGet(pathname);
-}
-
-inline
-FInfo FInfoGet(const char*pathname) {
-    return FInfoGet(StrL(pathname));
 }
 
 
@@ -2897,40 +2823,7 @@ const char *getBuild() { // courtesy of S.O.
             fclose(f);
             return data;
         }
-        StrLst *GetFilesInFolderPaths(MArena *unused, char *rootpath) {
-            StrLst *first = NULL;
 
-            struct dirent *dir;
-            DIR *d = opendir(rootpath);
-            if (d) {
-                d = opendir(rootpath);
-
-                Str path = StrL(rootpath);
-                if (path.len == 1 && path.str[0] == '.') {
-                    path.len = 0;
-                }
-                else if (path.str[path.len-1] != '/') {
-                    path = StrCat(path, StrL("/"));
-                }
-
-                StrLst *lst = NULL;
-                while ((dir = readdir(d)) != NULL) {
-                    // omit "." and ".."
-                    if (!strcmp(dir->d_name, ".") || !strcmp(dir->d_name, "..")) {
-                        continue;
-                    }
-
-                    Str dname = StrCat(path, StrL(dir->d_name));
-                    lst = StrLstPush(dname, lst);
-                    if (first == NULL) {
-                        first = lst;
-                    }
-                    //Str StrCat( lst->GetStr(), StrLiteral(dir->d_name), );
-                }
-                closedir(d);
-            }
-            return first;
-        }
         StrLst *GetFilePaths_Rec(char *rootpath, StrLst *head = NULL, StrLst *tail = NULL, const char *extension_filter = NULL, bool do_recurse = true) {
             struct dirent *dir_entry;
 
@@ -2938,10 +2831,8 @@ const char *getBuild() { // courtesy of S.O.
                 dir = opendir(rootpath);
 
                 Str path = StrL(rootpath);
-                if (path.len == 1 && path.str[0] == '.') {
-                    path.len = 0;
-                }
-                else if (path.str[path.len-1] != '/') {
+                if (path.str[path.len-1] != '/') {
+                    // ensure trailing slash
                     path = StrCat(path, StrL("/"));
                 }
 
@@ -2975,15 +2866,16 @@ const char *getBuild() { // courtesy of S.O.
                 fclose(f);
             }
 
-            if (tail == NULL) {
-                tail = StrLstPush( Str {}, NULL );
-            }
-
             return tail;
         }
 
-        StrLst *GetFiles(char *rootpath, const char *extension_filter = NULL, bool do_recurse = true) {
+        StrLst *GetFiles(char *rootpath, const char *extension_filter, bool do_recurse) {
             StrLst *fpaths = GetFilePaths_Rec(rootpath, NULL, NULL, extension_filter, do_recurse)->first;
+
+            if (fpaths == NULL) {
+                fpaths = StrLstPush( Str {}, NULL );
+            }
+
             return fpaths;
         }
 

@@ -5,14 +5,11 @@
 Written in C-style C++:
 
 - Vectors & 4x4 matrix transforms
-- Immediate-mode UI with tree-based offline auto-layout algorithm)
+- Immediate-mode UI with offline auto-layout
 - Font atlas & text layout
-- Sw render for text, UI, dots and lines
-- Octree, Index sets
+- Platform interface
 
 ## Linux
-
-This project depends on the two OpenGL and OS wrapper libraries; glew and glfw.
 
 <pre>
 sudo apt install cmake
@@ -22,28 +19,11 @@ sudo apt install libglfw3-dev
 
 Having installed dependencies, do the following to run basic tests/examples:
 
-<pre>
-git clone https://github.com/climbcat/cbui/
-cd cbui/build
-cmake ..
-make
-./cbui
-./wireframe
-</pre>
-
 ## Windows
 
-On Windows, 'glew' and 'glfw' /lib/ and /include/ are distributed as a zip file to be extracted locally:
+On Windows, first xtract the file 'lib_win.zip'. Install cmake for windows via https://cmake.org/download/.
 
-Extract the file 'lib_win.zip' (right click -> "Extract All ..." -> press Enter).
-
-CMake for windows is downloaded from https://cmake.org/download/.
-
-On windows, the c++ standard library binaries are installed using the Visual Studio Installer, e.g. "Desktop development with C++". The project uses a few of these, mainly std::thread for x-platform
-threading.
-
-If you are natively a linux enjoyer, I recommend the alternative terminal 'w64devkit'
-available via https://www.mingw-w64.org/downloads/.
+The linux-like tty tool 'w64devkit' is available via https://www.mingw-w64.org/downloads/.
 
 To compile and run, use:
 
@@ -52,7 +32,4 @@ cd cbui/build
 cmake ..
 cmake --build .
 ./Debug/cbui.exe
-./Debug/wireframe.exe
 </pre>
-
-(Use the cmake flag "-- config Release" to produce release builds.)
