@@ -9,7 +9,7 @@ Written in C-style C++:
 - Font atlas & text layout
 - Platform interface (depends on glew/glfw)
 
-The header-only library <code>jg_cbui.h</code> and its dependency, <code>jg_baselayer.h</code>, is simply copied into your project and included.
+The header-only library <code>jg_cbui.h</code>, and its dependency <code>jg_baselayer.h</code>, are simply copied from the release folder into your project and included.
 
 The platform layer wraps mouse/keyboard input, and sets up a simple OpenGL buffer that covers the window as a texture.
 This effectively makes a direct screen buffer available for drawing with your custom renderer, or by some of the available raster/blit functions.
