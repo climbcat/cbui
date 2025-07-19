@@ -9,12 +9,12 @@ Written in C-style C++:
 - Font atlas & text layout
 - Platform interface (depends on glew/glfw)
 
-The header-only library <code>jg_cbui.h</code> and its dependency, <code>jg_baselayer.h</code>, is simply copied and included into your project.
+The header-only library <code>jg_cbui.h</code> and its dependency, <code>jg_baselayer.h</code>, is simply copied into your project and included.
 
 The platform layer wraps mouse/keyboard input, and sets up a simple OpenGL buffer that covers the window as a texture.
 This effectively makes a direct screen buffer available for drawing with your custom renderer, or by some of the available raster/blit functions.
 
-To use this feature, set ENABLE_GLFW using e.g.
+To use this feature, set <code>ENABLE_GLFW</code>:
 
 <pre>
 #define ENABLE_GLFW
@@ -43,7 +43,7 @@ cbui --test
 
 ## Windows
 
-If using the platform layer, e.g. <code>ENABLE_GLFW</code> is set, manually extract the provided 'lib_win.zip', or provide glew/glfw in a different way.
+If using the platform layer (when <code>ENABLE_GLFW</code> is set), manually extract the provided 'lib_win.zip', or provide glew/glfw in a different way.
 
 Install cmake for windows via https://cmake.org/download/.
 
