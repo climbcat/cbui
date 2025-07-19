@@ -86,7 +86,7 @@ int main (int argc, char **argv) {
     }
 
     else if (CLAContainsArg("--version", argc, argv)) {
-        printf("%d.%d.%d\n", CBUI_VERSION_MAJOR, CBUI_VERSION_MINOR, CBUI_VERSION_PATCH);
+        printf("dev: %d.%d.%d\n", CBUI_VERSION_MAJOR, CBUI_VERSION_MINOR, CBUI_VERSION_PATCH);
         exit(0);
     }
 
