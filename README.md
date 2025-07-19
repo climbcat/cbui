@@ -32,9 +32,7 @@ To check that everything works, do the following:
 
 <pre>
 git clone https://github.com/climbcat/cbui
-cd cbui
-mkdir build
-cd build
+cd cbui/build
 cmake ..
 make
 cbui --test
