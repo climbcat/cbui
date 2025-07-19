@@ -1,4 +1,3 @@
-#include "../lib/jg_baselayer.h"
 #include "../src/archive/init_arc.h"
 #include "../src/algorithms/octree.h"
 #include "../src/algorithms/indices.h"

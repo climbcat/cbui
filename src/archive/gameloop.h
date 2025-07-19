@@ -164,7 +164,7 @@ struct GameLoopOne {
     // TODO: Rename to GameLoopFrameEnd()
     void CycleFrame(EntitySystem *es) {
 
-        OrbitCameraUpdate(&cam, mouse.dx, mouse.dy, mouse.l, mouse.r, mouse.mwheel_y_delta);
+        OrbitCameraUpdate(&cam, (f32) mouse.dx, (f32) mouse.dy, mouse.l, mouse.r, (f32) mouse.mwheel_y_delta);
         mouse.FrameEnd(frameno);
 
         Matrix4f vp = proj.proj * TransformGetInverse( cam.view );
@@ -192,7 +192,7 @@ struct GameLoopOne {
         XSleep(10);
     }
     void FrameEnd2DAnd3D(EntitySystem *es) {
-        OrbitCameraUpdate(&cam, mouse.dx, mouse.dy, mouse.l, mouse.r, mouse.mwheel_y_delta);
+        OrbitCameraUpdate(&cam, (f32) mouse.dx, (f32) mouse.dy, mouse.l, mouse.r, (f32) mouse.mwheel_y_delta);
         mouse.FrameEnd(frameno);
 
         Matrix4f vp = proj.proj * TransformGetInverse( cam.view );

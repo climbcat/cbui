@@ -7,7 +7,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include "lib/jg_baselayer.h"
+#include "release/0.2.0/jg_baselayer.h"
 
 #include "src/geometry/gtypes.h"
 #include "src/geometry/geometry.h"

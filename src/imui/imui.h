@@ -471,7 +471,7 @@ List<Widget*> WidgetTreePositioning(MArena *a_tmp, Widget *w_root) {
             ch->clicked = false;
 
             if (ch->features_flg & WF_CAN_COLLIDE) {
-                if (ch->rect.DidCollide( g_mouse_x, g_mouse_y )) {
+                if (ch->rect.DidCollide( (s32) g_mouse_x, (s32) g_mouse_y )) {
                     if (g_w_active == NULL) {
                         ch->hot = true;
                         if (g_mouse_down) {
@@ -482,7 +482,7 @@ List<Widget*> WidgetTreePositioning(MArena *a_tmp, Widget *w_root) {
                     }
                     else {
                         // disable active mode
-                        ch->active == false;
+                        ch->active = false;
                     }
                 }
                 else {

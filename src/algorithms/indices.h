@@ -2,7 +2,6 @@
 #define __INDICES_H__
 
 
-#include "../../lib/jg_baselayer.h"
 #include "../geometry/geometry.h"
 
 
