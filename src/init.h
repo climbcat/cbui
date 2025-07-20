@@ -2,23 +2,33 @@
 #define __CBUI_INIT_H__
 
 
-MContext *InitCbui(u64 *frameno, PlafGlfw **platform_out) {
+struct CbuiState {
+    MContext *ctx;
+    u64 frameno;
+    PlafGlfw *plf;
+    bool running;
+};
 
-    MContext *ctx = InitBaselayer();
-    PlafGlfw *plf = PlafGlfwInit("Testris");
-    *platform_out = plf;
-    plf->image_buffer = ImageBufferInit(ctx->a_life);
+static CbuiState _g_cbui_state;
+static CbuiState *cbui;
 
-    InitImUi(plf->width, plf->height, frameno);
+CbuiState *CbuiInit() {
+    cbui = &_g_cbui_state;
+    cbui->running = true;
+    cbui->ctx = InitBaselayer();
+    cbui->plf = PlafGlfwInit("Testris");
+    cbui->plf->image_buffer = ImageBufferInit(cbui->ctx->a_life);
 
-    ImageRGBA render_target = { (s32) plf->width, (s32) plf->height, (Color*) plf->image_buffer };
-    SpriteRender_Init(ctx->a_life);
+    InitImUi(cbui->plf->width, cbui->plf->height, &cbui->frameno);
 
-    g_texture_map = InitMap(ctx->a_life, MAX_RESOURCE_CNT);
-    g_resource_map = InitMap(ctx->a_life, MAX_RESOURCE_CNT);
+    ImageRGBA render_target = { (s32) cbui->plf->width, (s32) cbui->plf->height, (Color*) cbui->plf->image_buffer };
+    SpriteRender_Init(cbui->ctx->a_life);
+
+    g_texture_map = InitMap(cbui->ctx->a_life, MAX_RESOURCE_CNT);
+    g_resource_map = InitMap(cbui->ctx->a_life, MAX_RESOURCE_CNT);
 
     // load & check resource file
-    ResourceStreamHandle hdl = ResourceStreamLoadAndOpen(ctx->a_tmp, ctx->a_life, "all.res");
+    ResourceStreamHandle hdl = ResourceStreamLoadAndOpen(cbui->ctx->a_tmp, cbui->ctx->a_life, "all.res");
     g_font_names = hdl.names[RST_FONT];
     bool log_verbose = false;
 
@@ -56,24 +66,6 @@ MContext *InitCbui(u64 *frameno, PlafGlfw **platform_out) {
     }
     SetFontAndSize(FS_48, g_font_names->GetStr());
 
-    return ctx;
-}
-
-
-struct CbuiState {
-    MContext *ctx;
-    u64 frameno;
-    PlafGlfw *plf;
-    bool running;
-};
-
-static CbuiState _g_cbui_state;
-static CbuiState *cbui;
-
-CbuiState *CbuiInit__() {
-    cbui = &_g_cbui_state;
-    cbui->ctx = InitCbui(&cbui->frameno, &cbui->plf);
-    cbui->running = true;
     return cbui;
 }
 
