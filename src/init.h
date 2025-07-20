@@ -7,11 +7,11 @@ MContext *InitCbui(u64 *frameno, PlafGlfw **platform_out) {
     MContext *ctx = InitBaselayer();
     PlafGlfw *plf = PlafGlfwInit("Testris");
     *platform_out = plf;
-    u8 *image_buffer = ImageBufferInit(ctx->a_life);
+    plf->image_buffer = ImageBufferInit(ctx->a_life);
 
     InitImUi(plf->width, plf->height, frameno);
 
-    ImageRGBA render_target = { (s32) plf->width, (s32) plf->height, (Color*) image_buffer };
+    ImageRGBA render_target = { (s32) plf->width, (s32) plf->height, (Color*) plf->image_buffer };
     SpriteRender_Init(ctx->a_life);
 
     g_texture_map = InitMap(ctx->a_life, MAX_RESOURCE_CNT);
