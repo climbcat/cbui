@@ -861,16 +861,13 @@ Widget *UI_Label(const char *text, Color color = Color { RGBA_BLACK }) {
     Widget *w = WidgetGetNew(text);
     w->features_flg |= WF_DRAW_TEXT;
 
-    w->sz_font = GetDefaultFontSize();
+    w->sz_font = GetFontSize();
     w->col_bckgrnd = ColorGray(0.9f);
     w->col_border = ColorBlack();
     w->col_text = color;
 
-    FontSize fs = GetFontSize();
-    SetFontSize(w->sz_font);
     w->w = TextLineWidth(g_text_plotter, w->text);
     w->h = g_text_plotter->ln_measured;
-    SetFontSize(fs);
 
     TreeSibling(w);
     return w;
