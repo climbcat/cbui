@@ -362,11 +362,12 @@ static u8 *g_image_buffer;
 #define IMG_BUFF_CHANNELS 4
 #define IMG_BUFF_MAX_WIDTH 3840
 #define IMG_BUFF_MAX_HEIGHT 2160
-u8* ImageBufferGet() {
+u8 *ImageBufferGet() {
     return g_image_buffer;
 }
-void ImageBufferInit(MArena *a_dest) {
+u8 *ImageBufferInit(MArena *a_dest) {
     g_image_buffer = (u8*) ArenaAlloc(a_dest, IMG_BUFF_CHANNELS * IMG_BUFF_MAX_WIDTH * IMG_BUFF_MAX_HEIGHT);
+    return g_image_buffer;
 }
 void ImageBufferClear(u32 width, u32 height) {
     if (g_image_buffer) {
