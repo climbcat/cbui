@@ -60,4 +60,51 @@ MContext *InitCbui(u64 *frameno, PlafGlfw **platform_out) {
 }
 
 
+struct CbuiState {
+    MContext *ctx;
+    u64 frameno;
+    PlafGlfw *plf;
+    bool running;
+};
+
+static CbuiState _g_cbui_state;
+static CbuiState *cbui;
+
+CbuiState *CbuiInit__() {
+    cbui = &_g_cbui_state;
+    cbui->ctx = InitCbui(&cbui->frameno, &cbui->plf);
+    cbui->running = true;
+    return cbui;
+}
+
+void CbuiFrameStart() {
+    ArenaClear(cbui->ctx->a_tmp);
+    cbui->frameno++;
+    PlafGlfwUpdate(cbui->plf);
+    ImageBufferClear(cbui->plf->width, cbui->plf->height);
+
+
+    // TODO: clean up these globals
+    g_mouse_x = cbui->plf->cursorpos.x;
+    g_mouse_y = cbui->plf->cursorpos.y;
+    g_mouse_down = MouseLeft().ended_down;
+    g_mouse_pushed = MouseLeft().pushed;
+}
+
+void CbuiFrameEnd() {
+    UI_FrameEnd(cbui->ctx->a_tmp, cbui->plf->width, cbui->plf->height);
+    SpriteRender_BlitAndCLear(InitImageRGBA(cbui->plf->width, cbui->plf->height, g_image_buffer));
+    PlafGlfwUpdate(cbui->plf);
+
+    cbui->running = cbui->running && !GetEscape() && !GetWindowShouldClose(cbui->plf);
+
+    // TODO: get delta t and framerate under control
+    XSleep(1);
+}
+
+void CbuiExit() {
+    PlafGlfwTerminate(cbui->plf);
+}
+
+
 #endif
