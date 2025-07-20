@@ -74,22 +74,23 @@ enum WidgetFlags {
     WF_DRAW_TEXT = 1 << 1,
     WF_CAN_COLLIDE = 1 << 2,
 
-    WF_LAYOUT_HORIZONTAL = 1 << 10,
-    WF_LAYOUT_VERTICAL = 1 << 11,
-    WF_LAYOUT_HORIZONTAL_CENTER_VERTICAL = 1 << 12,
-    WF_LAYOUT_VERTICAL_CENTER_HORIZONTAL = 1 << 13,
+    WF_LAYOUT_CENTER = 1 << 10,
+    WF_LAYOUT_HORIZONTAL = 1 << 11,
+    WF_LAYOUT_VERTICAL = 1 << 12,
+    WF_ALIGN_LEFT = 1 << 13,
+    WF_ALIGN_RIGHT = 1 << 14,
+    WF_ALIGN_CENTER = 1 << 15,
 
-    WF_EXPAND_HORIZONTAL = 1 << 15,
-    WF_EXPAND_VERTICAL = 1 << 16,
+    WF_EXPAND_HORIZONTAL = 1 << 16,
+    WF_EXPAND_VERTICAL = 1 << 17,
 
     WF_ABSREL_POSITION = 1 << 20
 };
 bool WidgetIsLayout(u32 features) {
     bool result =
+        features & WF_LAYOUT_CENTER ||
         features & WF_LAYOUT_HORIZONTAL ||
         features & WF_LAYOUT_VERTICAL ||
-        features & WF_LAYOUT_HORIZONTAL_CENTER_VERTICAL ||
-        features & WF_LAYOUT_VERTICAL_CENTER_HORIZONTAL ||
     false;
     return result;
 }
@@ -170,7 +171,6 @@ static Widget *g_w_layout;
 static Widget *g_w_active;
 
 static u64 *g_frameno_imui;
-//static MouseTrap *g_mouse_imui;
 
 
 void TreeSibling(Widget *w) {
@@ -187,6 +187,7 @@ void TreeSibling(Widget *w) {
         w->parent = g_w_layout;
     }
 }
+
 void TreeBranch(Widget *w) {
     if (g_w_layout->first != NULL) {
         Widget *sib = g_w_layout->first;
@@ -201,6 +202,7 @@ void TreeBranch(Widget *w) {
     w->parent = g_w_layout;
     g_w_layout = w;
 }
+
 void TreePop() {
     Widget *parent = g_w_layout->parent;
     if (parent != NULL) {
@@ -294,6 +296,10 @@ void WidgetTreeSizeWrap_Rec(Widget *w, s32 *w_sum, s32 *h_sum, s32 *w_max, s32 *
 
 
     if (w->w == 0 && w->h == 0) {
+        if (w->features_flg & WF_LAYOUT_CENTER) {
+            w->w = *w_max;
+            w->h = *h_max;
+        }
         if (w->features_flg & WF_LAYOUT_HORIZONTAL) {
             w->w = *w_sum;
             w->h = *h_max;
@@ -302,19 +308,8 @@ void WidgetTreeSizeWrap_Rec(Widget *w, s32 *w_sum, s32 *h_sum, s32 *w_max, s32 *
             w->w = *w_max;
             w->h = *h_sum;
         }
-        else if (w->features_flg & WF_LAYOUT_HORIZONTAL_CENTER_VERTICAL) {
-            w->w = *w_sum;
-            w->h = *h_max;
-        }
-        else if (w->features_flg & WF_LAYOUT_VERTICAL_CENTER_HORIZONTAL) {
-            w->w = *w_max;
-            w->h = *h_sum;
-        }
-        else if ((w->features_flg & WF_LAYOUT_VERTICAL_CENTER_HORIZONTAL) && (w->features_flg & WF_LAYOUT_VERTICAL_CENTER_HORIZONTAL)) {
-            w->w = *w_max;
-            w->h = *h_max;
-        }
     }
+
     // or keep pre-sets
     else {
         *w_sum = w->w;
@@ -396,27 +391,42 @@ List<Widget*> WidgetTreePositioning(MArena *a_tmp, Widget *w_root) {
         Widget *ch = w->first;
         while (ch != NULL) { // iterate child widgets
 
-            // set child position - skip completely if absolutely positioned
+            // set child position - if not absolutely positioned
             if ((ch->features_flg & WF_ABSREL_POSITION) == false) {
+
                 ch->x0 = w->x0;
                 ch->y0 = w->y0;
 
-                if (w->features_flg & WF_LAYOUT_HORIZONTAL) {
-                    ch->x0 = w->x0 + pt_x;
-                    pt_x += ch->w;
-                }
-                else if (w->features_flg & WF_LAYOUT_HORIZONTAL_CENTER_VERTICAL) {
+                if (w->features_flg & WF_LAYOUT_CENTER) {
+                    ch->y0 = w->y0 + (w->h - ch->h) / 2;
                     ch->x0 = w->x0 + (w->w - ch->w) / 2;
                 }
 
-                if (w->features_flg & WF_LAYOUT_VERTICAL) {
+                else if (w->features_flg & WF_LAYOUT_HORIZONTAL) {
+                    ch->x0 = w->x0 + pt_x;
+                    pt_x += ch->w;
+
+                    if (w->features_flg & WF_ALIGN_CENTER) {
+                        ch->y0 = w->y0 + (w->h - ch->h) / 2;
+                    }
+                    else if (w->features_flg & WF_ALIGN_RIGHT) {
+                        ch->y0 = w->y0 + (w->h - ch->h);
+                    }
+                }
+
+                else if (w->features_flg & WF_LAYOUT_VERTICAL) {
                     ch->y0 = w->y0 + pt_y;
                     pt_y += ch->h;
-                }
-                else if (w->features_flg & WF_LAYOUT_VERTICAL_CENTER_HORIZONTAL) {
-                    ch->y0 = w->y0 + (w->h - ch->h) / 2;
+
+                    if (w->features_flg & WF_ALIGN_CENTER) {
+                        ch->x0 = w->x0 + (w->w - ch->w) / 2;
+                    }
+                    else if (w->features_flg & WF_ALIGN_RIGHT) {
+                        ch->x0 = w->x0 + (w->w - ch->w);
+                    }
                 }
             }
+
             if (ch->features_flg & WF_ABSREL_POSITION) {
                 // basic offset wrt. parent
                 if (ch->alignment_flg == 0) {
@@ -723,10 +733,10 @@ bool UI_ToggleButton(const char *text, bool *state, Widget **w_out = NULL) {
 Widget *UI_CoolPanel(s32 width, s32 height, bool center_h = true) {
     Widget *w = WidgetGetNew();
     w->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
-    if (center_h) {
-        w->features_flg |= WF_LAYOUT_HORIZONTAL_CENTER_VERTICAL;
-    }
     w->features_flg |= WF_LAYOUT_VERTICAL;
+    if (center_h) {
+        w->features_flg |= WF_ALIGN_CENTER;
+    }
     w->w = width;
     w->h = height;
     w->sz_border = 20;
@@ -769,8 +779,8 @@ bool UI_CrossButton(const char *symbol, Widget **w_out = NULL) {
 Widget *UI_CoolPopUp(s32 width, s32 height, s32 padding = 20, bool *close = NULL) {
     Widget *w = WidgetGetNew();
     w->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
-    w->features_flg |= WF_LAYOUT_HORIZONTAL_CENTER_VERTICAL;
-    w->features_flg |= WF_LAYOUT_VERTICAL_CENTER_HORIZONTAL;
+    w->features_flg |= WF_LAYOUT_CENTER;
+
     w->w = width;
     w->h = height;
     w->sz_border = 20;
@@ -778,7 +788,6 @@ Widget *UI_CoolPopUp(s32 width, s32 height, s32 padding = 20, bool *close = NULL
     w->col_border = ColorGray(0.7f);
 
     TreeBranch(w);
-
 
     Widget *x;
     bool cross_clicked = UI_CrossButton("x", &x);
@@ -795,8 +804,7 @@ Widget *UI_CoolPopUp(s32 width, s32 height, s32 padding = 20, bool *close = NULL
         x->col_bckgrnd = w->col_border;
     }
 
-
-    Widget *i = WidgetGetNew(); 
+    Widget *i = WidgetGetNew();
     i->features_flg |= WF_LAYOUT_VERTICAL;
     i->w = width - padding * 2;
     i->h = height - padding * 2;
@@ -818,8 +826,7 @@ Widget *UI_LayoutExpandCenter() {
 
     w->features_flg |= WF_EXPAND_VERTICAL;
     w->features_flg |= WF_EXPAND_HORIZONTAL;
-    w->features_flg |= WF_LAYOUT_HORIZONTAL_CENTER_VERTICAL;
-    w->features_flg |= WF_LAYOUT_VERTICAL_CENTER_HORIZONTAL;
+    w->features_flg |= WF_LAYOUT_CENTER;
 
     TreeBranch(w);
     return w;
@@ -833,9 +840,13 @@ Widget *UI_LayoutHorizontal() {
     return w;
 }
 
-Widget *UI_LayoutVertical() {
+Widget *UI_LayoutVertical(bool center_vertical = false) {
     Widget *w = WidgetGetNew();
+
     w->features_flg |= WF_LAYOUT_VERTICAL;
+    if (center_vertical) {
+        w->features_flg |= WF_ALIGN_CENTER;
+    }
 
     TreeBranch(w);
     return w;
@@ -848,14 +859,12 @@ void UI_SpaceH(u32 width) {
     TreeSibling(w);
 }
 
-
 void UI_SpaceV(u32 height) {
     Widget *w = WidgetGetNew();
     w->h = height;
 
     TreeSibling(w);
 }
-
 
 Widget *UI_Label(const char *text, Color color = Color { RGBA_BLACK }) {
     Widget *w = WidgetGetNew(text);
