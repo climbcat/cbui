@@ -129,8 +129,6 @@ struct Widget {
     u32 alignment_flg;
 
     // everything below belongs in the layout algorithm
-    s32 x;
-    s32 y;
     CollRect rect;
 
     void CollRectClear() {
@@ -432,7 +430,7 @@ List<Widget*> WidgetTreePositioning(MArena *a_tmp, Widget *w_root) {
                 if (ch->alignment_flg == 0) {
                     ch->x0 += w->x0;
                     ch->y0 += w->y0;
-                } 
+                }
 
                 // alignment also specified
                 else if (ch->alignment_flg & WA_TOP_LEFT) {
@@ -600,14 +598,9 @@ void UI_FrameEnd(MArena *a_tmp, s32 width, s32 height) {
             if (w->hash_key != 0) {
                 MapPut(g_m_widgets, w->hash_key, w);
             }
-
             w->parent = NULL;
             w->first = NULL;
             w->next = NULL;
-            w->x0 = 0;
-            w->y0 = 0;
-            w->x = 0;
-            w->y = 0;
         }
     }
 }
