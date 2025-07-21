@@ -4,8 +4,13 @@
 
 struct CbuiState {
     MContext *ctx;
-    u64 frameno;
     PlafGlfw *plf;
+    u64 frameno;
+    u64 dts[8];
+    u64 t_framestart;
+    u64 t_framestart_prev;
+    f32 dt;
+    f32 fr;
     bool running;
 };
 
@@ -13,11 +18,14 @@ static CbuiState _g_cbui_state;
 static CbuiState *cbui;
 
 CbuiState *CbuiInit() {
+    _g_cbui_state = {};
     cbui = &_g_cbui_state;
     cbui->running = true;
     cbui->ctx = InitBaselayer();
     cbui->plf = PlafGlfwInit("Testris");
     cbui->plf->image_buffer = ImageBufferInit(cbui->ctx->a_life);
+    cbui->t_framestart = ReadSystemTimerMySec();
+    cbui->t_framestart_prev = cbui->t_framestart;
 
     InitImUi(cbui->plf->width, cbui->plf->height, &cbui->frameno);
 
@@ -69,10 +77,23 @@ CbuiState *CbuiInit() {
     return cbui;
 }
 
+
+#define FR_RUNNING_AVG_COUNT 4
 void CbuiFrameStart() {
     ArenaClear(cbui->ctx->a_tmp);
-    cbui->frameno++;
     ImageBufferClear(cbui->plf->width, cbui->plf->height);
+
+    cbui->t_framestart = ReadSystemTimerMySec();
+    cbui->dt = (cbui->t_framestart - cbui->t_framestart_prev) / 1000;
+    cbui->dts[cbui->frameno % FR_RUNNING_AVG_COUNT] = cbui->dt;
+
+    f32 sum = 0;
+    for (s32 i = 0; i < FR_RUNNING_AVG_COUNT; ++i) { sum += cbui->dts[i]; }
+    f32 dt_avg = sum / FR_RUNNING_AVG_COUNT;
+    cbui->fr = 1.0f / dt_avg * 1000;
+    cbui->t_framestart_prev = cbui->t_framestart;
+
+    cbui->frameno++;
 }
 
 void CbuiFrameEnd() {
