@@ -59,42 +59,42 @@ struct QuadHexaVertex { // renderable six-vertex quad
     }
     inline
     void SetColor(Color color) {
-        for (u32 i = 0; i < 6; ++i) {
+        for (s32 i = 0; i < 6; ++i) {
             verts[i].col = color;
         }
     }
     inline
-    s32 GetWidth() {
-        s32 x0 = (s32) verts[2].pos.x;
-        s32 x1 = (s32) verts[0].pos.x;
-        s32 width = x1 - x0;
+    f32 GetWidth() {
+        f32 x0 = verts[2].pos.x;
+        f32 x1 = verts[0].pos.x;
+        f32 width = x1 - x0;
         return width;
     }
     inline
-    s32 GetHeight() {
-        s32 y0 = (s32) verts[0].pos.y;
-        s32 y1 = (s32) verts[2].pos.y;
+    f32 GetHeight() {
+        f32 y0 = verts[0].pos.y;
+        s32 y1 = verts[2].pos.y;
         s32 width = y1 - y0;
         return width;
     }
     inline
-    s32 GetX0() {
-        s32 x0 = (s32) verts[2].pos.x;
+    f32 GetX0() {
+        f32 x0 = verts[2].pos.x;
         return x0;
     }
     inline
-    s32 GetY0() {
-        s32 y0 = (s32) verts[0].pos.y;
+    f32 GetY0() {
+        f32 y0 = verts[0].pos.y;
         return y0;
     }
     inline
-    s32 GetX1() {
-        s32 x1 = (s32) verts[0].pos.x;
+    f32 GetX1() {
+        f32 x1 = verts[0].pos.x;
         return x1;
     }
     inline
-    s32 GetY1() {
-        s32 y1 = (s32) verts[1].pos.y;
+    f32 GetY1() {
+        f32 y1 = verts[1].pos.y;
         return y1;
     }
     inline
@@ -144,17 +144,17 @@ struct QuadHexaVertex { // renderable six-vertex quad
     }
 };
 
-QuadHexaVertex QuadCookSolid(s32 w, s32 h, s32 x0, s32 y0, Color c) {
+QuadHexaVertex QuadCookSolid(f32 w, f32 h, f32 x0, f32 y0, Color c) {
     // lays down two three-vertex triangles: T1 = [ urc->lrc->llc ] and T2 = [ llc->ulc->urc ]
     // ulc: upper-left corner (etc.)
     QuadHexaVertex qh = {};
-    s32 x1 = x0 + w;
-    s32 y1 = y0 + h;
+    f32 x1 = x0 + w;
+    f32 y1 = y0 + h;
 
-    Vector2f ulc_pos { (f32) x0, (f32) y0 };
-    Vector2f urc_pos { (f32) x1, (f32) y0 };
-    Vector2f lrc_pos { (f32) x1, (f32) y1 };
-    Vector2f llc_pos { (f32) x0, (f32) y1 };
+    Vector2f ulc_pos { x0, y0 };
+    Vector2f urc_pos { x1, y0 };
+    Vector2f lrc_pos { x1, y1 };
+    Vector2f llc_pos { x0, y1 };
 
     qh.verts[0] = InitQuadVertex( urc_pos, { 0, 0 }, c, 0 );
     qh.verts[1] = InitQuadVertex( lrc_pos, { 0, 0 }, c, 0 );
@@ -434,10 +434,10 @@ void BlitQuads(Array<QuadHexaVertex> quads, ImageRGBA *img) {
     for (u32 i = 0; i < quads.len; ++i) {
         QuadHexaVertex *q = quads.arr + i;
 
-        s32 q_w = q->GetWidth();
-        s32 q_h = q->GetHeight();
-        s32 q_x0 = q->GetX0();
-        s32 q_y0 = q->GetY0();
+        s32 q_w = round( q->GetWidth() );
+        s32 q_h = round( q->GetHeight() );
+        s32 q_x0 = round( q->GetX0() );
+        s32 q_y0 = round( q->GetY0() );
         u64 q_texture = q->GetTextureId();
         Color q_color = q->GetColor();
 

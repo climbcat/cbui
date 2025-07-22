@@ -514,6 +514,8 @@ void TextPositionLine(Str txt, s32 box_l, s32 box_t, s32 box_w, s32 box_h, s32 a
 }
 
 
+// TODO: use floats for character rendering
+
 void TextPlot(Str txt, s32 box_l, s32 box_t, s32 box_w, s32 box_h, s32 *sz_x, s32 *sz_y, Color color) {
     assert(g_text_plotter != NULL && "init text plotters first");
     FontAtlas *plt = g_text_plotter;

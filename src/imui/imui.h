@@ -7,9 +7,7 @@
 //
 
 
-void PanelPlot(
-    s32 l, s32 t, s32 w, s32 h,
-    s32 thic_border, Color col_border = { RGBA_GRAY_75 }, Color col_pnl = { RGBA_WHITE } )
+void PanelPlot( f32 l, f32 t, f32 w, f32 h, f32 thic_border, Color col_border = { RGBA_GRAY_75 }, Color col_pnl = { RGBA_WHITE } )
 {
     if (thic_border >= w / 2 || thic_border >= w / 2) {
         return;
@@ -104,12 +102,12 @@ struct Widget {
     u64 hash_key;       // hash for frame-boundary persistence
     u64 frame_touched;  // expiration date
 
-    s32 x0;
-    s32 y0;
-    s32 w;
-    s32 h;
-    s32 w_max;
-    s32 h_max;
+    f32 x0;
+    f32 y0;
+    f32 w;
+    f32 h;
+    f32 w_max;
+    f32 h_max;
 
     Str text;
     FontSize sz_font;
