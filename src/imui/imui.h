@@ -617,7 +617,6 @@ Widget *WidgetGetCached(const char *text, bool *was_new = NULL) {
         MapPut(g_m_widgets, key, w);
         w->hash_key = key;
 
-        // TODO: impl. the hash # string key features
         w->text = Str { (char*) text, (u32) strlen( (char*) text) };
         if (was_new) *was_new = true;
     }

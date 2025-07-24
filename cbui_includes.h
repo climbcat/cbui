@@ -21,6 +21,7 @@
 #include "src/imui/resource.h"
 #include "src/imui/font.h"
 #include "src/imui/imui.h"
+#include "src/imui/raster.h"
 
 #include "src/platform/platform_glfw.h"
 #include "src/init.h"

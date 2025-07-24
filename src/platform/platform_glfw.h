@@ -516,7 +516,7 @@ inline bool GetSpace() { return g_plaf_glfw.akeys.space; }
 inline bool GetBackspace() { return g_plaf_glfw.akeys.backspace; }
 inline bool GetDelete() { return g_plaf_glfw.akeys.del; }
 
-bool GetFKey(u32 *fval) {
+inline bool GetFKey(u32 *fval) {
     assert(fval != NULL);
 
     u8 fkey = g_plaf_glfw.akeys.fkey;
@@ -529,13 +529,23 @@ bool GetFKey(u32 *fval) {
     }
 }
 
-bool GetFKey(u32 fval) {
+inline bool GetFKey(u32 fval) {
     if (g_plaf_glfw.akeys.fkey == fval) {
         return true;
     }
     else {
         return false;
     }
+}
+
+inline bool GetChar(char c) {
+    for (s32 i = 0; i < g_plaf_glfw.keys.keys_cnt; ++i) {
+        char key = g_plaf_glfw.keys.keys[i];
+        if (key == c) {
+            return true;
+        }
+    }
+    return false;
 }
 
 inline bool ModCtrl() { return g_plaf_glfw.akeys.mod_ctrl; }

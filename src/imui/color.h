@@ -10,6 +10,7 @@
 #define COLOR_WHITE (( Color { 255, 255, 255, 255 } ))
 #define COLOR_GRAY (( Color { 128, 128, 128, 255 } ))
 #define COLOR_GRAY_50 (( Color { 128, 128, 128, 255 } ))
+#define COLOR_GRAY_60 (( Color { 150, 150, 150, 255 } ))
 #define COLOR_GRAY_75 (( Color { 192, 192, 192, 255 } ))
 #define COLOR_GRAY_80 (( Color { 217, 217, 217, 255 } ))
 
