@@ -447,45 +447,49 @@ void PlafGlfwTerminate(PlafGlfw* plf) {
     glfwTerminate();
 }
 
+void PlafGlfwToggleFullscreen(PlafGlfw* plf) {
+    plf->fullscreen = !plf->fullscreen;
+    if (plf->fullscreen) {
+        assert(plf->width_cache == 0);
+        assert(plf->height_cache == 0);
+
+        plf->width_cache = plf->width;
+        plf->height_cache = plf->height;
+        glfwGetWindowPos(plf->window, &plf->window_xpos, &plf->window_ypos);
+
+        GLFWmonitor *monitor = glfwGetWindowMonitor(plf->window);
+
+        const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+        plf->width = mode->width;
+        plf->height = mode->height;
+
+        glfwSetWindowMonitor(plf->window, monitor, 0, 0, plf->width, plf->height, GLFW_DONT_CARE);
+    }
+    else {
+        plf->width = plf->width_cache;
+        plf->height = plf->height_cache;
+
+        plf->width_cache = 0;
+        plf->height_cache = 0;
+
+        // doesn't get us back into windowed
+        //glfwSetWindowMonitor(plf->window, NULL, 0, 0, 0, 0, GLFW_DONT_CARE);
+        // TODO: try creating a "windowed full screen" mode switch
+
+        // destroy and re-create everything (!?!)
+        glfwDestroyWindow(plf->window);
+        glfwTerminate();
+        plf = PlafGlfwInit(plf->title, plf->width, plf->height);
+    }
+
+    plf->screen.SetSize(plf->image_buffer, plf->width, plf->height);
+}
+
 void PlafGlfwUpdate(PlafGlfw* plf) {
     if (plf->akeys.fkey == 10) {
         // toggle fullscreen
 
-        plf->fullscreen = !plf->fullscreen;
-        if (plf->fullscreen) {
-            assert(plf->width_cache == 0);
-            assert(plf->height_cache == 0);
-
-            plf->width_cache = plf->width;
-            plf->height_cache = plf->height;
-            glfwGetWindowPos(plf->window, &plf->window_xpos, &plf->window_ypos);
-
-            GLFWmonitor *monitor = glfwGetWindowMonitor(plf->window);
-
-            const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-            plf->width = mode->width;
-            plf->height = mode->height;
-
-            glfwSetWindowMonitor(plf->window, monitor, 0, 0, plf->width, plf->height, GLFW_DONT_CARE);
-        }
-        else {
-            plf->width = plf->width_cache;
-            plf->height = plf->height_cache;
-
-            plf->width_cache = 0;
-            plf->height_cache = 0;
-
-            // doesn't get us back into windowed
-            //glfwSetWindowMonitor(plf->window, NULL, 0, 0, 0, 0, GLFW_DONT_CARE);
-            // TODO: try creating a "windowed full screen" mode switch
-
-            // destroy and re-create everything (!?!)
-            glfwDestroyWindow(plf->window);
-            glfwTerminate();
-            plf = PlafGlfwInit(plf->title, plf->width, plf->height);
-        }
-
-        plf->screen.SetSize(plf->image_buffer, plf->width, plf->height);
+        PlafGlfwToggleFullscreen(plf);
     }
 
     plf->screen.Draw(plf->image_buffer, plf->width, plf->height);
