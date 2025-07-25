@@ -12,6 +12,10 @@ struct CbuiState {
     f32 dt;
     f32 fr;
     bool running;
+
+    f32 TimeSince(f32 t) {
+        return t_framestart - t; 
+    }
 };
 
 static CbuiState _g_cbui_state;
