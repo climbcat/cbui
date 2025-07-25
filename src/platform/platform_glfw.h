@@ -213,6 +213,10 @@ struct ActionKeys {
     bool backspace;
     bool del;
     bool space;
+    bool left;
+    bool right;
+    bool up;
+    bool down;
     bool mod_ctrl;
     bool mod_shift;
     bool mod_alt;
@@ -331,6 +335,18 @@ void KeyCallBack(GLFWwindow* window,  int key, int scancode, int action, int mod
         }
         else if (key == ' ') {
             plf->akeys.space = true;
+        }
+        else if (key == GLFW_KEY_LEFT) {
+            plf->akeys.left = true;
+        }
+        else if (key == GLFW_KEY_RIGHT) {
+            plf->akeys.right = true;
+        }
+        else if (key == GLFW_KEY_UP) {
+            plf->akeys.up = true;
+        }
+        else if (key == GLFW_KEY_DOWN) {
+            plf->akeys.down = true;
         }
         else if (key >= 290 && key <= 301) {
             // 290-301: F1 through F12
@@ -515,6 +531,10 @@ inline bool GetEnter() { return g_plaf_glfw.akeys.enter; }
 inline bool GetSpace() { return g_plaf_glfw.akeys.space; }
 inline bool GetBackspace() { return g_plaf_glfw.akeys.backspace; }
 inline bool GetDelete() { return g_plaf_glfw.akeys.del; }
+inline bool GetLeft() { return g_plaf_glfw.akeys.left; }
+inline bool GetRight() { return g_plaf_glfw.akeys.right; }
+inline bool GetUp() { return g_plaf_glfw.akeys.up; }
+inline bool GetDown() { return g_plaf_glfw.akeys.down; }
 
 inline bool GetFKey(u32 *fval) {
     assert(fval != NULL);
