@@ -19,16 +19,21 @@
 #include "src/imui/resource.h"
 #include "src/imui/font.h"
 #include "src/imui/imui.h"
-#include "src/archive/init_arc.h"
+#include "src/platform/platform_glfw.h"
+#include "src/init.h"
 
-#include "test/test_01.cpp"
+//#include "src/archive/init_arc.h"
+//#include "test/test_01.cpp"
+//#include "test/test_02.cpp"
+
+#include "test/test_03.cpp"
 
 
 int main (int argc, char **argv) {
     TimeProgram;
     BaselayerAssertVersion(0, 2, 3);
 
-    bool force_testing = false;
+    bool force_testing = true;
 
     if (CLAContainsArg("--help", argc, argv) || CLAContainsArg("-h", argc, argv)) {
         printf("--help:          display help (this text)\n");
@@ -38,7 +43,7 @@ int main (int argc, char **argv) {
         exit(0);
     }
 
-    else if (CLAContainsArg("--release", argc, argv) || force_testing) {
+    else if (CLAContainsArg("--release", argc, argv)) {
         
         MArena *a_files = GetContext()->a_life;
         StrInit();
@@ -83,7 +88,7 @@ int main (int argc, char **argv) {
     }
 
     else if (CLAContainsArg("--test", argc, argv) || force_testing) {
-        Test();
+        Test_03();
     }
 
     else if (CLAContainsArg("--version", argc, argv)) {

@@ -1,4 +1,3 @@
-#include "../src/archive/init_arc.h"
 #include "../src/algorithms/octree.h"
 #include "../src/algorithms/indices.h"
 
@@ -970,7 +969,7 @@ void TestBoxesAndPointClouds() {
 }
 
 
-void Test() {
+void Test_01() {
     //TestRandomPCWithNormals();
     //TestVGROcTree();
     

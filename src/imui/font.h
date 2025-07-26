@@ -176,19 +176,19 @@ FontAtlas *SetFontAndSize(FontSize font_size, Str font_name) {
     return g_text_plotter;
 }
 
-FontAtlas *SetFont(Str font_name) {
+FontAtlas *UI_SetFont(Str font_name) {
     assert(g_text_plotter != NULL);
 
     return SetFontAndSize( FontSizeFromPx(g_text_plotter->sz_px), font_name);
 }
 
-FontAtlas *SetFontSize(FontSize font_size) {
+FontAtlas *UI_SetFontSize(FontSize font_size) {
     assert(g_text_plotter != NULL);
 
     return SetFontAndSize( font_size, g_text_plotter->GetFontName());
 }
 
-FontSize GetFontSize() {
+FontSize UI_GetFontSize() {
     s32 sz_px = g_text_plotter->sz_px;
     switch (sz_px) {
         case 18: return FS_18; break;

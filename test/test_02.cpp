@@ -2,7 +2,6 @@
 #include "../src/platform/platform_glfw.h"
 #include "../src/geometry/geometry.h"
 #include "../src/geometry/gtypes.h"
-#include "../src/geometry/wireframe.h"
 #include "../src/geometry/scenegraph.h"
 
 
@@ -65,6 +64,7 @@ bool FClosePN(f32 val, f32 target_pn) {
     bool close_n = abs(val + target_pn) < 0.0001f;
     return close_p || close_n;
 }
+
 
 Array<Ray> TestSLAB() {
     printf("TestSLAB\n");

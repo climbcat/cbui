@@ -31,7 +31,7 @@ CbuiState *CbuiInit(const char *title, bool start_in_fullscreen) {
     cbui->t_framestart = ReadSystemTimerMySec();
     cbui->t_framestart_prev = cbui->t_framestart;
 
-    InitImUi(cbui->plf->width, cbui->plf->height, &cbui->frameno);
+    UI_Init(cbui->plf->width, cbui->plf->height, &cbui->frameno);
 
     ImageRGBA render_target = { (s32) cbui->plf->width, (s32) cbui->plf->height, (Color*) cbui->plf->image_buffer };
     SpriteRender_Init(cbui->ctx->a_life);

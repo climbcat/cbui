@@ -19,7 +19,7 @@ void PanelPlot( f32 l, f32 t, f32 w, f32 h, f32 thic_border, Color col_border = 
 
 
 //
-//  IMUI system experiments
+//  Immediate-Mode User Interface
 //
 
 
@@ -84,6 +84,7 @@ enum WidgetFlags {
 
     WF_ABSREL_POSITION = 1 << 20
 };
+
 bool WidgetIsLayout(u32 features) {
     bool result =
         features & WF_LAYOUT_CENTER ||
@@ -169,7 +170,7 @@ static Widget *g_w_active;
 static u64 *g_frameno_imui;
 
 
-void TreeSibling(Widget *w) {
+void WidgetTreeSibling(Widget *w) {
     if (g_w_layout->first != NULL) {
         Widget *sib = g_w_layout->first;
         while (sib->next != NULL) {
@@ -184,7 +185,7 @@ void TreeSibling(Widget *w) {
     }
 }
 
-void TreeBranch(Widget *w) {
+void WidgetTreeBranch(Widget *w) {
     if (g_w_layout->first != NULL) {
         Widget *sib = g_w_layout->first;
         while (sib->next != NULL) {
@@ -199,11 +200,18 @@ void TreeBranch(Widget *w) {
     g_w_layout = w;
 }
 
-void TreePop() {
+void WidgetTreePop() {
     Widget *parent = g_w_layout->parent;
     if (parent != NULL) {
         g_w_layout = parent;
     }
+}
+
+
+static bool g_ui_debugmode;
+
+void UI_DebugMode(bool enable) {
+    g_ui_debugmode = enable;
 }
 
 
@@ -213,7 +221,7 @@ static bool g_mouse_down;
 static bool g_mouse_pushed;
 
 
-void InitImUi(u32 width, u32 height, u64 *frameno) {
+void UI_Init(u32 width, u32 height, u64 *frameno) {
     if (g_a_imui != NULL) {
         assert(1 == 0 && "don't re-initialize imui");
     }
@@ -527,7 +535,6 @@ List<Widget*> WidgetTreePositioning(MArena *a_tmp, Widget *w_root) {
     return all_widgets;
 }
 
-
 void WidgetTreeRenderToDrawcalls(List<Widget*> all_widgets) {
 
 
@@ -538,12 +545,20 @@ void WidgetTreeRenderToDrawcalls(List<Widget*> all_widgets) {
     for (u32 i = 0; i < all_widgets.len; ++i) {
         Widget *w = all_widgets.lst[i];
 
+        if (g_ui_debugmode) {
+            PanelPlot(w->x0, w->y0, w->w, w->h, 1, COLOR_BLACK, COLOR_WHITE);
+        }
+
         if (w->features_flg & WF_DRAW_BACKGROUND_AND_BORDER) {
-            PanelPlot(w->x0, w->y0, w->w, w->h, w->sz_border, w->col_border, w->col_bckgrnd);
+            f32 sz_border = w->sz_border;
+            Color col_border = w->col_border;
+            Color col_bckgrnd = w->col_bckgrnd;
+
+            PanelPlot(w->x0, w->y0, w->w, w->h, sz_border, col_border, col_bckgrnd);
         }
 
         if (w->features_flg & WF_DRAW_TEXT) {
-            SetFontSize(w->sz_font);
+            UI_SetFontSize(w->sz_font);
             s32 w_out;
             s32 h_out;
 
@@ -641,7 +656,6 @@ Widget *WidgetGetNew(const char *text = NULL) {
     return w;
 }
 
-
 bool UI_Button(const char *text, Widget **w_out = NULL) {
     Widget *w  = WidgetGetCached(text);
     w->features_flg |= WF_DRAW_TEXT;
@@ -670,7 +684,7 @@ bool UI_Button(const char *text, Widget **w_out = NULL) {
         w->col_border = COLOR_BLACK;
     }
 
-    TreeSibling(w);
+    WidgetTreeSibling(w);
 
     if (w_out != NULL) {
         *w_out = w;
@@ -711,7 +725,7 @@ bool UI_ToggleButton(const char *text, bool *state, Widget **w_out = NULL) {
         w->col_border = ColorBlack();
     }
 
-    TreeSibling(w);
+    WidgetTreeSibling(w);
 
     if (w_out != NULL) {
         *w_out = w;
@@ -733,7 +747,7 @@ Widget *UI_CoolPanel(s32 width, s32 height, bool center_h = true) {
     w->col_bckgrnd = ColorGray(0.9f);
     w->col_border = ColorGray(0.7f);
 
-    TreeBranch(w);
+    WidgetTreeBranch(w);
 
     return w;
 }
@@ -760,7 +774,7 @@ bool UI_CrossButton(const char *symbol, Widget **w_out = NULL) {
     x->w = 25;
     x->h = 25;
 
-    TreeSibling(x);
+    WidgetTreeSibling(x);
 
     return x->clicked;
 }
@@ -777,7 +791,7 @@ Widget *UI_CoolPopUp(s32 width, s32 height, s32 padding = 20, bool *close = NULL
     w->col_bckgrnd = ColorGray(0.9f);
     w->col_border = ColorGray(0.7f);
 
-    TreeBranch(w);
+    WidgetTreeBranch(w);
 
     Widget *x;
     bool cross_clicked = UI_CrossButton("x", &x);
@@ -799,26 +813,33 @@ Widget *UI_CoolPopUp(s32 width, s32 height, s32 padding = 20, bool *close = NULL
     i->w = width - padding * 2;
     i->h = height - padding * 2;
 
-    TreeBranch(i);
+    WidgetTreeBranch(i);
 
     return i;
 }
 
-Widget *UI_Plain() {
+Widget *UI_Branch() {
     Widget *w = WidgetGetNew();
 
-    TreeBranch(w);
+    WidgetTreeBranch(w);
     return w;
 }
 
-Widget *UI_LayoutExpandCenter() {
+Widget *UI_Sibling() {
+    Widget *w = WidgetGetNew();
+
+    WidgetTreeSibling(w);
+    return w;
+}
+
+Widget *UI_Center() {
     Widget *w = WidgetGetNew();
 
     w->features_flg |= WF_EXPAND_VERTICAL;
     w->features_flg |= WF_EXPAND_HORIZONTAL;
     w->features_flg |= WF_LAYOUT_CENTER;
 
-    TreeBranch(w);
+    WidgetTreeBranch(w);
     return w;
 }
 
@@ -826,19 +847,22 @@ Widget *UI_LayoutHorizontal() {
     Widget *w = WidgetGetNew();
     w->features_flg |= WF_LAYOUT_HORIZONTAL;
 
-    TreeBranch(w);
+    WidgetTreeBranch(w);
     return w;
 }
 
-Widget *UI_LayoutVertical(bool center_vertical = false) {
+Widget *UI_LayoutVertical(s32 align = 1) {
     Widget *w = WidgetGetNew();
 
     w->features_flg |= WF_LAYOUT_VERTICAL;
-    if (center_vertical) {
+    if (align == 0) {
         w->features_flg |= WF_ALIGN_CENTER;
     }
+    else if (align == -1) {
+        w->features_flg |= WF_ALIGN_RIGHT;
+    }
 
-    TreeBranch(w);
+    WidgetTreeBranch(w);
     return w;
 }
 
@@ -846,21 +870,21 @@ void UI_SpaceH(u32 width) {
     Widget *w = WidgetGetNew();
     w->w = width;
 
-    TreeSibling(w);
+    WidgetTreeSibling(w);
 }
 
 void UI_SpaceV(u32 height) {
     Widget *w = WidgetGetNew();
     w->h = height;
 
-    TreeSibling(w);
+    WidgetTreeSibling(w);
 }
 
 Widget *UI_Label(const char *text, Color color = Color { RGBA_BLACK }) {
     Widget *w = WidgetGetNew(text);
     w->features_flg |= WF_DRAW_TEXT;
 
-    w->sz_font = GetFontSize();
+    w->sz_font = UI_GetFontSize();
     w->col_bckgrnd = ColorGray(0.9f);
     w->col_border = ColorBlack();
     w->col_text = color;
@@ -868,12 +892,12 @@ Widget *UI_Label(const char *text, Color color = Color { RGBA_BLACK }) {
     w->w = TextLineWidth(g_text_plotter, w->text);
     w->h = g_text_plotter->ln_measured;
 
-    TreeSibling(w);
+    WidgetTreeSibling(w);
     return w;
 }
 
 void UI_Pop() {
-    TreePop();
+    WidgetTreePop();
 }
 
 
