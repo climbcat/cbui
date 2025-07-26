@@ -21,12 +21,12 @@ struct CbuiState {
 static CbuiState _g_cbui_state;
 static CbuiState *cbui;
 
-CbuiState *CbuiInit() {
+CbuiState *CbuiInit(const char *title, bool start_in_fullscreen) {
     _g_cbui_state = {};
     cbui = &_g_cbui_state;
     cbui->running = true;
     cbui->ctx = InitBaselayer();
-    cbui->plf = PlafGlfwInit("Testris");
+    cbui->plf = PlafGlfwInit(title);
     cbui->plf->image_buffer = ImageBufferInit(cbui->ctx->a_life);
     cbui->t_framestart = ReadSystemTimerMySec();
     cbui->t_framestart_prev = cbui->t_framestart;
@@ -77,6 +77,8 @@ CbuiState *CbuiInit() {
         res = res->GetInlinedNext();
     }
     SetFontAndSize(FS_48, g_font_names->GetStr());
+
+    if (start_in_fullscreen) { PlafGlfwToggleFullscreen(cbui->plf); }
 
     return cbui;
 }
