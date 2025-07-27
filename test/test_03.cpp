@@ -13,7 +13,7 @@
 void TestUILayoutFeatures() {
 
     cbui = CbuiInit("TestUILayoutFeatures", false);
-    s32 TB_mode = 4;
+    s32 TB_mode = 5;
 
     f32 time = 0;
     UI_SetFontSize(FS_24);
@@ -82,18 +82,63 @@ void TestUILayoutFeatures() {
         } break;
 
         case 4: {
-            Widget *center = UI_Center();
-            center->DBG_tag = StrL("center");
+            // vertical layout sizing
 
-            Widget *vert = UI_LayoutVertical(0);
+            UI_Center();
+
+            Widget *vert = UI_LayoutVertical(-1);
             vert->DBG_tag = StrL("vert");
-            //vert->w = 500;
-            //vert->h = 100;
+
+            // NOTE: out-comment to check behavior
+            vert->w = 500;
+            vert->h = 120;
 
             Widget *s0 = UI_Sibling();
             s0->DBG_tag = StrL("s0");
             s0->w = 400;
-            s0->h = 50;
+            s0->h = 100;
+
+            Widget *s1 = UI_Sibling();
+            s1->DBG_tag = StrL("s1");
+            s1->w = 300;
+            s1->h = 50;
+        } break;
+
+        case 5: {
+            // horizontal layout sizing
+
+            UI_Center();
+
+            Widget *vert = UI_LayoutHorizontal(-1);
+            vert->DBG_tag = StrL("horiz");
+
+            // NOTE: out-comment to check behavior
+            vert->w = 120;
+            vert->h = 450;
+
+            Widget *s0 = UI_Sibling();
+            s0->DBG_tag = StrL("s0");
+            s0->w = 100;
+            s0->h = 400;
+
+            Widget *s1 = UI_Sibling();
+            s1->DBG_tag = StrL("s1");
+            s1->w = 50;
+            s1->h = 300;
+        } break;
+
+        case 6: {
+            UI_Center();
+
+            Widget *vert = UI_LayoutVertical(-1);
+            vert->DBG_tag = StrL("vert");
+            vert->w = 500;
+            vert->h = 120;
+
+            Widget *s0 = UI_Sibling();
+            s0->DBG_tag = StrL("s0");
+            s0->w = 400;
+            s0->h = 100;
 
             /*
             Widget *exp = UI_ExpanderH();
@@ -108,7 +153,7 @@ void TestUILayoutFeatures() {
             Widget *s1 = UI_Sibling();
             s1->DBG_tag = StrL("s1");
             s1->w = 300;
-            s1->h = 25;
+            s1->h = 50;
 
             /*
             Widget *h = UI_LayoutHorizontal();
@@ -142,7 +187,7 @@ void TestUILayoutFeatures() {
         default: break; }
 
         if (GetSpace()) {
-            TB_mode = (TB_mode + 1) % 5;
+            TB_mode = (TB_mode + 1) % 7;
         }
         if (GetFKey(2)) {
             UI_DebugMode(!g_ui_debugmode);

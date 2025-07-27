@@ -75,14 +75,14 @@ enum WidgetFlags {
     WF_LAYOUT_CENTER = 1 << 10,
     WF_LAYOUT_HORIZONTAL = 1 << 11,
     WF_LAYOUT_VERTICAL = 1 << 12,
-    WF_ALIGN_LEFT = 1 << 13,
-    WF_ALIGN_RIGHT = 1 << 14,
+    WF_ALIGN_LEFT_OR_TOP = 1 << 13,
+    WF_ALIGN_RIGHT_OR_BOTTOM = 1 << 14,
     WF_ALIGN_CENTER = 1 << 15,
 
     WF_EXPAND_HORIZONTAL = 1 << 16,
     WF_EXPAND_VERTICAL = 1 << 17,
 
-    WF_ABSREL_POSITION = 1 << 20
+    WF_ABSREL_POSITION = 1 << 18
 };
 
 bool WidgetIsLayout(u32 features) {
@@ -301,23 +301,21 @@ void WidgetTreeSizeWrap_Rec(Widget *w, f32 *w_sum, f32 *h_sum, f32 *w_max, f32 *
     }
 
 
-    //
-    // Ascent: Assign actual size to current widget (where undefined)
+    // TODO: modify layout panel sizing procedure whenever clipping is introduced
 
 
-    if (w->w == 0 && w->h == 0) {
-        if (w->features_flg & WF_LAYOUT_CENTER) {
-            w->w = *w_max;
-            w->h = *h_max;
-        }
-        if (w->features_flg & WF_LAYOUT_HORIZONTAL) {
-            w->w = *w_sum;
-            w->h = *h_max;
-        }
-        else if (w->features_flg & WF_LAYOUT_VERTICAL) {
-            w->w = *w_max;
-            w->h = *h_sum;
-        }
+    // Ascent: Assign actual size to current widget
+    if (w->features_flg & WF_LAYOUT_CENTER) {
+        if (w->w == 0) w->w = *w_max;
+        if (w->h == 0) w->h = *h_max;
+    }
+    else if (w->features_flg & WF_LAYOUT_VERTICAL) {
+        w->w = MaxF32(w->w, *w_max);
+        if (w->h == 0) w->h = *h_sum;
+    }
+    else if (w->features_flg & WF_LAYOUT_HORIZONTAL) {
+        if (w->w == 0) w->w = *w_sum;
+        w->h = MaxF32(w->h, *h_max);
     }
 
     // or keep pre-sets
@@ -331,6 +329,12 @@ void WidgetTreeSizeWrap_Rec(Widget *w, f32 *w_sum, f32 *h_sum, f32 *w_max, f32 *
 
 
 void WidgetTreeExpanders_Rec(Widget *w) {
+
+    if (StrEqual(StrL("vert"), w->DBG_tag)) {
+        printf("her\n");
+    }
+
+
     // expands one sub-widget using own dimensions
 
     Widget *ch = w->first;
@@ -419,7 +423,7 @@ List<Widget*> WidgetTreePositioning(MArena *a_tmp, Widget *w_root) {
                     if (w->features_flg & WF_ALIGN_CENTER) {
                         ch->y0 = w->y0 + (w->h - ch->h) / 2;
                     }
-                    else if (w->features_flg & WF_ALIGN_RIGHT) {
+                    else if (w->features_flg & WF_ALIGN_RIGHT_OR_BOTTOM) {
                         ch->y0 = w->y0 + (w->h - ch->h);
                     }
                 }
@@ -431,7 +435,7 @@ List<Widget*> WidgetTreePositioning(MArena *a_tmp, Widget *w_root) {
                     if (w->features_flg & WF_ALIGN_CENTER) {
                         ch->x0 = w->x0 + (w->w - ch->w) / 2;
                     }
-                    else if (w->features_flg & WF_ALIGN_RIGHT) {
+                    else if (w->features_flg & WF_ALIGN_RIGHT_OR_BOTTOM) {
                         ch->x0 = w->x0 + (w->w - ch->w);
                     }
                 }
@@ -854,9 +858,16 @@ Widget *UI_Center() {
     return w;
 }
 
-Widget *UI_LayoutHorizontal() {
+Widget *UI_LayoutHorizontal(s32 align = 1) {
     Widget *w = WidgetGetNew();
     w->features_flg |= WF_LAYOUT_HORIZONTAL;
+
+    if (align == 0) {
+        w->features_flg |= WF_ALIGN_CENTER;
+    }
+    else if (align == -1) {
+        w->features_flg |= WF_ALIGN_RIGHT_OR_BOTTOM;
+    }
 
     WidgetTreeBranch(w);
     return w;
@@ -864,13 +875,13 @@ Widget *UI_LayoutHorizontal() {
 
 Widget *UI_LayoutVertical(s32 align = 1) {
     Widget *w = WidgetGetNew();
-
     w->features_flg |= WF_LAYOUT_VERTICAL;
+
     if (align == 0) {
         w->features_flg |= WF_ALIGN_CENTER;
     }
     else if (align == -1) {
-        w->features_flg |= WF_ALIGN_RIGHT;
+        w->features_flg |= WF_ALIGN_RIGHT_OR_BOTTOM;
     }
 
     WidgetTreeBranch(w);
