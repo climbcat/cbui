@@ -133,7 +133,7 @@ void TestUILayoutFeatures() {
             Widget *vert = UI_LayoutVertical(0);
             vert->DBG_tag = StrL("vert");
             vert->w = 500;
-            //vert->h = 320;
+            vert->h = 320;
 
             Widget *s0 = UI_Sibling();
             s0->DBG_tag = StrL("s0");
@@ -141,6 +141,7 @@ void TestUILayoutFeatures() {
             s0->h = 100;
 
             Widget *exp = UI_ExpanderH();
+            exp->features_flg |= WF_EXPAND_VERTICAL;
             exp->DBG_tag = StrL("exp");
             exp->h = 50;
 
@@ -148,33 +149,6 @@ void TestUILayoutFeatures() {
             s1->DBG_tag = StrL("s1");
             s1->w = 300;
             s1->h = 50;
-
-            /*
-            Widget *h = UI_LayoutHorizontal();
-            h->w = 400;
-
-            Widget *t = UI_Sibling();
-            t->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
-            t->sz_border = 1;
-            t->col_bckgrnd = COLOR_RED;
-            t->w = 100;
-            t->h = 100;
-
-            Widget *e = UI_ExpanderH();
-            e->h = 100;
-
-            // TODO: try this as well:
-            //UI_Center();
-            //UI_Pop();
-
-            Widget *u = UI_Sibling();
-            u->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
-            u->sz_border = 1;
-            u->col_bckgrnd = COLOR_GREEN;
-            u->w = 100;
-            u->h = 100;
-            */
-
 
         } break;
 

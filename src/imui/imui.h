@@ -342,18 +342,18 @@ void WidgetTreeExpanders_Rec(Widget *w) {
 
     while (ch) {
         if (ch->features_flg & WF_EXPAND_VERTICAL) {
-            //assert(ch->h == 0);
+            assert(ev == NULL && "only one expander supported currently");
             ev = ch;
         }
-        else {
+        else if (w->features_flg & WF_LAYOUT_VERTICAL) {
             heights_sum += ch->h;
         }
 
         if (ch->features_flg & WF_EXPAND_HORIZONTAL) {
-            //sert(ch->w == 0);
+            assert(eh == NULL && "only one expander supported currently");
             eh = ch;
         }
-        else {
+        else if (w->features_flg & WF_LAYOUT_HORIZONTAL) {
             widths_sum += ch->w;
         }
 
