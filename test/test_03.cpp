@@ -13,7 +13,7 @@
 void TestUILayoutFeatures() {
 
     cbui = CbuiInit("TestUILayoutFeatures", false);
-    s32 TB_mode = 5;
+    s32 TB_mode = 6;
 
     f32 time = 0;
     UI_SetFontSize(FS_24);
@@ -130,25 +130,19 @@ void TestUILayoutFeatures() {
         case 6: {
             UI_Center();
 
-            Widget *vert = UI_LayoutVertical(-1);
+            Widget *vert = UI_LayoutVertical(0);
             vert->DBG_tag = StrL("vert");
             vert->w = 500;
-            vert->h = 120;
+            //vert->h = 320;
 
             Widget *s0 = UI_Sibling();
             s0->DBG_tag = StrL("s0");
             s0->w = 400;
             s0->h = 100;
 
-            /*
             Widget *exp = UI_ExpanderH();
-            exp->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
             exp->DBG_tag = StrL("exp");
-            exp->col_bckgrnd = COLOR_BLACK;
-            exp->col_border = COLOR_RED;
-            exp->sz_border = 4;
-            exp->h = 100;
-            */
+            exp->h = 50;
 
             Widget *s1 = UI_Sibling();
             s1->DBG_tag = StrL("s1");

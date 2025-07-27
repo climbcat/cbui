@@ -329,14 +329,6 @@ void WidgetTreeSizeWrap_Rec(Widget *w, f32 *w_sum, f32 *h_sum, f32 *w_max, f32 *
 
 
 void WidgetTreeExpanders_Rec(Widget *w) {
-
-    if (StrEqual(StrL("vert"), w->DBG_tag)) {
-        printf("her\n");
-    }
-
-
-    // expands one sub-widget using own dimensions
-
     Widget *ch = w->first;
     if (ch == NULL) {
         return;
