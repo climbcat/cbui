@@ -9,99 +9,155 @@
 #include "../src/init.h"
 
 
-void TB_Drawn04() {
-    UI_Center();
-
-    UI_LayoutHorizontal();
-
-    UI_Label("l1");
-    UI_Label("l2");
-    UI_Label("l3");
-
-    Widget *s1 = UI_Sibling();
-    s1->w = 100;
-    s1->h = 400;
-
-    UI_LayoutVertical(1);
-    UI_Label("Test 4");
-    UI_Label("Et");
-    UI_Label("par");
-    UI_Label("linjers");
-    UI_Label("tekst.");
-    UI_Pop();
-
-    UI_Label("l4");
-}
-
-void TB_Drawn03() {
-    UI_Center();
-
-    UI_LayoutVertical(-1);
-    UI_Label("Test 3: Alight right");
-    UI_Label("Et");
-    UI_Label("par");
-    UI_Label("linjers");
-    UI_Label("tekst.");
-}
-
-void TB_Drawn02() {
-    UI_Center();
-
-    UI_LayoutVertical(0);
-    UI_Label("Test 2: Center");
-    UI_Label("Et");
-    UI_Label("par");
-    UI_Label("linjers");
-    UI_Label("tekst.");
-}
-
-void TB_Drawn01() {
-    UI_Center();
-
-    UI_LayoutVertical();
-    UI_Label("Test 1: Align Left");
-    UI_Label("Et");
-    UI_Label("par");
-    UI_Label("linjers");
-    UI_Label("tekst.");
-}
-
 
 void TestUILayoutFeatures() {
 
     cbui = CbuiInit("TestUILayoutFeatures", false);
-    s32 TB_mode = 0;
+    s32 TB_mode = 4;
 
     f32 time = 0;
     UI_SetFontSize(FS_24);
     UI_DebugMode(true);
+    UI_DebugNames(true);
 
     while (cbui->running) {
         CbuiFrameStart();
 
         switch (TB_mode) {
-        case 0: TB_Drawn01(); break;
-        case 1: TB_Drawn02(); break;
-        case 2: TB_Drawn03(); break;
-        case 3: TB_Drawn04(); break;
+        case 0: {
+            UI_Center();
+
+            UI_LayoutVertical();
+            UI_Label("Test 1: Align Left");
+            UI_Label("Et");
+            UI_Label("par");
+            UI_Label("linjers");
+            UI_Label("tekst.");
+        } break;
+
+        case 1: {
+            UI_Center();
+
+            UI_LayoutVertical(0);
+            UI_Label("Test 2: Center");
+            UI_Label("Et");
+            UI_Label("par");
+            UI_Label("linjers");
+            UI_Label("tekst.");
+        } break;
+
+        case 2: {
+            UI_Center();
+
+            UI_LayoutVertical(-1);
+            UI_Label("Test 3: Alight right");
+            UI_Label("Et");
+            UI_Label("par");
+            UI_Label("linjers");
+            UI_Label("tekst.");
+
+        } break;
+
+        case 3: {
+            UI_Center();
+
+            UI_LayoutHorizontal();
+
+            UI_Label("Hori");
+            UI_Label("zon");
+            UI_Label("tal");
+
+            Widget *s1 = UI_Sibling();
+            s1->w = 100;
+            s1->h = 400;
+
+            UI_LayoutVertical(1);
+            UI_Label("Test 4");
+            UI_Label("Vert");
+            UI_Label("ical");
+            UI_Label("layout");
+            UI_Pop();
+
+            UI_Label("layout");
+        } break;
+
+        case 4: {
+            Widget *center = UI_Center();
+            center->DBG_tag = StrL("center");
+
+            Widget *vert = UI_LayoutVertical(0);
+            vert->DBG_tag = StrL("vert");
+            //vert->w = 500;
+            //vert->h = 100;
+
+            Widget *s0 = UI_Sibling();
+            s0->DBG_tag = StrL("s0");
+            s0->w = 400;
+            s0->h = 50;
+
+            /*
+            Widget *exp = UI_ExpanderH();
+            exp->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
+            exp->DBG_tag = StrL("exp");
+            exp->col_bckgrnd = COLOR_BLACK;
+            exp->col_border = COLOR_RED;
+            exp->sz_border = 4;
+            exp->h = 100;
+            */
+
+            Widget *s1 = UI_Sibling();
+            s1->DBG_tag = StrL("s1");
+            s1->w = 300;
+            s1->h = 25;
+
+            /*
+            Widget *h = UI_LayoutHorizontal();
+            h->w = 400;
+
+            Widget *t = UI_Sibling();
+            t->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
+            t->sz_border = 1;
+            t->col_bckgrnd = COLOR_RED;
+            t->w = 100;
+            t->h = 100;
+
+            Widget *e = UI_ExpanderH();
+            e->h = 100;
+
+            // TODO: try this as well:
+            //UI_Center();
+            //UI_Pop();
+
+            Widget *u = UI_Sibling();
+            u->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
+            u->sz_border = 1;
+            u->col_bckgrnd = COLOR_GREEN;
+            u->w = 100;
+            u->h = 100;
+            */
+
+
+        } break;
+
         default: break; }
 
         if (GetSpace()) {
-            TB_mode = (TB_mode + 1) % 4;
+            TB_mode = (TB_mode + 1) % 5;
         }
         if (GetFKey(2)) {
             UI_DebugMode(!g_ui_debugmode);
+        }
+        if (GetFKey(3)) {
+            UI_DebugNames(!g_ui_debugnames);
         }
 
         CbuiFrameEnd();
     }
     CbuiExit();
-
-
-
 }
 
 
 void Test_03() {
+
     TestUILayoutFeatures();
 }

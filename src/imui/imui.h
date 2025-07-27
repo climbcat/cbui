@@ -7,7 +7,7 @@
 //
 
 
-void PanelPlot( f32 l, f32 t, f32 w, f32 h, f32 thic_border, Color col_border = { RGBA_GRAY_75 }, Color col_pnl = { RGBA_WHITE } )
+void PanelPlot(f32 l, f32 t, f32 w, f32 h, f32 thic_border, Color col_border = { RGBA_GRAY_75 }, Color col_pnl = { RGBA_WHITE } )
 {
     if (thic_border >= w / 2 || thic_border >= w / 2) {
         return;
@@ -34,13 +34,13 @@ void PanelPlot( f32 l, f32 t, f32 w, f32 h, f32 thic_border, Color col_border = 
 
 
 struct CollRect {
-    s32 x0;
-    s32 x1;
-    s32 y0;
-    s32 y1;
+    f32 x0;
+    f32 x1;
+    f32 y0;
+    f32 y1;
 
     inline
-    bool DidCollide(s32 x, s32 y) {
+    bool DidCollide(f32 x, f32 y) {
         bool bx = (x >= x0 && x <= x1);
         bool by = (y >= y0 && y <= y1);
         return bx && by;
@@ -110,6 +110,10 @@ struct Widget {
     f32 w_max;
     f32 h_max;
 
+    u32 features_flg;
+    u32 alignment_flg;
+
+    // panels / labels
     Str text;
     FontSize sz_font;
     s32 sz_border;
@@ -117,18 +121,15 @@ struct Widget {
     Color col_text;
     Color col_border;
 
-    // DBG / experimental
+    // cursor interaction
     Color col_hot;
     Color col_active;
     bool hot;
     bool active;
     bool clicked;
-
-    u32 features_flg;
-    u32 alignment_flg;
-
-    // everything below belongs in the layout algorithm
     CollRect rect;
+
+    Str DBG_tag;
 
     void CollRectClear() {
         rect = {};
@@ -139,7 +140,7 @@ struct Widget {
         rect.y0 = y0;
         rect.y1 = y0 + h;
     }
-    void SetFeature(WidgetFlags f) {
+    void SetFlag(WidgetFlags f) {
         features_flg = features_flg |= f;
     }
 };
@@ -209,9 +210,14 @@ void WidgetTreePop() {
 
 
 static bool g_ui_debugmode;
+static bool g_ui_debugnames;
 
 void UI_DebugMode(bool enable) {
     g_ui_debugmode = enable;
+}
+
+void UI_DebugNames(bool enable) {
+    g_ui_debugnames = enable;
 }
 
 
@@ -255,7 +261,7 @@ void UI_Init(u32 width, u32 height, u64 *frameno) {
 }
 
 
-void WidgetTreeSizeWrap_Rec(Widget *w, s32 *w_sum, s32 *h_sum, s32 *w_max, s32 *h_max) {
+void WidgetTreeSizeWrap_Rec(Widget *w, f32 *w_sum, f32 *h_sum, f32 *w_max, f32 *h_max) {
     // Recursively determines widget sizes by wrapping in child widgets. 
     // Sizes will be the minimal, and expander sizes will be expanded elsewhere.
 
@@ -279,10 +285,10 @@ void WidgetTreeSizeWrap_Rec(Widget *w, s32 *w_sum, s32 *h_sum, s32 *w_max, s32 *
 
     Widget *ch = w->first;
     while (ch != NULL) { // iterate child widgets
-        s32 w_sum_ch;
-        s32 h_sum_ch;
-        s32 w_max_ch;
-        s32 h_max_ch;
+        f32 w_sum_ch;
+        f32 h_sum_ch;
+        f32 w_max_ch;
+        f32 h_max_ch;
 
         WidgetTreeSizeWrap_Rec(ch, &w_sum_ch, &h_sum_ch, &w_max_ch, &h_max_ch);
 
@@ -324,7 +330,7 @@ void WidgetTreeSizeWrap_Rec(Widget *w, s32 *w_sum, s32 *h_sum, s32 *w_max, s32 *
 }
 
 
-void WidgetTreeExpand_Rec(Widget *w) {
+void WidgetTreeExpanders_Rec(Widget *w) {
     // expands one sub-widget using own dimensions
 
     Widget *ch = w->first;
@@ -333,47 +339,48 @@ void WidgetTreeExpand_Rec(Widget *w) {
     }
 
     // extract info
-    bool expander_vert_found = false;
-    bool expander_horiz_found = false;
-    u32 width_other = 0;
-    u32 height_other = 0;
+    Widget *ev = NULL;
+    Widget *eh = NULL;
+    f32 widths_sum = 0;
+    f32 heights_sum = 0;
+
     while (ch) {
-        if ( ! (ch->features_flg & WF_EXPAND_VERTICAL)) {
-            height_other += ch->h;
+        if (ch->features_flg & WF_EXPAND_VERTICAL) {
+            //assert(ch->h == 0);
+            ev = ch;
         }
         else {
-            assert(w->features_flg & WF_LAYOUT_HORIZONTAL || expander_vert_found == false && "Expander not allowed (WF_EXPAND_VERTICAL)");
-            expander_vert_found = true;
+            heights_sum += ch->h;
         }
 
-        if ( ! (ch->features_flg & WF_EXPAND_HORIZONTAL)) {
-            width_other += ch->w;
+        if (ch->features_flg & WF_EXPAND_HORIZONTAL) {
+            //sert(ch->w == 0);
+            eh = ch;
         }
         else {
-            assert(w->features_flg & WF_LAYOUT_VERTICAL || expander_horiz_found == false && "Expander not allowed (WF_EXPAND_HORIZONTAL)");
-            expander_horiz_found = true;
+            widths_sum += ch->w;
         }
 
         ch = ch->next;
     }
 
-    // assign max possible size to the expander(s)
-    ch = w->first;
-    while (ch) {
-        if (ch->features_flg & WF_EXPAND_VERTICAL) {
-            ch->h = w->h - height_other;
-        }
-        if (ch->features_flg & WF_EXPAND_HORIZONTAL) {
-            ch->w = w->w - width_other;
-        }
-        ch = ch->next;
+
+    // TODO: multiple epanders, sharing available space
+    // TODO: expanders using % space
+
+
+    if (ev) {
+        ev->h = w->h - heights_sum;
+    }
+
+    if (eh) {
+        eh->w = w->w - widths_sum;
     }
 
     // descend
     ch = w->first;
     while (ch) {
-        WidgetTreeExpand_Rec(ch);
-
+        WidgetTreeExpanders_Rec(ch);
         ch = ch->next;
     }
 }
@@ -383,13 +390,12 @@ List<Widget*> WidgetTreePositioning(MArena *a_tmp, Widget *w_root) {
     List<Widget*> all_widgets = InitList<Widget*>(a_tmp, 0);
     Widget *w = w_root;
 
-
     while (w != NULL) {
         ArenaAlloc(a_tmp, sizeof(Widget*));
         all_widgets.Add(w);
 
-        s32 pt_x = 0;
-        s32 pt_y = 0;
+        f32 pt_x = 0;
+        f32 pt_y = 0;
 
         // with all widget sizes known, widgets can position their children
         Widget *ch = w->first;
@@ -548,13 +554,8 @@ void WidgetTreeRenderToDrawcalls(List<Widget*> all_widgets) {
         if (g_ui_debugmode) {
             PanelPlot(w->x0, w->y0, w->w, w->h, 1, COLOR_BLACK, COLOR_WHITE);
         }
-
-        if (w->features_flg & WF_DRAW_BACKGROUND_AND_BORDER) {
-            f32 sz_border = w->sz_border;
-            Color col_border = w->col_border;
-            Color col_bckgrnd = w->col_bckgrnd;
-
-            PanelPlot(w->x0, w->y0, w->w, w->h, sz_border, col_border, col_bckgrnd);
+        else if (w->features_flg & WF_DRAW_BACKGROUND_AND_BORDER) {
+            PanelPlot(w->x0, w->y0, w->w, w->h, w->sz_border, w->col_border, w->col_bckgrnd);
         }
 
         if (w->features_flg & WF_DRAW_TEXT) {
@@ -564,6 +565,12 @@ void WidgetTreeRenderToDrawcalls(List<Widget*> all_widgets) {
 
             TextPlot(w->text, w->x0, w->y0, w->w, w->h, &w_out, &h_out, w->col_text);
         }
+        else if (g_ui_debugnames) {
+            s32 sz_x;
+            s32 sz_y;
+            TextPlot(w->DBG_tag, w->x0, w->y0, w->w, w->h, &sz_x, &sz_y, COLOR_BLACK);
+        }
+
     }
 }
 
@@ -578,22 +585,26 @@ void UI_FrameEnd(MArena *a_tmp, s32 width, s32 height) {
     w->h_max = height;
     w->w = w->w_max;
     w->h = w->h_max;
+    //w->DBG_tag = StrL("root");
 
     // size widgets to wrap tightly
-    s32 w_sum_ch;
-    s32 h_sum_ch;
-    s32 w_max_ch;
-    s32 h_max_ch;
+    f32 w_sum_ch;
+    f32 h_sum_ch;
+    f32 w_max_ch;
+    f32 h_max_ch;
     WidgetTreeSizeWrap_Rec(w, &w_sum_ch, &h_sum_ch, &w_max_ch, &h_max_ch);
 
-    // size pass
-    WidgetTreeExpand_Rec(w);
+    // size expanders
+    WidgetTreeExpanders_Rec(w);
+
+
+    // TODO: merge positioning and render passes:
 
     // position pass
     List<Widget*> all_widgets = WidgetTreePositioning(a_tmp, w);
-
     // render pass
     WidgetTreeRenderToDrawcalls(all_widgets);
+
 
     // clean up pass
     _g_w_root.frame_touched = *g_frameno_imui;
@@ -866,18 +877,36 @@ Widget *UI_LayoutVertical(s32 align = 1) {
     return w;
 }
 
-void UI_SpaceH(u32 width) {
+Widget *UI_SpaceH(u32 width) {
     Widget *w = WidgetGetNew();
     w->w = width;
 
     WidgetTreeSibling(w);
+    return w;
 }
 
-void UI_SpaceV(u32 height) {
+Widget *UI_SpaceV(u32 height) {
     Widget *w = WidgetGetNew();
     w->h = height;
 
     WidgetTreeSibling(w);
+    return w;
+}
+
+Widget *UI_ExpanderH() {
+    Widget *w = WidgetGetNew();
+    w->features_flg |= WF_EXPAND_HORIZONTAL;
+
+    WidgetTreeSibling(w);
+    return w;
+}
+
+Widget *UI_ExpanderV() {
+    Widget *w = WidgetGetNew();
+    w->features_flg |= WF_EXPAND_VERTICAL;
+
+    WidgetTreeSibling(w);
+    return w;
 }
 
 Widget *UI_Label(const char *text, Color color = Color { RGBA_BLACK }) {
