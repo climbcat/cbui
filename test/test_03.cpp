@@ -13,7 +13,7 @@
 void TestUILayoutFeatures() {
 
     cbui = CbuiInit("TestUILayoutFeatures", false);
-    s32 TB_mode = 6;
+    s32 TB_mode = 0;
 
     f32 time = 0;
     UI_SetFontSize(FS_24);
@@ -28,33 +28,33 @@ void TestUILayoutFeatures() {
             UI_Center();
 
             UI_LayoutVertical();
-            UI_Label("Test 1: Align Left");
-            UI_Label("Et");
-            UI_Label("par");
-            UI_Label("linjers");
-            UI_Label("tekst.");
+            UI_Label("Test: Align Left");
+            UI_Label("A couple");
+            UI_Label("lines");
+            UI_Label("of");
+            UI_Label("text");
         } break;
 
         case 1: {
             UI_Center();
 
             UI_LayoutVertical(0);
-            UI_Label("Test 2: Center");
-            UI_Label("Et");
-            UI_Label("par");
-            UI_Label("linjers");
-            UI_Label("tekst.");
+            UI_Label("Test: Align Left");
+            UI_Label("A couple");
+            UI_Label("lines");
+            UI_Label("of");
+            UI_Label("text");
         } break;
 
         case 2: {
             UI_Center();
 
             UI_LayoutVertical(-1);
-            UI_Label("Test 3: Alight right");
-            UI_Label("Et");
-            UI_Label("par");
-            UI_Label("linjers");
-            UI_Label("tekst.");
+            UI_Label("Test: Alight right");
+            UI_Label("A couple");
+            UI_Label("lines");
+            UI_Label("of");
+            UI_Label("text");
 
         } break;
 
@@ -67,29 +67,30 @@ void TestUILayoutFeatures() {
             UI_Label("zon");
             UI_Label("tal");
 
-            Widget *s1 = UI_Sibling();
-            s1->w = 100;
-            s1->h = 400;
+            Widget *s0 = UI_Sibling();
+            s0->w = 50;
+            s0->h = 400;
 
             UI_LayoutVertical(1);
-            UI_Label("Test 4");
-            UI_Label("Vert");
+            UI_Label("Vert-");
             UI_Label("ical");
+            UI_Label("");
             UI_Label("layout");
             UI_Pop();
+
+            Widget *s1 = UI_Sibling();
+            s1->w = 50;
+            s1->h = 400;
 
             UI_Label("layout");
         } break;
 
         case 4: {
-            // vertical layout sizing
-
             UI_Center();
 
             Widget *vert = UI_LayoutVertical(-1);
             vert->DBG_tag = StrL("vert");
 
-            // NOTE: out-comment to check behavior
             vert->w = 500;
             vert->h = 120;
 
@@ -105,8 +106,46 @@ void TestUILayoutFeatures() {
         } break;
 
         case 5: {
-            // horizontal layout sizing
+            UI_Center();
 
+            Widget *vert = UI_LayoutVertical(0);
+            vert->DBG_tag = StrL("vert");
+
+            vert->w = 500;
+            vert->h = 120;
+
+            Widget *s0 = UI_Sibling();
+            s0->DBG_tag = StrL("s0");
+            s0->w = 400;
+            s0->h = 100;
+
+            Widget *s1 = UI_Sibling();
+            s1->DBG_tag = StrL("s1");
+            s1->w = 300;
+            s1->h = 50;
+        } break;
+
+        case 6: {
+            UI_Center();
+
+            Widget *vert = UI_LayoutVertical();
+            vert->DBG_tag = StrL("vert");
+
+            vert->w = 500;
+            vert->h = 120;
+
+            Widget *s0 = UI_Sibling();
+            s0->DBG_tag = StrL("s0");
+            s0->w = 400;
+            s0->h = 100;
+
+            Widget *s1 = UI_Sibling();
+            s1->DBG_tag = StrL("s1");
+            s1->w = 300;
+            s1->h = 50;
+        } break;
+
+        case 7: {
             UI_Center();
 
             Widget *vert = UI_LayoutHorizontal(-1);
@@ -127,7 +166,49 @@ void TestUILayoutFeatures() {
             s1->h = 300;
         } break;
 
-        case 6: {
+        case 8: {
+            UI_Center();
+
+            Widget *vert = UI_LayoutHorizontal(0);
+            vert->DBG_tag = StrL("horiz");
+
+            // NOTE: out-comment to check behavior
+            vert->w = 120;
+            vert->h = 450;
+
+            Widget *s0 = UI_Sibling();
+            s0->DBG_tag = StrL("s0");
+            s0->w = 100;
+            s0->h = 400;
+
+            Widget *s1 = UI_Sibling();
+            s1->DBG_tag = StrL("s1");
+            s1->w = 50;
+            s1->h = 300;
+        } break;
+
+        case 9: {
+            UI_Center();
+
+            Widget *vert = UI_LayoutHorizontal(1);
+            vert->DBG_tag = StrL("horiz");
+
+            // NOTE: out-comment to check behavior
+            vert->w = 120;
+            vert->h = 450;
+
+            Widget *s0 = UI_Sibling();
+            s0->DBG_tag = StrL("s0");
+            s0->w = 100;
+            s0->h = 400;
+
+            Widget *s1 = UI_Sibling();
+            s1->DBG_tag = StrL("s1");
+            s1->w = 50;
+            s1->h = 300;
+        } break;
+
+        case 10: {
             UI_Center();
 
             Widget *vert = UI_LayoutVertical(0);
@@ -155,7 +236,7 @@ void TestUILayoutFeatures() {
         default: break; }
 
         if (GetSpace()) {
-            TB_mode = (TB_mode + 1) % 7;
+            TB_mode = (TB_mode + 1) % 9;
         }
         if (GetFKey(2)) {
             UI_DebugMode(!g_ui_debugmode);
