@@ -1,6 +1,3 @@
-#include <math.h>
-#include <assert.h>
-
 #include "../../../baselayer/src/baselayer.h"
 
 
@@ -8,11 +5,6 @@
 #include "stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
-
-
-void RawImage() {
-
-}
 
 
 int main (int argc, char **argv) {
@@ -31,6 +23,9 @@ int main (int argc, char **argv) {
             printf("could not load: %s\n", filename_in);
         }
         else {
+            printf("image width:  %d\n", bitmap_w);
+            printf("image height: %d\n", bitmap_h);
+
             // create the output filename
             StrInit();
 
