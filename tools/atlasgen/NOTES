@@ -1,0 +1,21 @@
+
+
+
+Sprite sheets:
+
+Overview:
+
+Rehash the sprite sheet and font atlas system.
+Meta data interleaved with bitmap data.
+Each font atlas is ALSO a sprite sheet, and should use the same basic meta data format. (?)
+(However, additional font info is required to lay out the characters.)
+
+Details:
+
+Each line is an animation.
+The line is a sequence of animation frames, each animation filling one line.
+Mapping/addressing: 
+    [sheet name] - "courier" or "aliens_01" - returns a ptr to Sheet
+    [ani idx] - which row - ptr to nothing - ptr to Animation
+    [ani frame idx] - x,y,w,h, duration - ptr to Frame
+
