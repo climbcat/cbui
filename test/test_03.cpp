@@ -236,7 +236,7 @@ void TestUILayoutFeatures() {
         default: break; }
 
         if (GetSpace()) {
-            TB_mode = (TB_mode + 1) % 9;
+            TB_mode = (TB_mode + 1) % 11;
         }
         if (GetFKey(2)) {
             UI_DebugMode(!g_ui_debugmode);
