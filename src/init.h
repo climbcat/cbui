@@ -56,7 +56,10 @@ CbuiState *CbuiInit(const char *title, bool start_in_fullscreen) {
             MapPut(&g_texture_map, font->GetKey(), &font->texture);
         }
 
+
         // sprite maps
+        // TODO: do something else // load each sprite map individually
+        /*
         else if (res->tpe == RST_SPRITE) {
             SpriteMap *smap = SpriteMapLoadStream((u8*) res->GetInlinedData(), res->data_sz);
             if (log_verbose) {
@@ -67,6 +70,7 @@ CbuiState *CbuiInit(const char *title, bool start_in_fullscreen) {
             MapPut(&g_resource_map, smap->GetKey(), smap);
             MapPut(&g_texture_map, smap->GetKey(), &smap->texture);
         }
+        */
 
         // other
         else {

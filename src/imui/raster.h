@@ -2,6 +2,11 @@
 #define __RASTER_H__
 
 
+//
+//  Line rasterization
+//
+
+
 inline
 bool _CullScreenCoords(u32 pos_x, u32 pos_y, u32 w, u32 h) {
     // returns true if the coordinate is out of range
@@ -160,6 +165,88 @@ void RenderLineSegment(u8 *image_buffer, Matrix4f view, Matrix4f proj, Vector3f 
         RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, color);
     }
 }
+
+
+//
+//  Blitting
+//
+
+
+
+//
+//  Texture sampling
+
+
+inline
+Color SampleTextureRGBA(ImageRGBA *tex, f32 x, f32 y) {
+    s32 i = (s32) round(tex->width * x);
+    s32 j = (s32) round(tex->height * y);
+    u32 idx = tex->width * j + i;
+    Color b = tex->img[idx];
+    return b;
+}
+
+inline
+Color SampleTextureRGBASafe(ImageRGBA *tex, f32 x, f32 y, Color col_default) {
+    s32 i = (s32) round(tex->width * x);
+    s32 j = (s32) round(tex->height * y);
+    if (i < 0 || i >= tex->width || j < 0 || j >= tex->height) {
+        return col_default;
+    }
+    u32 idx = tex->width * j + i;
+    Color b = tex->img[idx];
+    return b;
+}
+
+
+void BlitSprite(s32 q_w, s32 q_h, s32 q_x0, s32 q_y0, f32 q_u0, f32 q_u1, f32 q_v0, f32 q_v1, s32 x0, s32 y0, ImageRGBA *img_dest, ImageRGBA *img_src) {
+
+    assert(img_dest->height >= q_w);
+    assert(img_dest->width >= q_h);
+
+    u32 stride_img = img_dest->width;
+
+    f32 q_scale_x = (q_u1 - q_u0) / q_w;
+    f32 q_scale_y = (q_v1 - q_v0) / q_h;
+
+    // i,j          : target coords
+    // i_img, j_img : img coords
+
+    for (s32 j = 0; j < q_h; ++j) {
+        s32 j_img = j + q_y0;
+        if (j_img < 0 || j_img > img_dest->height) {
+            continue;
+        }
+
+        for (s32 i = 0; i < q_w; ++i) {
+            s32 i_img = q_x0 + i;
+            if (i_img < 0 || i_img > img_dest->width) {
+                continue;
+            }
+            f32 x = q_u0 + i * q_scale_x;
+            f32 y = q_v0 + j * q_scale_y;
+
+            // TODO: how do we regularize this code?
+            Color color_src = SampleTextureRGBASafe(img_src, x, y, Color { 0, 0, 0, 255 });
+
+            if (color_src.a != 0) {
+                // rudimentary alpha-blending
+                s32 idx = j_img * stride_img + i_img;
+                Color color_background = img_dest->img[idx];
+
+                f32 alpha = (1.0f * color_src.a) / 255;
+                Color color_blended;
+                color_blended.r = (u8) (floor( alpha*color_src.r ) + floor( (1-alpha)*color_background.r ));
+                color_blended.g = (u8) (floor( alpha*color_src.g ) + floor( (1-alpha)*color_background.g ));
+                color_blended.b = (u8) (floor( alpha*color_src.b ) + floor( (1-alpha)*color_background.b ));
+                color_blended.a = 255;
+
+                img_dest->img[idx] = color_blended;
+            }
+        }
+    }
+}
+
 
 
 #endif

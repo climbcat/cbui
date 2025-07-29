@@ -2,7 +2,6 @@
 
 
 #include "../../../baselayer/src/baselayer.h"
-//#include "../../chui_includes.h"
 #include "../../cbui_includes.h"
 
 
@@ -53,11 +52,7 @@ int main (int argc, char **argv) {
     }
     else if (CLAContainsArg("--help", argc, argv) || CLAContainsArg("-h", argc, argv)) {
         printf("--help:          display help (this text)\n");
-        printf("--test:          run test functions\n");
         exit(0);
-    }
-    else if (CLAContainsArg("--test", argc, argv)) {
-        printf("No available tests ...\n");
     }
     else {
         InitBaselayer();

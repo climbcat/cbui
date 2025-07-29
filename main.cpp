@@ -1,26 +1,8 @@
 #define ENABLE_GLFW
 
 
-#include <math.h>
-#include <assert.h>
-#include <signal.h>
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-
 #include "release/0.2.0/jg_baselayer.h"
-
-#include "src/geometry/gtypes.h"
-#include "src/geometry/geometry.h"
-#include "src/geometry/scenegraph.h"
-
-#include "src/cbui.h"
-#include "src/imui/color.h"
-#include "src/imui/sprite.h"
-#include "src/imui/resource.h"
-#include "src/imui/font.h"
-#include "src/imui/imui.h"
-#include "src/platform/platform_glfw.h"
-#include "src/init.h"
+#include "cbui_includes.h"
 
 //#include "src/archive/init_arc.h"
 //#include "test/test_01.cpp"
