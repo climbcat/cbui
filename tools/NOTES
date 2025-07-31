@@ -19,3 +19,15 @@ Mapping/addressing:
     [ani idx] - which row - ptr to nothing - ptr to Animation
     [ani frame idx] - x,y,w,h, duration - ptr to Frame
 
+
+Update 250731: 
+
+There is a "quad" system underlying the font glyphs, defines color and texture_id for every quad
+A seperate texture map exists for all the font stuff, currently it is a global (inflexible)
+We need to unify the underlying pipeline such that:
+    - An LRU cache can be applied to all blitting taking place
+    - there is a unified texture_map
+    - OpenGL export can be applied to the pipeline as a whole
+
+Obs: We are actually neighter using Sprite, not Glyph for doing characters, we
+are doing HexaQuad.
