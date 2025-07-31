@@ -5,8 +5,8 @@
 #include "../../cbui_includes.h"
 
 
-void LoadInvaders(MArena *a_dest, HashMap *map) {
-    SS_Sheet(a_dest, map, "invaders_03.raw", "invaders_03", 176, 592, 6);
+void LoadInvaders(MArena *a_dest, HashMap *map_ssheets, HashMap *map_textures) {
+    SS_Sheet(a_dest, map_ssheets, map_textures, "invaders_03.raw", "invaders_03", 176, 592, 6);
 
     SS_Animation(a_dest, "invader_01", 16, 16, 4);
     SS_FrameDuration(200);
@@ -50,32 +50,61 @@ void LoadInvaders(MArena *a_dest, HashMap *map) {
 void RunProgram(bool start_in_fullscreen) {
     cbui = CbuiInit("projname", start_in_fullscreen);
 
-    HashMap map = InitMap(GetContext()->a_life);
-    LoadInvaders(GetContext()->a_life, &map);
+    HashMap map_ssheets = InitMap(GetContext()->a_life);
+    HashMap map_textures = InitMap(GetContext()->a_life);
+    LoadInvaders(GetContext()->a_life, &map_ssheets, &map_textures);
+
+    // seems good now:
+    MapIter iter = {};
+    SpriteSheet *sheet = (SpriteSheet*) MapNextVal(&map_ssheets, &iter);
+    SS_Print(sheet);
 
     {
-        // seems good now:
-        MapIter iter = {};
-        SpriteSheet *sheet = (SpriteSheet*) MapNextVal(&map, &iter);
-        SS_Print(sheet);
-        
-
         f32 d;
         Frame f;
 
-        f = GetAnimationFrame(&map, StrL("invaders_03"), 0, 0, &d);
+        f = GetAnimationFrame(&map_ssheets, StrL("invaders_03"), 0, 0, &d);
         printf("Frame 0, 0: sz: %d %d, tex: %f %f %f %f, dur: %f\n", f.h, f.w, f.u0, f.u1, f.v0, f.v1, d);
 
-        f = GetAnimationFrame(&map, StrL("invaders_03"), 1, 2, &d);
+        f = GetAnimationFrame(&map_ssheets, StrL("invaders_03"), 1, 2, &d);
         printf("Frame 1, 2: sz: %d %d, tex: %f %f %f %f, dur: %f\n", f.h, f.w, f.u0, f.u1, f.v0, f.v1, d);
 
-        f = GetAnimationFrame(&map, StrL("invaders_03"), 2, 4, &d);
+        f = GetAnimationFrame(&map_ssheets, StrL("invaders_03"), 2, 4, &d);
         printf("Frame 2, 4: sz: %d %d, tex: %f %f %f %f, dur: %f\n", f.h, f.w, f.u0, f.u1, f.v0, f.v1, d);
     }
 
 
+
+    s32 animation_idx = 0;
+    s32 frame_idx = 0;
+    f32 t_frame_elapsed = 0;
+
     while (cbui->running) {
         CbuiFrameStart();
+
+        UI_Center();
+        UI_Label("Testing font glyphs ...");
+
+
+        Texture img = {};
+        img.tpe = TT_RGBA;
+        img.stride = 4;
+        img.data = cbui->plf->image_buffer;
+        img.width = cbui->plf->width;
+        img.height = cbui->plf->height;
+
+        f32 duration;
+        Frame f = GetAnimationFrame(&map_ssheets, StrL("invaders_03"), animation_idx, frame_idx, &duration);
+
+        Texture *tex = (Texture *) MapGet(&map_textures, f.tex_id);
+        BlitSprite(f.w, f.h, 100, 100, f.u0, f.u1, f.v0, f.v1, &img, tex);
+        t_frame_elapsed += cbui->dt;
+
+        if (duration < t_frame_elapsed) {
+            t_frame_elapsed = 0;
+            frame_idx += 1;
+            frame_idx = frame_idx % 4;
+        }
 
         /*
         switch (mode) {

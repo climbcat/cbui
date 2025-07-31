@@ -17,9 +17,9 @@
 #include "src/cbui.h"
 
 #include "src/imui/color.h"
+#include "src/imui/sprite.h"
 #include "src/imui/raster.h"
 
-#include "src/imui/sprite.h"
 #include "src/imui/quad.h"
 #include "src/imui/resource.h"
 #include "src/imui/font.h"

@@ -2,6 +2,23 @@
 #define __SPRITE_H__
 
 
+enum TextureType {
+    TT_UNDEF,
+    TT_RGBA,
+    TT_8BIT,
+
+    TT_COUNT
+};
+
+struct Texture {
+    TextureType tpe;
+    s32 width;
+    s32 height;
+
+    u8 *data;
+    s32 stride;
+};
+
 struct Frame {
     s32 w;
     s32 h;
@@ -9,6 +26,7 @@ struct Frame {
     f32 u1;
     f32 v0;
     f32 v1;
+    u64 tex_id;
 };
 
 struct Animation {
@@ -23,11 +41,13 @@ struct Animation {
 struct SpriteSheet {
     Str name;
     Str filename;
-    ImageRGBA sheet;
+    u64 texture_id;
     Array<Animation> animations;
 
-    // helper
+    // helpers
     s32 top_accum;
+    s32 tex_width;
+    s32 tex_height;
 
     // TODO: strlist containing the animation names
 };
@@ -37,23 +57,32 @@ static SpriteSheet *active_sheet;
 static Animation *active_animation;
 
 
-SpriteSheet *SS_Sheet(MArena *a_dest, HashMap *map_dest, Str filename, Str sheet_name, s32 data_width, s32 data_height, s32 animation_cnt) {
+SpriteSheet *SS_Sheet(MArena *a_dest, HashMap *map_dest, HashMap *map_textures, Str filename, Str sheet_name, s32 data_width, s32 data_height, s32 animation_cnt) {
     assert(active_sheet == NULL);
 
-    active_sheet = (SpriteSheet*) ArenaAlloc(a_dest, sizeof(SpriteSheet));
+    Texture *texture = (Texture*) ArenaAlloc(a_dest, sizeof(Texture));
+    texture->tpe = TT_RGBA;
+    texture->stride = 4;
+    texture->width = data_width;
+    texture->height = data_height;
+    texture->data = (u8*) LoadFileFSeek(a_dest, filename);
 
+    u64 texture_id = HashStringValue(sheet_name);
+    MapPut(map_textures, texture_id, texture);
+
+    active_sheet = (SpriteSheet*) ArenaAlloc(a_dest, sizeof(SpriteSheet));
     active_sheet->filename = StrPush(a_dest, filename);
     active_sheet->name = StrPush(a_dest, sheet_name);
-    active_sheet->sheet.width = data_width;
-    active_sheet->sheet.height = data_height;
-    active_sheet->sheet.img = (Color*) LoadFileFSeek(a_dest, filename);
     active_sheet->animations = InitArray<Animation>(a_dest, animation_cnt);
-
+    active_sheet->texture_id = texture_id;
+    active_sheet->tex_width = data_width;
+    active_sheet->tex_height = data_height;
     MapPut(map_dest, active_sheet->name, active_sheet);
+
     return active_sheet;
 }
-SpriteSheet *SS_Sheet(MArena *a_dest, HashMap *map_dest, const char *filename, const char *sheet_name, s32 data_width, s32 data_height, s32 animation_cnt) {
-    return SS_Sheet(a_dest, map_dest, StrL(filename), StrL(sheet_name), data_width, data_height, animation_cnt);
+SpriteSheet *SS_Sheet(MArena *a_dest, HashMap *map_dest, HashMap *map_textures, const char *filename, const char *sheet_name, s32 data_width, s32 data_height, s32 animation_cnt) {
+    return SS_Sheet(a_dest, map_dest, map_textures, StrL(filename), StrL(sheet_name), data_width, data_height, animation_cnt);
 }
 
 void SS_Animation(MArena *a_dest, Str name, s32 width, s32 height, s32 frames_cnt) {
@@ -79,10 +108,11 @@ void SS_Animation(MArena *a_dest, Str name, s32 width, s32 height, s32 frames_cn
         Frame f = {};
         f.w = width;
         f.h = height;
-        f.u0 = x / (f32) active_sheet->sheet.width;
-        f.u1 = (x + width) / (f32) active_sheet->sheet.width;
-        f.v0 = y / (f32) active_sheet->sheet.height;
-        f.v1 = (y + height) / (f32) active_sheet->sheet.height;
+        f.u0 = x / (f32) active_sheet->tex_width;
+        f.u1 = (x + width) / (f32) active_sheet->tex_width;
+        f.v0 = y / (f32) active_sheet->tex_height;
+        f.v1 = (y + height) / (f32) active_sheet->tex_height;
+        f.tex_id = active_sheet->texture_id;
 
         animation.frames.Add(f);
     }
