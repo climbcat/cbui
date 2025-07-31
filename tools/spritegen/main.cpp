@@ -6,38 +6,38 @@
 
 
 void LoadInvaders(MArena *a_dest, HashMap *map) {
-    SS_Sheet(a_dest, map, StrL("invaders_03.raw"), StrL("invaders_03"), 176, 592, 6);
+    SS_Sheet(a_dest, map, "invaders_03.raw", "invaders_03", 176, 592, 6);
 
-    SS_Animation(a_dest, StrL("invader_01"), 16, 16, 4);
-    SS_FrameDuration(200);
-    SS_FrameDuration(200);
-    SS_FrameDuration(200);
-    SS_FrameDuration(200);
-
-    SS_Animation(a_dest, StrL("invader_02"), 16, 16, 4);
+    SS_Animation(a_dest, "invader_01", 16, 16, 4);
     SS_FrameDuration(200);
     SS_FrameDuration(200);
     SS_FrameDuration(200);
     SS_FrameDuration(200);
 
-    SS_Animation(a_dest, StrL("invader_03"), 16, 16, 5);
+    SS_Animation(a_dest, "invader_02", 16, 16, 4);
+    SS_FrameDuration(200);
+    SS_FrameDuration(200);
+    SS_FrameDuration(200);
+    SS_FrameDuration(200);
+
+    SS_Animation(a_dest, "invader_03", 16, 16, 5);
     SS_FrameDuration(200);
     SS_FrameDuration(200);
     SS_FrameDuration(200);
     SS_FrameDuration(200);
     SS_FrameDuration(200);
 
-    SS_Animation(a_dest, StrL("invader_04"), 16, 16, 3);
+    SS_Animation(a_dest, "invader_04", 16, 16, 3);
     SS_FrameDuration(200);
     SS_FrameDuration(200);
     SS_FrameDuration(200);
 
-    SS_Animation(a_dest, StrL("invader_05"), 16, 16, 3);
+    SS_Animation(a_dest, "invader_05", 16, 16, 3);
     SS_FrameDuration(200);
     SS_FrameDuration(200);
     SS_FrameDuration(200);
 
-    SS_Animation(a_dest, StrL("invader_06"), 16, 16, 3);
+    SS_Animation(a_dest, "invader_06", 16, 16, 3);
     SS_FrameDuration(200);
     SS_FrameDuration(200);
     SS_FrameDuration(200);
@@ -51,12 +51,28 @@ void RunProgram(bool start_in_fullscreen) {
     cbui = CbuiInit("projname", start_in_fullscreen);
 
     HashMap map = InitMap(GetContext()->a_life);
-
     LoadInvaders(GetContext()->a_life, &map);
 
-    MapIter iter = {};
-    SpriteSheet *sheet = (SpriteSheet*) MapNextVal(&map, &iter);
-    SS_Print(sheet);
+    {
+        // seems good now:
+        MapIter iter = {};
+        SpriteSheet *sheet = (SpriteSheet*) MapNextVal(&map, &iter);
+        SS_Print(sheet);
+        
+
+        f32 d;
+        Frame f;
+
+        f = GetAnimationFrame(&map, StrL("invaders_03"), 0, 0, &d);
+        printf("Frame 0, 0: sz: %d %d, tex: %f %f %f %f, dur: %f\n", f.h, f.w, f.u0, f.u1, f.v0, f.v1, d);
+
+        f = GetAnimationFrame(&map, StrL("invaders_03"), 1, 2, &d);
+        printf("Frame 1, 2: sz: %d %d, tex: %f %f %f %f, dur: %f\n", f.h, f.w, f.u0, f.u1, f.v0, f.v1, d);
+
+        f = GetAnimationFrame(&map, StrL("invaders_03"), 2, 4, &d);
+        printf("Frame 2, 4: sz: %d %d, tex: %f %f %f %f, dur: %f\n", f.h, f.w, f.u0, f.u1, f.v0, f.v1, d);
+    }
+
 
     while (cbui->running) {
         CbuiFrameStart();

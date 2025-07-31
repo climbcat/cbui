@@ -28,6 +28,8 @@ struct SpriteSheet {
 
     // helper
     s32 top_accum;
+
+    // TODO: strlist containing the animation names
 };
 
 
@@ -50,6 +52,9 @@ SpriteSheet *SS_Sheet(MArena *a_dest, HashMap *map_dest, Str filename, Str sheet
     MapPut(map_dest, active_sheet->name, active_sheet);
     return active_sheet;
 }
+SpriteSheet *SS_Sheet(MArena *a_dest, HashMap *map_dest, const char *filename, const char *sheet_name, s32 data_width, s32 data_height, s32 animation_cnt) {
+    return SS_Sheet(a_dest, map_dest, StrL(filename), StrL(sheet_name), data_width, data_height, animation_cnt);
+}
 
 void SS_Animation(MArena *a_dest, Str name, s32 width, s32 height, s32 frames_cnt) {
     assert(active_sheet);
@@ -68,16 +73,16 @@ void SS_Animation(MArena *a_dest, Str name, s32 width, s32 height, s32 frames_cn
     f32 v0 = y / (f32) height;
     f32 v1 = (y + height) / (f32) height;
 
-    for (s32 i = 0; i < animation.frames.len; ++i) {
+    for (s32 i = 0; i < frames_cnt; ++i) {
         s32 x = i * width;
 
         Frame f = {};
         f.w = width;
         f.h = height;
-        f.u0 = x / (f32) width;
-        f.u1 = (x + width) / (f32) width;
-        f.v0 = y / (f32) height;
-        f.v1 = (y + height) / (f32) height;
+        f.u0 = x / (f32) active_sheet->sheet.width;
+        f.u1 = (x + width) / (f32) active_sheet->sheet.width;
+        f.v0 = y / (f32) active_sheet->sheet.height;
+        f.v1 = (y + height) / (f32) active_sheet->sheet.height;
 
         animation.frames.Add(f);
     }
@@ -89,6 +94,9 @@ void SS_Animation(MArena *a_dest, Str name, s32 width, s32 height, s32 frames_cn
     if (active_sheet->animations.len == active_sheet->animations.max) {
         active_sheet = NULL;
     }
+}
+void SS_Animation(MArena *a_dest, const char *name, s32 width, s32 height, s32 frames_cnt) {
+    return SS_Animation(a_dest, StrL(name), width, height, frames_cnt);
 }
 
 void SS_FrameDuration(f32 duration) {
@@ -131,6 +139,26 @@ access:
 Frame GetAnimationFrame(u64 sheet_id, u64 animation_id, s32 frame_idx)
 */
 
+static Frame frame_zero;
+
+Frame GetAnimationFrame(HashMap *map, Str sheet_name, s32 animation_idx, s32 frame_idx, f32 *frame_duration) {
+    assert(frame_duration);
+
+    SpriteSheet *sheet = (SpriteSheet*) MapGet(map, sheet_name);
+    if (sheet == NULL) {
+        frame_zero = {};
+        return frame_zero;
+    }
+
+    assert( StrEqual(sheet_name, sheet->name) );
+
+    Animation animation = sheet->animations.arr[animation_idx];
+    Frame result = animation.frames.arr[frame_idx];
+    *frame_duration = animation.durations.arr[frame_idx];
+
+    return result;
+}
+
 
 // TODO: reference API
 /*
@@ -139,7 +167,7 @@ struct AnimatedEntity {
     s32 animation_idx;
     s32 frame_idx;
     f32 t_frame_elapsed;
-};
+-køøkægüåk↓þþœ~};
 */
 
 

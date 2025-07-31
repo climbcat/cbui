@@ -1,2 +1,2 @@
 #!/bin/sh
-g++ main.cpp -o spritegen -lGL -lGLEW -lglfw
+g++ -g main.cpp -o spritegen -lGL -lGLEW -lglfw
