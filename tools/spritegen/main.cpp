@@ -5,9 +5,8 @@
 #include "../../cbui_includes.h"
 
 
-void LoadInvaders(MArena *a_dest) {
-
-    SpriteSheet *sheet_01 = SS_Sheet(a_dest, StrL("invaders_03.raw"), StrL("invaders_03"), 176, 592, 6);
+void LoadInvaders(MArena *a_dest, HashMap *map) {
+    SS_Sheet(a_dest, map, StrL("invaders_03.raw"), StrL("invaders_03"), 176, 592, 6);
 
     SS_Animation(a_dest, StrL("invader_01"), 16, 16, 4);
     SS_FrameDuration(200);
@@ -44,8 +43,6 @@ void LoadInvaders(MArena *a_dest) {
     SS_FrameDuration(200);
 
     SS_CloseSheet();
-
-    SS_Print(sheet_01);
 }
 
 
@@ -53,9 +50,13 @@ void LoadInvaders(MArena *a_dest) {
 void RunProgram(bool start_in_fullscreen) {
     cbui = CbuiInit("projname", start_in_fullscreen);
 
-    LoadInvaders(GetContext()->a_life);
+    HashMap map = InitMap(GetContext()->a_life);
 
-    return;
+    LoadInvaders(GetContext()->a_life, &map);
+
+    MapIter iter = {};
+    SpriteSheet *sheet = (SpriteSheet*) MapNextVal(&map, &iter);
+    SS_Print(sheet);
 
     while (cbui->running) {
         CbuiFrameStart();

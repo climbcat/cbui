@@ -25,44 +25,17 @@ struct SpriteSheet {
     Str filename;
     ImageRGBA sheet;
     Array<Animation> animations;
-    // helper variable
+
+    // helper
     s32 top_accum;
 };
-
-
-//
-// referencing it:
-struct AnimatedEntity {
-    s32 animation_idx;
-    s32 frame_idx;
-    f32 t_frame_elapsed;
-};
-
-
-/*
-construction:
-
-a) Given png file: A .h file would compile this information in runtime.
-b) Given png file: A .h code would compile a sheet in binary form ; requires a loaded as well
-
-SS_Sheet(MArena *a_dest, Str filename, Str sheet_name) -> u64 [sprite_sheet_id]
-SS_Animation(MArena *a_dest, Str animation_name, s32 y_start, s32 row_height, s32 frame_width) -> u64 [animation_id]
-SS_Frame(f32 duration) -> s32 [frame_idx];
-*/
-
-
-/*
-access:
-
-Frame GetAnimationFrame(u64 sheet_id, u64 animation_id, s32 frame_idx)
-*/
 
 
 static SpriteSheet *active_sheet;
 static Animation *active_animation;
 
 
-SpriteSheet *SS_Sheet(MArena *a_dest, Str filename, Str sheet_name, s32 data_width, s32 data_height, s32 animation_cnt) {
+SpriteSheet *SS_Sheet(MArena *a_dest, HashMap *map_dest, Str filename, Str sheet_name, s32 data_width, s32 data_height, s32 animation_cnt) {
     assert(active_sheet == NULL);
 
     active_sheet = (SpriteSheet*) ArenaAlloc(a_dest, sizeof(SpriteSheet));
@@ -71,10 +44,10 @@ SpriteSheet *SS_Sheet(MArena *a_dest, Str filename, Str sheet_name, s32 data_wid
     active_sheet->name = StrPush(a_dest, sheet_name);
     active_sheet->sheet.width = data_width;
     active_sheet->sheet.height = data_height;
-    u32 sz;
-    active_sheet->sheet.img = (Color*) LoadFileFSeek(a_dest, filename, &sz);
+    active_sheet->sheet.img = (Color*) LoadFileFSeek(a_dest, filename);
     active_sheet->animations = InitArray<Animation>(a_dest, animation_cnt);
 
+    MapPut(map_dest, active_sheet->name, active_sheet);
     return active_sheet;
 }
 
@@ -136,10 +109,39 @@ void SS_CloseSheet() {
 
 
 void SS_Print(SpriteSheet *sheet) {
-    StrPrint("SpriteSheet: ", sheet->name, "\n");
-    StrPrint("file: ", sheet->filename, "\n");
+    StrPrint("loaded sheet: ", sheet->name, "");
+    StrPrint(" (", sheet->filename, ")\n");
 
+    for (s32 i = 0; i < sheet->animations.len; ++i) {
+        Animation a = sheet->animations.arr[i];
+        StrPrint("    ", a.name, ": ");
+
+        for (s32 i = 0; i < a.durations.len; ++i) {
+            printf("%.0f ", a.durations.arr[i]);
+        }
+        printf("\n");
+    }
 }
+
+
+// TODO: data access API
+/*
+access:
+
+Frame GetAnimationFrame(u64 sheet_id, u64 animation_id, s32 frame_idx)
+*/
+
+
+// TODO: reference API
+/*
+reference:
+struct AnimatedEntity {
+    s32 animation_idx;
+    s32 frame_idx;
+    f32 t_frame_elapsed;
+};
+*/
+
 
 
 /*
