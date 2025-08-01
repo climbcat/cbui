@@ -24,7 +24,7 @@ QuadVertex InitQuadVertex(Vector2f pos, Vector2f tex, Color color, u64 texture_i
     return v;
 }
 
-struct QuadHexaVertex { // renderable six-vertex quad
+struct Quad { // renderable six-vertex quad
     QuadVertex verts[6];
 
     inline
@@ -51,8 +51,8 @@ struct QuadHexaVertex { // renderable six-vertex quad
     inline
     f32 GetHeight() {
         f32 y0 = verts[0].pos.y;
-        s32 y1 = verts[2].pos.y;
-        s32 width = y1 - y0;
+        f32 y1 = verts[2].pos.y;
+        f32 width = y1 - y0;
         return width;
     }
     inline
@@ -122,10 +122,10 @@ struct QuadHexaVertex { // renderable six-vertex quad
     }
 };
 
-QuadHexaVertex QuadCookSolid(f32 w, f32 h, f32 x0, f32 y0, Color c) {
+Quad QuadSolid(f32 w, f32 h, f32 x0, f32 y0, Color c) {
     // lays down two three-vertex triangles: T1 = [ urc->lrc->llc ] and T2 = [ llc->ulc->urc ]
     // ulc: upper-left corner (etc.)
-    QuadHexaVertex qh = {};
+    Quad qh = {};
     f32 x1 = x0 + w;
     f32 y1 = y0 + h;
 
@@ -144,11 +144,11 @@ QuadHexaVertex QuadCookSolid(f32 w, f32 h, f32 x0, f32 y0, Color c) {
     return qh;
 }
 
-QuadHexaVertex QuadCookTextured(Sprite s, s32 x0, s32 y0, u64 texture_id) {
+Quad QuadTextured(Sprite s, s32 x0, s32 y0, u64 texture_id) {
     // lays down two three-vertex triangles: T1 = [ urc->lrc->llc ] and T2 = [ llc->ulc->urc ]
     // ulc: upper-left corner (etc.)
 
-    QuadHexaVertex qh = {};
+    Quad qh = {};
     s32 x1 = x0 + s.w;
     s32 y1 = y0 + s.h;
 
@@ -175,8 +175,8 @@ QuadHexaVertex QuadCookTextured(Sprite s, s32 x0, s32 y0, u64 texture_id) {
 }
 
 inline
-QuadHexaVertex QuadOffset(QuadHexaVertex *q, s16 x, s16 y, Color color, u64 texture_id) {
-    QuadHexaVertex out = {};
+Quad QuadOffset(Quad *q, s16 x, s16 y, Color color, u64 texture_id) {
+    Quad out = {};
     for (u32 i = 0; i < 6; ++i) {
         QuadVertex v = *(q->verts + i);
         v.pos.x += x;
@@ -206,7 +206,7 @@ enum DrawCallType {
 struct DrawCall {
     DrawCallType tpe;
     u64 texture_key;
-    List<QuadHexaVertex> quads;
+    List<Quad> quads;
 };
 
 
@@ -225,10 +225,10 @@ u8 SampleTexture(ImageB *tex, f32 x, f32 y) {
     return b;
 }
 
-void BlitQuads(Array<QuadHexaVertex> quads, ImageRGBA *img) {
+void BlitQuads(Array<Quad> quads, ImageRGBA *img) {
 
     for (u32 i = 0; i < quads.len; ++i) {
-        QuadHexaVertex *q = quads.arr + i;
+        Quad *q = quads.arr + i;
 
         s32 q_w = round( q->GetWidth() );
         s32 q_h = round( q->GetHeight() );
@@ -325,20 +325,16 @@ void BlitQuads(Array<QuadHexaVertex> quads, ImageRGBA *img) {
 // sprite render API (hides buffer)
 
 
-static Array<QuadHexaVertex> g_quad_buffer;
-void SpriteRender_Init(MArena *a_life, u32 max_quads = 2048) {
-    g_quad_buffer = InitArray<QuadHexaVertex>(a_life, max_quads);
+static Array<Quad> g_quad_buffer;
+void QuadBufferInit(MArena *a_dest, u32 max_quads = 2048) {
+    g_quad_buffer = InitArray<Quad>(a_dest, max_quads);
 }
 
-void SpriteRender_PushDrawCall(DrawCall dc) {
-    // TODO: do something with this for OGL
-}
-
-void SpriteRender_PushQuad(QuadHexaVertex quad) {
+void QuadBufferPush(Quad quad) {
     g_quad_buffer.Add(quad);
 }
 
-void SpriteRender_BlitAndCLear(ImageRGBA render_target) {
+void QuadBufferBlitAndClear(ImageRGBA render_target) {
     BlitQuads(g_quad_buffer, &render_target);
     g_quad_buffer.len = 0;
 }

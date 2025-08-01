@@ -2150,7 +2150,7 @@ void BlitQuads(Array<QuadHexaVertex> quads, ImageRGBA *img) {
 
 
 static Array<QuadHexaVertex> g_quad_buffer;
-void SpriteRender_Init(MArena *a_life, u32 max_quads = 2048) {
+void QuadBufferInit(MArena *a_life, u32 max_quads = 2048) {
     g_quad_buffer = InitArray<QuadHexaVertex>(a_life, max_quads);
 }
 
@@ -2158,11 +2158,11 @@ void SpriteRender_PushDrawCall(DrawCall dc) {
     // TODO: do something with this for OGL
 }
 
-void SpriteRender_PushQuad(QuadHexaVertex quad) {
+void QuadBufferPush(QuadHexaVertex quad) {
     g_quad_buffer.Add(quad);
 }
 
-void SpriteRender_BlitAndCLear(ImageRGBA render_target) {
+void QuadBufferBlitAndClear(ImageRGBA render_target) {
     BlitQuads(g_quad_buffer, &render_target);
     g_quad_buffer.len = 0;
 }
@@ -2883,7 +2883,7 @@ void TextPlot(Str txt, s32 box_l, s32 box_t, s32 box_w, s32 box_h, s32 *sz_x, s3
 
         QuadHexaVertex q = QuadOffset(plt->cooked.lst + c, pt_x, pt_y, color, plt_key);
         pt_x += plt->advance_x.lst[c];
-        SpriteRender_PushQuad(q);
+        QuadBufferPush(q);
     }
 }
 
@@ -2906,8 +2906,8 @@ void PanelPlot( f32 l, f32 t, f32 w, f32 h, f32 thic_border, Color col_border = 
         return;
     }
 
-    SpriteRender_PushQuad(QuadCookSolid(w, h, l, t, col_border));
-    SpriteRender_PushQuad(QuadCookSolid(w - 2*thic_border, h - 2*thic_border, l + thic_border, t + thic_border, col_pnl));
+    QuadBufferPush(QuadCookSolid(w, h, l, t, col_border));
+    QuadBufferPush(QuadCookSolid(w - 2*thic_border, h - 2*thic_border, l + thic_border, t + thic_border, col_pnl));
 }
 
 
@@ -4563,7 +4563,7 @@ CbuiState *CbuiInit(const char *title, bool start_in_fullscreen) {
     InitImUi(cbui->plf->width, cbui->plf->height, &cbui->frameno);
 
     ImageRGBA render_target = { (s32) cbui->plf->width, (s32) cbui->plf->height, (Color*) cbui->plf->image_buffer };
-    SpriteRender_Init(cbui->ctx->a_life);
+    QuadBufferInit(cbui->ctx->a_life);
 
     g_texture_map = InitMap(cbui->ctx->a_life, MAX_RESOURCE_CNT);
     g_resource_map = InitMap(cbui->ctx->a_life, MAX_RESOURCE_CNT);
@@ -4636,7 +4636,7 @@ void CbuiFrameEnd() {
     XSleep(1);
 
     UI_FrameEnd(cbui->ctx->a_tmp, cbui->plf->width, cbui->plf->height);
-    SpriteRender_BlitAndCLear(InitImageRGBA(cbui->plf->width, cbui->plf->height, g_image_buffer));
+    QuadBufferBlitAndClear(InitImageRGBA(cbui->plf->width, cbui->plf->height, g_image_buffer));
 
     PlafGlfwUpdate(cbui->plf);
     // TODO: clean up these globals

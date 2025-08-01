@@ -13,8 +13,8 @@ void PanelPlot(f32 l, f32 t, f32 w, f32 h, f32 thic_border, Color col_border = {
         return;
     }
 
-    SpriteRender_PushQuad(QuadCookSolid(w, h, l, t, col_border));
-    SpriteRender_PushQuad(QuadCookSolid(w - 2*thic_border, h - 2*thic_border, l + thic_border, t + thic_border, col_pnl));
+    QuadBufferPush(QuadSolid(w, h, l, t, col_border));
+    QuadBufferPush(QuadSolid(w - 2*thic_border, h - 2*thic_border, l + thic_border, t + thic_border, col_pnl));
 }
 
 

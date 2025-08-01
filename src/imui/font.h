@@ -22,13 +22,13 @@ struct FontAtlas {
     List<u8> advance_x;
     List<u8> x_lsb;
     List<s8> y_ascend;
-    List<QuadHexaVertex> cooked;
+    List<Quad> cooked;
 
     Sprite glyphs_mem[128];
     u8 advance_x_mem[128];
     u8 x_lsb_mem[128];
     s8 y_ascend_mem[128];
-    QuadHexaVertex cooked_mem[128];
+    Quad cooked_mem[128];
 
     s32 GetLineBaseOffset() {
         return ln_measured - ln_descend;
@@ -255,10 +255,10 @@ Str StrInc(Str s, u32 inc) {
 
 
 inline
-void ScaleTextInline(List<QuadHexaVertex> text, f32 scale, s32 x0, s32 y0, s32 w, s32 h) {
+void ScaleTextInline(List<Quad> text, f32 scale, s32 x0, s32 y0, s32 w, s32 h) {
     if (scale != 1.0f) {
         for (u32 i = 0; i < text.len; ++i) {
-            QuadHexaVertex *q = text.lst + i;
+            Quad *q = text.lst + i;
 
             for (u32 j = 0; j < 6; ++j) {
                 Vector2f *pos = &(q->verts + j)->pos;
@@ -310,12 +310,12 @@ enum TextAlign {
     TAL_CNT,
 };
 inline
-void AlignQuadsH(List<QuadHexaVertex> line_quads, s32 cx, TextAlign ta) {
+void AlignQuadsH(List<Quad> line_quads, s32 cx, TextAlign ta) {
     // TODO: re-impl.
     /*
     if (ta != TAL_LEFT && line_quads.len > 0) {
-        QuadHexaVertex *ql = line_quads.lst;
-        QuadHexaVertex *qr = line_quads.LastPtr();
+        Quad *ql = line_quads.lst;
+        Quad *qr = line_quads.LastPtr();
         s32 line_c = (qr->GetX1() + ql->GetX0()) / 2;
 
         s32 offset_x = cx - line_c;
@@ -334,13 +334,12 @@ void AlignQuadsH(List<QuadHexaVertex> line_quads, s32 cx, TextAlign ta) {
 }
 
 
-List<QuadHexaVertex> LayoutTextAutowrap(MArena *a_dest, FontAtlas *plt, Str txt, s32 x0, s32 y0, s32 w, s32 h, Color color, TextAlign ta) {
+List<Quad> LayoutTextAutowrap(MArena *a_dest, FontAtlas *plt, Str txt, s32 x0, s32 y0, s32 w, s32 h, Color color, TextAlign ta) {
     assert(g_text_plotter != NULL && "init text plotters first");
 
 
     //
     // TODO: un-retire this autowrap function
-    //
 
 
     s32 pt_x = x0;
@@ -352,7 +351,7 @@ List<QuadHexaVertex> LayoutTextAutowrap(MArena *a_dest, FontAtlas *plt, Str txt,
     u32 i = 0;
     Str s = txt;
 
-    List<QuadHexaVertex> quads = InitList<QuadHexaVertex>(a_dest, 0);
+    List<Quad> quads = InitList<Quad>(a_dest, 0);
     u32 line_first_idx = 0;
     u32 line_len = 0;
     while (s.len > 0) {
@@ -362,7 +361,7 @@ List<QuadHexaVertex> LayoutTextAutowrap(MArena *a_dest, FontAtlas *plt, Str txt,
             if (CanDoNewline(pt_y, plt->ln_height, plt->ln_ascend, box_b)) {
                 DoNewLine(plt->ln_height, x0, &pt_x, &pt_y);
 
-                AlignQuadsH(List<QuadHexaVertex> { quads.lst + line_first_idx, line_len }, x0 + w / 2, ta);
+                AlignQuadsH(List<Quad> { quads.lst + line_first_idx, line_len }, x0 + w / 2, ta);
                 line_len = 0;
                 line_first_idx = quads.len;
             }
@@ -384,7 +383,7 @@ List<QuadHexaVertex> LayoutTextAutowrap(MArena *a_dest, FontAtlas *plt, Str txt,
             if (CanDoNewline(pt_y, plt->ln_height, plt->ln_ascend, box_b)) {
                 DoNewLine(plt->ln_height, x0, &pt_x, &pt_y);
             
-                AlignQuadsH(List<QuadHexaVertex> { quads.lst + line_first_idx, line_len }, x0 + w / 2, ta);
+                AlignQuadsH(List<Quad> { quads.lst + line_first_idx, line_len }, x0 + w / 2, ta);
                 line_len = 0;
                 line_first_idx = quads.len;
             }
@@ -399,11 +398,11 @@ List<QuadHexaVertex> LayoutTextAutowrap(MArena *a_dest, FontAtlas *plt, Str txt,
             char c = s.str[j];
 
             // TODO: re-impl.
-            //QuadHexaVertex q = QuadOffset(plt->cooked.lst + c, pt_x, pt_y, color);
-            QuadHexaVertex q = {};
+            //Quad q = QuadOffset(plt->cooked.lst + c, pt_x, pt_y, color);
+            Quad q = {};
 
             pt_x += plt->advance_x.lst[c];
-            ArenaAlloc(a_dest, sizeof(QuadHexaVertex));
+            ArenaAlloc(a_dest, sizeof(Quad));
             quads.Add(q);
 
             line_len++;
@@ -416,7 +415,7 @@ List<QuadHexaVertex> LayoutTextAutowrap(MArena *a_dest, FontAtlas *plt, Str txt,
     assert(quads.len <= txt.len); // quad len equals char count minus whitespaces
 
     // align the last line of the batch
-    AlignQuadsH(List<QuadHexaVertex> { quads.lst + line_first_idx, line_len }, x0 + w / 2, ta);
+    AlignQuadsH(List<Quad> { quads.lst + line_first_idx, line_len }, x0 + w / 2, ta);
 
     // only scale if absolutely necessary
     f32 scale = 1.0f;
@@ -430,7 +429,6 @@ List<QuadHexaVertex> LayoutTextAutowrap(MArena *a_dest, FontAtlas *plt, Str txt,
     dc.tpe = DCT_TEXTURE_BYTE;
     dc.texture_key = plt->GetKey();
     dc.quads = quads;
-    SpriteRender_PushDrawCall(dc);
 
     return quads;
 }
@@ -542,9 +540,9 @@ void TextPlot(Str txt, s32 box_l, s32 box_t, s32 box_w, s32 box_h, s32 *sz_x, s3
             continue;
         }
 
-        QuadHexaVertex q = QuadOffset(plt->cooked.lst + c, pt_x, pt_y, color, plt_key);
+        Quad q = QuadOffset(plt->cooked.lst + c, pt_x, pt_y, color, plt_key);
         pt_x += plt->advance_x.lst[c];
-        SpriteRender_PushQuad(q);
+        QuadBufferPush(q);
     }
 }
 

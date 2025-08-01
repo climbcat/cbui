@@ -1,19 +1,16 @@
 #define ENABLE_GLFW
 
 
-#include "release/0.2.0/jg_baselayer.h"
+//#include "release/0.2.0/jg_baselayer.h"
+#include "../baselayer/src/baselayer.h"
 #include "cbui_includes.h"
-
-//#include "src/archive/init_arc.h"
-//#include "test/test_01.cpp"
-//#include "test/test_02.cpp"
 
 #include "test/test_03.cpp"
 
 
 int main (int argc, char **argv) {
     TimeProgram;
-    BaselayerAssertVersion(0, 2, 3);
+    BaselayerAssertVersion(0, 2, 4);
 
     bool force_testing = true;
 

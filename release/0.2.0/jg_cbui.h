@@ -2148,7 +2148,7 @@ void BlitQuads(Array<QuadHexaVertex> quads, ImageRGBA *img) {
 
 
 static Array<QuadHexaVertex> g_quad_buffer;
-void SpriteRender_Init(MArena *a_life, u32 max_quads = 2048) {
+void QuadBufferInit(MArena *a_life, u32 max_quads = 2048) {
     g_quad_buffer = InitArray<QuadHexaVertex>(a_life, max_quads);
 }
 
@@ -2156,11 +2156,11 @@ void SpriteRender_PushDrawCall(DrawCall dc) {
     // TODO: do something with this for OGL
 }
 
-void SpriteRender_PushQuad(QuadHexaVertex quad) {
+void QuadBufferPush(QuadHexaVertex quad) {
     g_quad_buffer.Add(quad);
 }
 
-void SpriteRender_BlitAndCLear(ImageRGBA render_target) {
+void QuadBufferBlitAndClear(ImageRGBA render_target) {
     BlitQuads(g_quad_buffer, &render_target);
     g_quad_buffer.len = 0;
 }
@@ -2879,7 +2879,7 @@ void TextPlot(Str txt, s32 box_l, s32 box_t, s32 box_w, s32 box_h, s32 *sz_x, s3
 
         QuadHexaVertex q = QuadOffset(plt->cooked.lst + c, pt_x, pt_y, color, plt_key);
         pt_x += plt->advance_x.lst[c];
-        SpriteRender_PushQuad(q);
+        QuadBufferPush(q);
     }
 }
 
@@ -2904,8 +2904,8 @@ void PanelPlot(
         return;
     }
 
-    SpriteRender_PushQuad(QuadCookSolid(w, h, l, t, col_border));
-    SpriteRender_PushQuad(QuadCookSolid(w - 2*thic_border, h - 2*thic_border, l + thic_border, t + thic_border, col_pnl));
+    QuadBufferPush(QuadCookSolid(w, h, l, t, col_border));
+    QuadBufferPush(QuadCookSolid(w - 2*thic_border, h - 2*thic_border, l + thic_border, t + thic_border, col_pnl));
 }
 
 

@@ -34,7 +34,7 @@ CbuiState *CbuiInit(const char *title, bool start_in_fullscreen) {
     UI_Init(cbui->plf->width, cbui->plf->height, &cbui->frameno);
 
     ImageRGBA render_target = { (s32) cbui->plf->width, (s32) cbui->plf->height, (Color*) cbui->plf->image_buffer };
-    SpriteRender_Init(cbui->ctx->a_life);
+    QuadBufferInit(cbui->ctx->a_life);
 
     g_texture_map = InitMap(cbui->ctx->a_life, MAX_RESOURCE_CNT);
     g_resource_map = InitMap(cbui->ctx->a_life, MAX_RESOURCE_CNT);
@@ -111,7 +111,7 @@ void CbuiFrameEnd() {
     XSleep(1);
 
     UI_FrameEnd(cbui->ctx->a_tmp, cbui->plf->width, cbui->plf->height);
-    SpriteRender_BlitAndCLear(InitImageRGBA(cbui->plf->width, cbui->plf->height, g_image_buffer));
+    QuadBufferBlitAndClear(InitImageRGBA(cbui->plf->width, cbui->plf->height, g_image_buffer));
 
     PlafGlfwUpdate(cbui->plf);
     // TODO: clean up these globals

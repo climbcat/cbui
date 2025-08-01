@@ -115,7 +115,7 @@ FontAtlas CreateCharAtlas(MArena *a_dest, u8 *font, s32 line_height) {
     // set up convenient helper data; cooked quads and advance_x list
     for (u32 i = 0; i < 128; ++i) {
         Sprite g = atlas.glyphs.lst[i];
-        QuadHexaVertex q = QuadCookTextured(g, atlas.x_lsb.lst[i], atlas.y_ascend.lst[i], 0);
+        Quad q = QuadTextured(g, atlas.x_lsb.lst[i], atlas.y_ascend.lst[i], 0);
         atlas.cooked.lst[i] = q;
     }
 
