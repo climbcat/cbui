@@ -921,8 +921,8 @@ Widget *UI_Label(const char *text, Color color = Color { RGBA_BLACK }) {
     w->col_border = ColorBlack();
     w->col_text = color;
 
-    w->w = TextLineWidth(g_text_plotter, w->text);
-    w->h = g_text_plotter->ln_measured;
+    w->w = TextLineWidth(g_current_font, w->text);
+    w->h = g_current_font->ln_measured;
 
     WidgetTreeSibling(w);
     return w;

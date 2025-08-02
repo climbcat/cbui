@@ -155,9 +155,8 @@ FontSize FontSizeFromPx(u32 sz_px) {
 //
 //  Font related globals
 
-static HashMap g_resource_map;
-static StrLst *g_font_names;
-static FontAtlas *g_text_plotter;
+static HashMap *g_font_map;
+static FontAtlas *g_current_font;
 
 
 FontAtlas *SetFontAndSize(FontSize font_size, Str font_name) {
@@ -171,25 +170,25 @@ FontAtlas *SetFontAndSize(FontSize font_size, Str font_name) {
 
     // get by key
     u64 key = HashStringValue(StrZ(key_name));
-    u64 val = MapGet(&g_resource_map, key);
-    g_text_plotter = (FontAtlas*) val;
-    return g_text_plotter;
+    u64 val = MapGet(g_font_map, key);
+    g_current_font = (FontAtlas*) val;
+    return g_current_font;
 }
 
 FontAtlas *UI_SetFont(Str font_name) {
-    assert(g_text_plotter != NULL);
+    assert(g_current_font != NULL);
 
-    return SetFontAndSize( FontSizeFromPx(g_text_plotter->sz_px), font_name);
+    return SetFontAndSize( FontSizeFromPx(g_current_font->sz_px), font_name);
 }
 
 FontAtlas *UI_SetFontSize(FontSize font_size) {
-    assert(g_text_plotter != NULL);
+    assert(g_current_font != NULL);
 
-    return SetFontAndSize( font_size, g_text_plotter->GetFontName());
+    return SetFontAndSize( font_size, g_current_font->GetFontName());
 }
 
 FontSize UI_GetFontSize() {
-    s32 sz_px = g_text_plotter->sz_px;
+    s32 sz_px = g_current_font->sz_px;
     switch (sz_px) {
         case 18: return FS_18; break;
         case 24: return FS_24; break;
@@ -336,7 +335,7 @@ void AlignQuadsH(List<Quad> line_quads, s32 cx, TextAlign ta) {
 
 
 List<Quad> LayoutTextAutowrap(MArena *a_dest, FontAtlas *plt, Str txt, s32 x0, s32 y0, s32 w, s32 h, Color color, TextAlign ta) {
-    assert(g_text_plotter != NULL && "init text plotters first");
+    assert(g_current_font != NULL && "init text plotters first");
 
 
     //
@@ -461,7 +460,7 @@ s32 TextLineHeight(FontAtlas *plt) {
 }
 
 void TextPositionLine(Str txt, s32 box_l, s32 box_t, s32 box_w, s32 box_h, s32 align_horiz, s32 align_vert, s32 *txt_l, s32 *txt_t, s32 *txt_w, s32 *txt_h) {
-    FontAtlas *plt = g_text_plotter;
+    FontAtlas *plt = g_current_font;
 
     *txt_w = 0;
     *txt_h = plt->ln_measured; // single-line height
@@ -518,8 +517,8 @@ void TextPositionLine(Str txt, s32 box_l, s32 box_t, s32 box_w, s32 box_h, s32 a
 
 
 void TextPlot(Str txt, s32 box_l, s32 box_t, s32 box_w, s32 box_h, s32 *sz_x, s32 *sz_y, Color color) {
-    assert(g_text_plotter != NULL && "init text plotters first");
-    FontAtlas *plt = g_text_plotter;
+    assert(g_current_font != NULL && "init text plotters first");
+    FontAtlas *plt = g_current_font;
 
     s32 txt_l;
     s32 txt_t;

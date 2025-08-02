@@ -22,12 +22,12 @@ struct CbuiState {
     }
 };
 
-static CbuiState _g_cbui_state;
 static CbuiState *cbui;
 
 CbuiState *CbuiInit(const char *title, bool start_in_fullscreen) {
-    _g_cbui_state = {};
-    cbui = &_g_cbui_state;
+    MArena *a_dest = GetContext()->a_life;
+
+    cbui = (CbuiState*) ArenaAlloc(a_dest, sizeof(CbuiState));
     cbui->running = true;
     cbui->ctx = InitBaselayer();
     cbui->plf = PlafGlfwInit(title);
@@ -40,14 +40,12 @@ CbuiState *CbuiInit(const char *title, bool start_in_fullscreen) {
     ImageRGBA render_target = { (s32) cbui->plf->width, (s32) cbui->plf->height, (Color*) cbui->plf->image_buffer };
     QuadBufferInit(cbui->ctx->a_life);
 
-    //cbui->map_fonts = InitMap(cbui->ctx->a_life, MAX_RESOURCE_CNT);
-    g_resource_map = InitMap(cbui->ctx->a_life, MAX_RESOURCE_CNT);
+    cbui->map_fonts = InitMap(cbui->ctx->a_life, MAX_RESOURCE_CNT);
+    g_font_map = &cbui->map_fonts;
     cbui->map_textures = InitMap(cbui->ctx->a_life, MAX_RESOURCE_CNT);
 
     // load & check resource file
     ResourceStreamHandle hdl = ResourceStreamLoadAndOpen(cbui->ctx->a_tmp, cbui->ctx->a_life, "all.res");
-    g_font_names = hdl.names[RST_FONT];
-    bool log_verbose = false;
 
     // map out the resources
     ResourceHdr *res = hdl.first;
@@ -55,10 +53,9 @@ CbuiState *CbuiInit(const char *title, bool start_in_fullscreen) {
         // fonts
         if (res->tpe == RST_FONT) {
             FontAtlas *font = FontAtlasLoadBinaryStream(res->GetInlinedData(), res->data_sz);
-            if (log_verbose) { font->Print(); }
+            if (false) { font->Print(); }
 
-            //MapPut(&cbui->map_fonts, font->GetKey(), font);
-            MapPut(&g_resource_map, font->GetKey(), font);
+            MapPut(&cbui->map_fonts, font->GetKey(), font);
             MapPut(&cbui->map_textures, font->GetKey(), &font->texture);
         }
 
@@ -68,7 +65,7 @@ CbuiState *CbuiInit(const char *title, bool start_in_fullscreen) {
         /*
         else if (res->tpe == RST_SPRITE) {
             SpriteMap *smap = SpriteMapLoadStream((u8*) res->GetInlinedData(), res->data_sz);
-            if (log_verbose) {
+            if (false) {
 
                 printf("sprite map: %s, %s, count: %u, atlas w: %u, atlas h: %u\n", smap->map_name, smap->key_name, smap->sprites.len, smap->texture.width, smap->texture.height);
             }
@@ -87,7 +84,7 @@ CbuiState *CbuiInit(const char *title, bool start_in_fullscreen) {
         // iter
         res = res->GetInlinedNext();
     }
-    SetFontAndSize(FS_48, g_font_names->GetStr());
+    SetFontAndSize(FS_48, hdl.names[RST_FONT]->GetStr());
 
     if (start_in_fullscreen) { PlafGlfwToggleFullscreen(cbui->plf); }
 
