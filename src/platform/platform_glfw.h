@@ -240,13 +240,13 @@ struct PlafGlfw {
     bool fullscreen;
     char *title;
 
+    MousePosition cursorpos;
     Button left;
     Button right;
     Scroll scroll;
+
     AsciiKeys keys;
     ActionKeys akeys;
-
-    MousePosition cursorpos;
 
     ScreenProgram screen;
     u32 width;
@@ -468,15 +468,17 @@ void PlafGlfwToggleFullscreen(PlafGlfw* plf) {
     ScreenProgramSetSize(plf->image_buffer, plf->width, plf->height);
 }
 
+void PlafGlfwPushBuffer(PlafGlfw* plf) {
+    ScreeProgramDraw(&plf->screen, plf->image_buffer, plf->width, plf->height);
+    glfwSwapBuffers(plf->window);
+}
+
 void PlafGlfwUpdate(PlafGlfw* plf) {
     if (plf->akeys.fkey == 10) {
         // toggle fullscreen
 
         PlafGlfwToggleFullscreen(plf);
     }
-
-    ScreeProgramDraw(&plf->screen, plf->image_buffer, plf->width, plf->height);
-    glfwSwapBuffers(plf->window);
 
     plf->left = {};
     plf->right = {};

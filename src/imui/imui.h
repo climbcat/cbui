@@ -571,7 +571,12 @@ void WidgetTreeRenderToDrawcalls(List<Widget*> all_widgets) {
 }
 
 
-void UI_FrameEnd(MArena *a_tmp, s32 width, s32 height) {
+void UI_FrameEnd(MArena *a_tmp, s32 width, s32 height, f32 mouse_x, f32 mouse_y, bool mouse_down, bool mouse_pushed) {
+    g_mouse_x = mouse_x;
+    g_mouse_y = mouse_y;
+    g_mouse_down = mouse_down;
+    g_mouse_pushed = mouse_pushed;
+
     if (g_mouse_down == false) {
         g_w_active = NULL;
     }

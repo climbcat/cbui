@@ -120,16 +120,11 @@ void CbuiFrameStart() {
 void CbuiFrameEnd() {
     XSleep(1);
 
-    UI_FrameEnd(cbui->ctx->a_tmp, cbui->plf->width, cbui->plf->height);
-    QuadBufferBlitAndClear(&cbui->map_textures, InitImageRGBA(cbui->plf->width, cbui->plf->height, cbui->image_buffer));
-
     PlafGlfwUpdate(cbui->plf);
+    UI_FrameEnd(cbui->ctx->a_tmp, cbui->plf->width, cbui->plf->height, cbui->plf->cursorpos.x, cbui->plf->cursorpos.y, cbui->plf->left.ended_down, cbui->plf->left.pushed);
 
-    // TODO: clean up these globals
-    g_mouse_x = cbui->plf->cursorpos.x;
-    g_mouse_y = cbui->plf->cursorpos.y;
-    g_mouse_down = MouseLeft().ended_down;
-    g_mouse_pushed = MouseLeft().pushed;
+    QuadBufferBlitAndClear(&cbui->map_textures, InitImageRGBA(cbui->plf->width, cbui->plf->height, cbui->image_buffer));
+    PlafGlfwPushBuffer(cbui->plf);
 
     cbui->running = cbui->running && !GetEscape() && !GetWindowShouldClose(cbui->plf);
 }
