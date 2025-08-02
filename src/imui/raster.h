@@ -238,4 +238,79 @@ void BlitSprite(s32 width, s32 height, s32 left, s32 top, f32 u0, f32 u1, f32 v0
 }
 
 
+
+//
+//  NOTE: imported from the "quad" blitter
+
+
+inline
+u8 SampleTexture(ImageB *tex, f32 x, f32 y) {
+    u32 i = (s32) round(tex->width * x);
+    u32 j = (s32) round(tex->height * y);
+    u32 idx = tex->width * j + i;
+    u8 b = tex->img[idx];
+    return b;
+}
+
+void BlitMonoColor(s32 q_w, s32 q_h, f32 q_x0, f32 q_y0, Color q_color, ImageRGBA img) {
+    s32 j_img;
+    s32 i_img;
+    u32 idx;
+    for (s32 j = 0; j < q_h; ++j) {
+        j_img = j + q_y0;
+        if (j_img < 0 || j_img > img.height) {
+            continue;
+        }
+
+        for (s32 i = 0; i < q_w; ++i) {
+            i_img = q_x0 + i;
+            if (i_img < 0 || i_img > img.width) {
+                continue;
+            }
+
+            idx = j_img * img.width + i_img;
+            img.img[idx] = q_color;
+        }
+    }
+
+}
+
+void BlitGlyph(s32 q_w, s32 q_h, f32 q_x0, f32 q_y0, f32 q_u0, f32 q_v0, f32 q_scale_x, f32 q_scale_y, Color q_color, ImageB *src, ImageRGBA img) {
+    // i,j          : target coords
+    // i_img, j_img : img coords
+
+    s32 stride_img = img.width;
+
+    for (s32 j = 0; j < q_h; ++j) {
+        s32 j_img = j + q_y0;
+        if (j_img < 0 || j_img > img.height) {
+            continue;
+        }
+
+        for (s32 i = 0; i < q_w; ++i) {
+            s32 i_img = q_x0 + i;
+            if (i_img < 0 || i_img > img.width) {
+                continue;
+            }
+            f32 x = q_u0 + i * q_scale_x;
+            f32 y = q_v0 + j * q_scale_y;
+            if (u8 alpha_byte = SampleTexture(src, x, y)) {
+                // rudimentary alpha-blending
+                u32 idx = (u32) (j_img * stride_img + i_img);
+                Color color_background = img.img[idx];
+
+                f32 alpha = (1.0f * alpha_byte) / 255;
+                Color color_blended;
+                color_blended.r = (u8) (floor( alpha*q_color.r ) + floor( (1-alpha)*color_background.r ));
+                color_blended.g = (u8) (floor( alpha*q_color.g ) + floor( (1-alpha)*color_background.g ));
+                color_blended.b = (u8) (floor( alpha*q_color.b ) + floor( (1-alpha)*color_background.b ));
+                color_blended.a = 255;
+
+                img.img[idx] = color_blended;
+            }
+        }
+    }
+}
+
+
 #endif
