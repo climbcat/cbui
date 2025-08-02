@@ -89,22 +89,23 @@ struct ScreenProgram {
         }
     )glsl";
 
-    void Draw(u8* imgbuffer, u32 width, u32 height) {
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f );
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        glUseProgram(program);
-        glBindVertexArray(vao);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-        glBindTexture(GL_TEXTURE_2D, texture_id);
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, imgbuffer);
-
-        u32 nverts = 4;
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, nverts);
-        glBindVertexArray(0);
-    }
 };
+
+void ScreeProgramDraw(ScreenProgram *p, u8* imgbuffer, u32 width, u32 height) {
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f );
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(p->program);
+    glBindVertexArray(p->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, p->vbo);
+
+    glBindTexture(GL_TEXTURE_2D, p->texture_id);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, imgbuffer);
+
+    u32 nverts = 4;
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, nverts);
+    glBindVertexArray(0);
+}
 
 void ScreenProgramSetSize(u8* imgbuffer, u32 width, u32 height) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgbuffer);
@@ -492,7 +493,7 @@ void PlafGlfwUpdate(PlafGlfw* plf) {
         PlafGlfwToggleFullscreen(plf);
     }
 
-    plf->screen.Draw(plf->image_buffer, plf->width, plf->height);
+    ScreeProgramDraw(&plf->screen, plf->image_buffer, plf->width, plf->height);
     glfwSwapBuffers(plf->window);
 
     plf->left = {};
