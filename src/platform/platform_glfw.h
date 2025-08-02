@@ -375,26 +375,13 @@ void WindowResizeCallBack(GLFWwindow* window, int width, int height) {
 }
 
 
-static u8 *g_image_buffer;
 #define IMG_BUFF_CHANNELS 4
 #define IMG_BUFF_MAX_WIDTH 3840
 #define IMG_BUFF_MAX_HEIGHT 2160
-u8 *ImageBufferGet() {
-    return g_image_buffer;
-}
-u8 *ImageBufferInit(MArena *a_dest) {
-    g_image_buffer = (u8*) ArenaAlloc(a_dest, IMG_BUFF_CHANNELS * IMG_BUFF_MAX_WIDTH * IMG_BUFF_MAX_HEIGHT);
-    return g_image_buffer;
-}
-void ImageBufferClear(u32 width, u32 height) {
-    if (g_image_buffer) {
-        memset(g_image_buffer, 255, IMG_BUFF_CHANNELS * width * height);
-    }
-}
 
 
 static PlafGlfw g_plaf_glfw;
-PlafGlfw* PlafGlfwInit(const char *title, u32 window_width = 640, u32 window_height = 480) {
+PlafGlfw* PlafGlfwInit(const char *title, u32 window_width, u32 window_height, u8* image_buffer) {
     g_plaf_glfw = {};
     PlafGlfw *plf = &g_plaf_glfw;
     plf->width = window_width;
@@ -428,7 +415,7 @@ PlafGlfw* PlafGlfwInit(const char *title, u32 window_width = 640, u32 window_hei
     glfwSetFramebufferSizeCallback(g_plaf_glfw.window, WindowResizeCallBack);
 
     // shader
-    plf->image_buffer = ImageBufferGet();
+    plf->image_buffer = image_buffer;
     plf->screen = ScreenProgramInit(plf->image_buffer, plf->width, plf->height);
 
     // initialize mouse position values (dx and dy are initialized to zero)
@@ -480,7 +467,7 @@ void PlafGlfwToggleFullscreen(PlafGlfw* plf) {
         // destroy and re-create everything (!?!)
         glfwDestroyWindow(plf->window);
         glfwTerminate();
-        plf = PlafGlfwInit(plf->title, plf->width, plf->height);
+        plf = PlafGlfwInit(plf->title, plf->width, plf->height, plf->image_buffer);
     }
 
     ScreenProgramSetSize(plf->image_buffer, plf->width, plf->height);
