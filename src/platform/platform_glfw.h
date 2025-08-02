@@ -89,11 +89,6 @@ struct ScreenProgram {
         }
     )glsl";
 
-    void SetSize(u8* imgbuffer, u32 width, u32 height) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgbuffer);
-        glViewport(0, 0, width, height);
-    }
-
     void Draw(u8* imgbuffer, u32 width, u32 height) {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f );
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -110,6 +105,11 @@ struct ScreenProgram {
         glBindVertexArray(0);
     }
 };
+
+void ScreenProgramSetSize(u8* imgbuffer, u32 width, u32 height) {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgbuffer);
+    glViewport(0, 0, width, height);
+}
 
 ScreenProgram ScreenProgramInit(u8* imgbuffer, u32 width, u32 height) {
     ScreenProgram prog = {};
@@ -129,7 +129,7 @@ ScreenProgram ScreenProgramInit(u8* imgbuffer, u32 width, u32 height) {
     glUseProgram(prog.program);
     glBindVertexArray(prog.vao);
     glBindBuffer(GL_ARRAY_BUFFER, prog.vbo);
-    prog.SetSize(imgbuffer, width, height);
+    ScreenProgramSetSize(imgbuffer, width, height);
 
     // quad
     float sqreen_quad_verts[] = {
@@ -370,7 +370,7 @@ void WindowResizeCallBack(GLFWwindow* window, int width, int height) {
 
     plf->width = width;
     plf->height = height;
-    plf->screen.SetSize(plf->image_buffer, width, height);
+    ScreenProgramSetSize(plf->image_buffer, width, height);
 }
 
 
@@ -482,7 +482,7 @@ void PlafGlfwToggleFullscreen(PlafGlfw* plf) {
         plf = PlafGlfwInit(plf->title, plf->width, plf->height);
     }
 
-    plf->screen.SetSize(plf->image_buffer, plf->width, plf->height);
+    ScreenProgramSetSize(plf->image_buffer, plf->width, plf->height);
 }
 
 void PlafGlfwUpdate(PlafGlfw* plf) {
