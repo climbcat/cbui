@@ -375,11 +375,6 @@ void WindowResizeCallBack(GLFWwindow* window, int width, int height) {
 }
 
 
-#define IMG_BUFF_CHANNELS 4
-#define IMG_BUFF_MAX_WIDTH 3840
-#define IMG_BUFF_MAX_HEIGHT 2160
-
-
 static PlafGlfw g_plaf_glfw;
 PlafGlfw* PlafGlfwInit(const char *title, u32 window_width, u32 window_height, u8* image_buffer) {
     g_plaf_glfw = {};
