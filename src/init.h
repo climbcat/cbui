@@ -13,6 +13,10 @@ struct CbuiState {
     f32 fr;
     bool running;
 
+    Array<Quad> quad_buffer;
+    HashMap map_textures;
+    HashMap map_fonts;
+
     f32 TimeSince(f32 t) {
         return t_framestart - t; 
     }
@@ -36,8 +40,9 @@ CbuiState *CbuiInit(const char *title, bool start_in_fullscreen) {
     ImageRGBA render_target = { (s32) cbui->plf->width, (s32) cbui->plf->height, (Color*) cbui->plf->image_buffer };
     QuadBufferInit(cbui->ctx->a_life);
 
-    g_texture_map = InitMap(cbui->ctx->a_life, MAX_RESOURCE_CNT);
+    //cbui->map_fonts = InitMap(cbui->ctx->a_life, MAX_RESOURCE_CNT);
     g_resource_map = InitMap(cbui->ctx->a_life, MAX_RESOURCE_CNT);
+    cbui->map_textures = InitMap(cbui->ctx->a_life, MAX_RESOURCE_CNT);
 
     // load & check resource file
     ResourceStreamHandle hdl = ResourceStreamLoadAndOpen(cbui->ctx->a_tmp, cbui->ctx->a_life, "all.res");
@@ -52,8 +57,9 @@ CbuiState *CbuiInit(const char *title, bool start_in_fullscreen) {
             FontAtlas *font = FontAtlasLoadBinaryStream(res->GetInlinedData(), res->data_sz);
             if (log_verbose) { font->Print(); }
 
+            //MapPut(&cbui->map_fonts, font->GetKey(), font);
             MapPut(&g_resource_map, font->GetKey(), font);
-            MapPut(&g_texture_map, font->GetKey(), &font->texture);
+            MapPut(&cbui->map_textures, font->GetKey(), &font->texture);
         }
 
 
@@ -71,6 +77,7 @@ CbuiState *CbuiInit(const char *title, bool start_in_fullscreen) {
             MapPut(&g_texture_map, smap->GetKey(), &smap->texture);
         }
         */
+
 
         // other
         else {
@@ -107,13 +114,13 @@ void CbuiFrameStart() {
 }
 
 void CbuiFrameEnd() {
-    // TODO: get delta t and framerate under control
     XSleep(1);
 
     UI_FrameEnd(cbui->ctx->a_tmp, cbui->plf->width, cbui->plf->height);
-    QuadBufferBlitAndClear(InitImageRGBA(cbui->plf->width, cbui->plf->height, g_image_buffer));
+    QuadBufferBlitAndClear(&cbui->map_textures, InitImageRGBA(cbui->plf->width, cbui->plf->height, g_image_buffer));
 
     PlafGlfwUpdate(cbui->plf);
+
     // TODO: clean up these globals
     g_mouse_x = cbui->plf->cursorpos.x;
     g_mouse_y = cbui->plf->cursorpos.y;

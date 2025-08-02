@@ -291,6 +291,7 @@ bool CanDoWhiteSpace(s32 pt_x, s32 w_space, s32 ln_limit_x) {
     bool result = pt_x + w_space <= ln_limit_x;
     return result;
 }
+
 inline
 void DoNewLine(s32 ln_height, s32 left, s32 *pt_x, s32 *pt_y) {
     *pt_y += ln_height;
@@ -454,6 +455,7 @@ s32 TextLineWidth(FontAtlas *plt, Str txt) {
 
     return pt_x;
 }
+
 s32 TextLineHeight(FontAtlas *plt) {
     return plt->ln_measured;
 }

@@ -210,11 +210,13 @@ struct DrawCall {
 };
 
 
+/*
 static HashMap g_texture_map;
 void *GetTexture(u64 key) {
     void *result = (void*) MapGet(&g_texture_map, key);
     return result;
 }
+*/
 
 inline
 u8 SampleTexture(ImageB *tex, f32 x, f32 y) {
@@ -225,8 +227,71 @@ u8 SampleTexture(ImageB *tex, f32 x, f32 y) {
     return b;
 }
 
-void BlitQuads(Array<Quad> quads, ImageRGBA *img) {
 
+void BlitMonoColor(s32 q_w, s32 q_h, f32 q_x0, f32 q_y0, Color q_color, ImageRGBA img) {
+    s32 j_img;
+    s32 i_img;
+    u32 idx;
+    for (s32 j = 0; j < q_h; ++j) {
+        j_img = j + q_y0;
+        if (j_img < 0 || j_img > img.height) {
+            continue;
+        }
+
+        for (s32 i = 0; i < q_w; ++i) {
+            i_img = q_x0 + i;
+            if (i_img < 0 || i_img > img.width) {
+                continue;
+            }
+
+            idx = j_img * img.width + i_img;
+            img.img[idx] = q_color;
+        }
+    }
+
+}
+
+
+void BlitGlyph(s32 q_w, s32 q_h, f32 q_x0, f32 q_y0, f32 q_u0, f32 q_v0, f32 q_scale_x, f32 q_scale_y, Color q_color, ImageB *src, ImageRGBA img) {
+    // i,j          : target coords
+    // i_img, j_img : img coords
+
+    s32 stride_img = img.width;
+
+    for (s32 j = 0; j < q_h; ++j) {
+        s32 j_img = j + q_y0;
+        if (j_img < 0 || j_img > img.height) {
+            continue;
+        }
+
+        for (s32 i = 0; i < q_w; ++i) {
+            s32 i_img = q_x0 + i;
+            if (i_img < 0 || i_img > img.width) {
+                continue;
+            }
+            f32 x = q_u0 + i * q_scale_x;
+            f32 y = q_v0 + j * q_scale_y;
+            if (u8 alpha_byte = SampleTexture(src, x, y)) {
+                // rudimentary alpha-blending
+                u32 idx = (u32) (j_img * stride_img + i_img);
+                Color color_background = img.img[idx];
+
+                f32 alpha = (1.0f * alpha_byte) / 255;
+                Color color_blended;
+                color_blended.r = (u8) (floor( alpha*q_color.r ) + floor( (1-alpha)*color_background.r ));
+                color_blended.g = (u8) (floor( alpha*q_color.g ) + floor( (1-alpha)*color_background.g ));
+                color_blended.b = (u8) (floor( alpha*q_color.b ) + floor( (1-alpha)*color_background.b ));
+                color_blended.a = 255;
+
+                img.img[idx] = color_blended;
+            }
+        }
+    }
+}
+
+
+
+void BlitQuads(Array<Quad> quads, HashMap *map_textues, ImageRGBA img) {
     for (u32 i = 0; i < quads.len; ++i) {
         Quad *q = quads.arr + i;
 
@@ -237,95 +302,35 @@ void BlitQuads(Array<Quad> quads, ImageRGBA *img) {
         u64 q_texture = q->GetTextureId();
         Color q_color = q->GetColor();
 
-        assert(img->height >= q_h);
-        assert(img->width >= q_w);
+        // TODO: impl. robust versions to be able to blit a larger quad into the "smaller" window
+        assert(img.height >= q_h);
+        assert(img.width >= q_w);
 
-        u32 stride_img = img->width;
-
-        void *texture = GetTexture(q_texture);
-        ImageB *texture_b = (ImageB*) texture;
-        ImageRGBA *texture_rgba = (ImageRGBA*) texture;
-
+        void *texture = (void*) MapGet(map_textues, q_texture);
 
         // byte-texture / glyphs
         if (q_texture != 0 && q_color.IsNonZero()) {
-            assert(texture_b != NULL);
-
             f32 q_scale_x = q->GetTextureScaleX(q_w);
             f32 q_scale_y = q->GetTextureScaleY(q_h);
             f32 q_u0 = q->GetTextureU0();
             f32 q_v0 = q->GetTextureV0();
 
-            // i,j          : target coords
-            // i_img, j_img : img coords
-
-            // TODO: extract code into raster function
-
-            for (s32 j = 0; j < q_h; ++j) {
-                s32 j_img = j + q_y0;
-                if (j_img < 0 || j_img > img->height) {
-                    continue;
-                }
-
-                for (s32 i = 0; i < q_w; ++i) {
-                    s32 i_img = q_x0 + i;
-                    if (i_img < 0 || i_img > img->width) {
-                        continue;
-                    }
-                    f32 x = q_u0 + i * q_scale_x;
-                    f32 y = q_v0 + j * q_scale_y;
-                    if (u8 alpha_byte = SampleTexture(texture_b, x, y)) {
-                        // rudimentary alpha-blending
-                        u32 idx = (u32) (j_img * stride_img + i_img);
-                        Color color_background = img->img[idx];
-
-                        f32 alpha = (1.0f * alpha_byte) / 255;
-                        Color color_blended;
-                        color_blended.r = (u8) (floor( alpha*q_color.r ) + floor( (1-alpha)*color_background.r ));
-                        color_blended.g = (u8) (floor( alpha*q_color.g ) + floor( (1-alpha)*color_background.g ));
-                        color_blended.b = (u8) (floor( alpha*q_color.b ) + floor( (1-alpha)*color_background.b ));
-                        color_blended.a = 255;
-
-                        img->img[idx] = color_blended;
-                    }
-                }
-            }
+            BlitGlyph(q_w, q_h, q_x0, q_y0, q_u0, q_v0, q_scale_x, q_scale_y, q_color, (ImageB*) texture, img);
         }
 
         // mono-color quads
         else if (q_texture == 0 && q_color.IsNonZero()) {
-
-            // TODO: extract code into raster function
-
-            s32 j_img;
-            s32 i_img;
-            u32 idx;
-            for (s32 j = 0; j < q_h; ++j) {
-                j_img = j + q_y0;
-                if (j_img < 0 || j_img > img->height) {
-                    continue;
-                }
-
-                for (s32 i = 0; i < q_w; ++i) {
-                    i_img = q_x0 + i;
-                    if (i_img < 0 || i_img > img->width) {
-                        continue;
-                    }
-
-                    idx = j_img * stride_img + i_img;
-                    img->img[idx] = q_color;
-                }
-            }
+            BlitMonoColor(q_w, q_h, q_x0, q_y0, q_color, img);
         }
     }
 }
 
 
 //
-// sprite render API (hides buffer)
+// sprite render API
 
 
-static Array<Quad> g_quad_buffer;
+Array<Quad> g_quad_buffer;
 void QuadBufferInit(MArena *a_dest, u32 max_quads = 2048) {
     g_quad_buffer = InitArray<Quad>(a_dest, max_quads);
 }
@@ -334,8 +339,8 @@ void QuadBufferPush(Quad quad) {
     g_quad_buffer.Add(quad);
 }
 
-void QuadBufferBlitAndClear(ImageRGBA render_target) {
-    BlitQuads(g_quad_buffer, &render_target);
+void QuadBufferBlitAndClear(HashMap *map_textures, ImageRGBA render_target) {
+    BlitQuads(g_quad_buffer, map_textures, render_target);
     g_quad_buffer.len = 0;
 }
 
