@@ -48,7 +48,7 @@ void LoadInvaders(MArena *a_dest, HashMap *map_ssheets, HashMap *map_textures) {
 
 
 void RunProgram(bool start_in_fullscreen) {
-    cbui = CbuiInit("projname", start_in_fullscreen);
+    CbuiInit("projname", start_in_fullscreen);
 
     HashMap map_ssheets = InitMap(GetContext()->a_life);
     HashMap map_textures = InitMap(GetContext()->a_life);
@@ -79,7 +79,7 @@ void RunProgram(bool start_in_fullscreen) {
     s32 frame_idx = 0;
     f32 t_frame_elapsed = 0;
 
-    while (cbui->running) {
+    while (cbui.running) {
         CbuiFrameStart();
 
         UI_Center();
@@ -89,16 +89,16 @@ void RunProgram(bool start_in_fullscreen) {
         Texture img = {};
         img.tpe = TT_RGBA;
         img.stride = 4;
-        img.data = cbui->plf->image_buffer;
-        img.width = cbui->plf->width;
-        img.height = cbui->plf->height;
+        img.data = cbui.plf->image_buffer;
+        img.width = cbui.plf->width;
+        img.height = cbui.plf->height;
 
         f32 duration;
         Frame f = GetAnimationFrame(&map_ssheets, StrL("invaders_03"), animation_idx, frame_idx, &duration);
 
-        Texture *tex = (Texture *) MapGet(&map_textures, f.tex_id);
+        Texture *tex = (Texture*) MapGet(&map_textures, f.tex_id);
         BlitSprite(f.w, f.h, 100, 100, f.u0, f.u1, f.v0, f.v1, &img, tex);
-        t_frame_elapsed += cbui->dt;
+        t_frame_elapsed += cbui.dt;
 
         if (duration < t_frame_elapsed) {
             t_frame_elapsed = 0;

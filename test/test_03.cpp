@@ -13,7 +13,7 @@
 
 void TestUILayoutFeatures() {
 
-    cbui = CbuiInit("TestUILayoutFeatures", false);
+    CbuiInit("TestUILayoutFeatures", false);
     s32 TB_mode = 0;
 
     f32 time = 0;
@@ -21,7 +21,7 @@ void TestUILayoutFeatures() {
     UI_DebugMode(true);
     UI_DebugNames(true);
 
-    while (cbui->running) {
+    while (cbui.running) {
         CbuiFrameStart();
 
         switch (TB_mode) {

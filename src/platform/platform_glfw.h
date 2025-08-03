@@ -2,9 +2,6 @@
 #define __PLATFORM_GLFW_H__
 
 
-#ifdef ENABLE_GLFW
-
-
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
@@ -562,9 +559,6 @@ inline bool ModShift() { return g_plaf_glfw.akeys.mod_shift; }
 inline bool ModAlt() { return g_plaf_glfw.akeys.mod_alt; }
 
 bool GetWindowShouldClose(PlafGlfw *plf) { return glfwWindowShouldClose(plf->window); }
-
-
-#endif
 
 
 #endif

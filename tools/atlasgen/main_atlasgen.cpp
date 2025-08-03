@@ -1,11 +1,9 @@
 #include <math.h>
 #include <assert.h>
 
-#include "../../lib/jg_baselayer.h"
-#include "../../src/geometry/gtypes.h"
-#include "../../src/geometry/geometry.h"
-#include "../../src/imui/resource.h"
-#include "../../src/imui/font.h"
+#include "../../../baselayer/src/baselayer.h"
+//#include "../../lib/jg_baselayer.h"
+#include "../../cbui_includes.h"
 
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -13,7 +11,7 @@
 #define STB_TRUETYPE_IMPLEMENTATION 
 #include "stb_truetype.h"
 
-
+    
 FontAtlas CreateCharAtlas(MArena *a_dest, u8 *font, s32 line_height) {
     // prepare font
     stbtt_fontinfo info;
@@ -129,25 +127,13 @@ FontAtlas CreateCharAtlas(MArena *a_dest, u8 *font, s32 line_height) {
 }
 
 
-Str StrSprintf(Str dest, const char *s) {
-    sprintf(dest.str + dest.len, "%s", s);
-    dest.len += _strlen( (char*) s);
-    return dest;
-}
-Str StrSprintf(Str dest, Str small) {
-    sprintf(dest.str + dest.len, "%s", StrZeroTerm(small));
-    dest.len += small.len;
-    return dest;
-}
-
-
 void CompileFontAndPushToStream(MArena *a_tmp, MArena *a_stream, ResourceStreamHandle *stream, Str font_name, u8* font_data) {
     s32 line_sizes[8] = { 18, 24, 30, 36, 48, 60, 72, 84 };
     for (u32 i = 0; i < 8; ++i) {
         s32 sz_px = line_sizes[i];
 
         FontAtlas atlas = CreateCharAtlas(a_tmp, font_data, sz_px);
-        sprintf(atlas.font_name, "%s", StrZeroTerm(font_name));
+        sprintf(atlas.font_name, "%s", StrZ(font_name));
         sprintf(atlas.key_name, "%s", atlas.font_name);
         sprintf(atlas.key_name + strlen(atlas.key_name), "_%d", atlas.sz_px);
         printf("font_name: %s\n", atlas.font_name);
@@ -163,20 +149,21 @@ void CompileFontAndPushToStream(MArena *a_tmp, MArena *a_stream, ResourceStreamH
         printf("\n");
         printf("\n");
 
-        Str ext = StrLiteral("atlas");
-        ext = StrCat(".", ext);
 
+        // construct the file name
+        Str ext = StrL(".atlas");
         char buff[200];
         sprintf(buff, "_%d", sz_px);
         Str fname = StrCat(font_name, buff);
         fname = StrCat(fname, ext);
         StrPrint("", fname, "\n");
 
+
         // save/load/print again (should not appear jumbled on screen)
-        FontAtlasSaveBinary128(a_tmp, StrZeroTerm(fname), atlas);
+        FontAtlasSaveBinary128(a_tmp, StrZ(fname), atlas);
 
         u32 loaded_size;
-        FontAtlas *loaded = FontAtlasLoadBinary128(a_tmp, StrZeroTerm(fname), &loaded_size);
+        FontAtlas *loaded = FontAtlasLoadBinary128(a_tmp, StrZ(fname), &loaded_size);
         printf("atlas test loading from disk (glyphs chars 32-%u):\n", loaded->glyphs.len);
         for (u32 i = 32; i < loaded->glyphs.len; ++i) {
             Sprite g = loaded->glyphs.lst[i];
