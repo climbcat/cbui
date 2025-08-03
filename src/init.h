@@ -9,7 +9,6 @@
 
 struct CbuiState {
     MContext *ctx;
-    PlafGlfw *plf;
     u64 frameno;
     u64 dts[8];
     u64 t_framestart;
@@ -23,6 +22,7 @@ struct CbuiState {
     HashMap map_fonts;
 
     u8 *image_buffer;
+    PlafGlfw plf;
 
     f32 TimeSince(f32 t) {
         return t_framestart - t; 
@@ -38,13 +38,13 @@ CbuiState *CbuiInit(const char *title, bool start_in_fullscreen) {
     cbui.running = true;
     cbui.image_buffer = (u8*) ArenaAlloc(ctx->a_life, IMG_BUFF_CHANNELS * IMG_BUFF_MAX_WIDTH * IMG_BUFF_MAX_HEIGHT);
     cbui.ctx = ctx;
-    cbui.plf = PlafGlfwInit(title, 640, 480, cbui.image_buffer);
+    PlafGlfwInit(&cbui.plf, title, 640, 480, cbui.image_buffer);
     cbui.t_framestart = ReadSystemTimerMySec();
     cbui.t_framestart_prev = cbui.t_framestart;
 
-    UI_Init(cbui.plf->width, cbui.plf->height, &cbui.frameno);
+    UI_Init(cbui.plf.width, cbui.plf.height, &cbui.frameno);
 
-    ImageRGBA render_target = { (s32) cbui.plf->width, (s32) cbui.plf->height, (Color*) cbui.plf->image_buffer };
+    ImageRGBA render_target = { (s32) cbui.plf.width, (s32) cbui.plf.height, (Color*) cbui.image_buffer };
     QuadBufferInit(cbui.ctx->a_life);
 
     cbui.map_fonts = InitMap(cbui.ctx->a_life, MAX_RESOURCE_CNT);
@@ -91,9 +91,9 @@ CbuiState *CbuiInit(const char *title, bool start_in_fullscreen) {
         // iter
         res = res->GetInlinedNext();
     }
-    SetFontAndSize(FS_48, hdl.names[RST_FONT]->GetStr());
+    SetFontAndSize(FS_30, hdl.names[RST_FONT]->GetStr());
 
-    if (start_in_fullscreen) { PlafGlfwToggleFullscreen(cbui.plf); }
+    if (start_in_fullscreen) { PlafGlfwToggleFullscreen(&cbui.plf); }
 
     return &cbui;
 }
@@ -102,7 +102,7 @@ CbuiState *CbuiInit(const char *title, bool start_in_fullscreen) {
 #define FR_RUNNING_AVG_COUNT 4
 void CbuiFrameStart() {
     ArenaClear(cbui.ctx->a_tmp);
-    memset(cbui.image_buffer, 255, IMG_BUFF_CHANNELS * cbui.plf->width * cbui.plf->height);
+    memset(cbui.image_buffer, 255, IMG_BUFF_CHANNELS * cbui.plf.width * cbui.plf.height);
 
     cbui.t_framestart = ReadSystemTimerMySec();
     cbui.dt = (cbui.t_framestart - cbui.t_framestart_prev) / 1000;
@@ -120,17 +120,17 @@ void CbuiFrameStart() {
 void CbuiFrameEnd() {
     XSleep(1);
 
-    PlafGlfwUpdate(cbui.plf);
-    UI_FrameEnd(cbui.ctx->a_tmp, cbui.plf->width, cbui.plf->height, cbui.plf->cursorpos.x, cbui.plf->cursorpos.y, cbui.plf->left.ended_down, cbui.plf->left.pushed);
+    PlafGlfwUpdate(&cbui.plf);
+    UI_FrameEnd(cbui.ctx->a_tmp, cbui.plf.width, cbui.plf.height, cbui.plf.cursorpos.x, cbui.plf.cursorpos.y, cbui.plf.left.ended_down, cbui.plf.left.pushed);
 
-    QuadBufferBlitAndClear(&cbui.map_textures, InitImageRGBA(cbui.plf->width, cbui.plf->height, cbui.image_buffer));
-    PlafGlfwPushBuffer(cbui.plf);
+    QuadBufferBlitAndClear(&cbui.map_textures, InitImageRGBA(cbui.plf.width, cbui.plf.height, cbui.image_buffer));
+    PlafGlfwPushBuffer(&cbui.plf);
 
-    cbui.running = cbui.running && !GetEscape() && !GetWindowShouldClose(cbui.plf);
+    cbui.running = cbui.running && !GetEscape() && !GetWindowShouldClose(&cbui.plf);
 }
 
 void CbuiExit() {
-    PlafGlfwTerminate(cbui.plf);
+    PlafGlfwTerminate(&cbui.plf);
 }
 
 

@@ -372,10 +372,9 @@ void WindowResizeCallBack(GLFWwindow* window, int width, int height) {
 }
 
 
-static PlafGlfw g_plaf_glfw;
-PlafGlfw* PlafGlfwInit(const char *title, u32 window_width, u32 window_height, u8* image_buffer) {
-    g_plaf_glfw = {};
-    PlafGlfw *plf = &g_plaf_glfw;
+static PlafGlfw *g_plaf_glfw;
+void PlafGlfwInit(PlafGlfw *plf, const char *title, u32 window_width, u32 window_height, u8* image_buffer) {
+    *plf = {};
     plf->width = window_width;
     plf->height = window_height;
     plf->title = (char*) title;
@@ -404,7 +403,7 @@ PlafGlfw* PlafGlfwInit(const char *title, u32 window_width, u32 window_height, u
     glfwSetWindowUserPointer(plf->window, plf);
 
     // window resize
-    glfwSetFramebufferSizeCallback(g_plaf_glfw.window, WindowResizeCallBack);
+    glfwSetFramebufferSizeCallback(plf->window, WindowResizeCallBack);
 
     // shader
     plf->image_buffer = image_buffer;
@@ -419,7 +418,8 @@ PlafGlfw* PlafGlfwInit(const char *title, u32 window_width, u32 window_height, u
     plf->cursorpos.x_frac = ((f32) mouse_x - (plf->width * 0.5f)) / plf->width;
     plf->cursorpos.y_frac = ((f32) mouse_y - (plf->height * 0.5f)) / plf->height;
 
-    return plf;
+    g_plaf_glfw = plf;
+
 }
 
 void PlafGlfwTerminate(PlafGlfw* plf) {
@@ -459,7 +459,7 @@ void PlafGlfwToggleFullscreen(PlafGlfw* plf) {
         // destroy and re-create everything (!?!)
         glfwDestroyWindow(plf->window);
         glfwTerminate();
-        plf = PlafGlfwInit(plf->title, plf->width, plf->height, plf->image_buffer);
+        PlafGlfwInit(plf, plf->title, plf->width, plf->height, plf->image_buffer);
     }
 
     ScreenProgramSetSize(plf->image_buffer, plf->width, plf->height);
@@ -506,26 +506,26 @@ void PlafGlfwUpdate(PlafGlfw* plf) {
 }
 
 
-inline Button MouseLeft() { return g_plaf_glfw.left; }
-inline Button MouseRight() { return g_plaf_glfw.right; }
-inline Scroll MouseScroll() { return g_plaf_glfw.scroll; }
-inline Vector2f MouseFrac() { return { g_plaf_glfw.cursorpos.x_frac, g_plaf_glfw.cursorpos.y_frac }; }
-inline Vector2f MouseFracDelta() { return { (f32) g_plaf_glfw.cursorpos.dx / g_plaf_glfw.width, (f32) g_plaf_glfw.cursorpos.dy / g_plaf_glfw.height }; }
-inline char GetChar() { return g_plaf_glfw.keys.Get(); }
-inline bool GetEscape() { return g_plaf_glfw.akeys.esc; }
-inline bool GetEnter() { return g_plaf_glfw.akeys.enter; }
-inline bool GetSpace() { return g_plaf_glfw.akeys.space; }
-inline bool GetBackspace() { return g_plaf_glfw.akeys.backspace; }
-inline bool GetDelete() { return g_plaf_glfw.akeys.del; }
-inline bool GetLeft() { return g_plaf_glfw.akeys.left; }
-inline bool GetRight() { return g_plaf_glfw.akeys.right; }
-inline bool GetUp() { return g_plaf_glfw.akeys.up; }
-inline bool GetDown() { return g_plaf_glfw.akeys.down; }
+inline Button MouseLeft() { return g_plaf_glfw->left; }
+inline Button MouseRight() { return g_plaf_glfw->right; }
+inline Scroll MouseScroll() { return g_plaf_glfw->scroll; }
+inline Vector2f MouseFrac() { return { g_plaf_glfw->cursorpos.x_frac, g_plaf_glfw->cursorpos.y_frac }; }
+inline Vector2f MouseFracDelta() { return { (f32) g_plaf_glfw->cursorpos.dx / g_plaf_glfw->width, (f32) g_plaf_glfw->cursorpos.dy / g_plaf_glfw->height }; }
+inline char GetChar() { return g_plaf_glfw->keys.Get(); }
+inline bool GetEscape() { return g_plaf_glfw->akeys.esc; }
+inline bool GetEnter() { return g_plaf_glfw->akeys.enter; }
+inline bool GetSpace() { return g_plaf_glfw->akeys.space; }
+inline bool GetBackspace() { return g_plaf_glfw->akeys.backspace; }
+inline bool GetDelete() { return g_plaf_glfw->akeys.del; }
+inline bool GetLeft() { return g_plaf_glfw->akeys.left; }
+inline bool GetRight() { return g_plaf_glfw->akeys.right; }
+inline bool GetUp() { return g_plaf_glfw->akeys.up; }
+inline bool GetDown() { return g_plaf_glfw->akeys.down; }
 
 inline bool GetFKey(u32 *fval) {
     assert(fval != NULL);
 
-    u8 fkey = g_plaf_glfw.akeys.fkey;
+    u8 fkey = g_plaf_glfw->akeys.fkey;
     if (fkey == 0) {
         return false;
     }
@@ -536,7 +536,7 @@ inline bool GetFKey(u32 *fval) {
 }
 
 inline bool GetFKey(u32 fval) {
-    if (g_plaf_glfw.akeys.fkey == fval) {
+    if (g_plaf_glfw->akeys.fkey == fval) {
         return true;
     }
     else {
@@ -545,8 +545,8 @@ inline bool GetFKey(u32 fval) {
 }
 
 inline bool GetChar(char c) {
-    for (s32 i = 0; i < g_plaf_glfw.keys.keys_cnt; ++i) {
-        char key = g_plaf_glfw.keys.keys[i];
+    for (s32 i = 0; i < g_plaf_glfw->keys.keys_cnt; ++i) {
+        char key = g_plaf_glfw->keys.keys[i];
         if (key == c) {
             return true;
         }
@@ -554,9 +554,9 @@ inline bool GetChar(char c) {
     return false;
 }
 
-inline bool ModCtrl() { return g_plaf_glfw.akeys.mod_ctrl; }
-inline bool ModShift() { return g_plaf_glfw.akeys.mod_shift; }
-inline bool ModAlt() { return g_plaf_glfw.akeys.mod_alt; }
+inline bool ModCtrl() { return g_plaf_glfw->akeys.mod_ctrl; }
+inline bool ModShift() { return g_plaf_glfw->akeys.mod_shift; }
+inline bool ModAlt() { return g_plaf_glfw->akeys.mod_alt; }
 
 bool GetWindowShouldClose(PlafGlfw *plf) { return glfwWindowShouldClose(plf->window); }
 
