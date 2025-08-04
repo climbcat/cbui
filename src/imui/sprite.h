@@ -26,6 +26,9 @@ struct Frame {
     f32 u1;
     f32 v0;
     f32 v1;
+    f32 x0;
+    f32 y0;
+    Color color;
     u64 tex_id;
 };
 
@@ -232,6 +235,8 @@ struct AnimatedEntity {
 //  Legacy Sprite type
 
 
+//typedef Frame Sprite;
+
 struct Sprite {
     s32 w;
     s32 h;
@@ -240,6 +245,8 @@ struct Sprite {
     f32 v0;
     f32 v1;
 };
+
+
 
 
 #endif

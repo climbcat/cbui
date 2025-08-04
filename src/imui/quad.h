@@ -3,7 +3,7 @@
 
 
 //
-//  Quads
+//  Quads modelled as six vertices
 
 
 struct QuadVertex {
@@ -229,7 +229,7 @@ void BlitQuads(Array<Quad> quads, HashMap *map_textues, ImageRGBA img) {
 
 
 //
-// sprite render API
+//  quad render API
 
 
 Array<Quad> g_quad_buffer;
@@ -245,29 +245,6 @@ void QuadBufferBlitAndClear(HashMap *map_textures, ImageRGBA render_target) {
     BlitQuads(g_quad_buffer, map_textures, render_target);
     g_quad_buffer.len = 0;
 }
-
-
-//
-//  NEW sprite render API
-
-
-/*
-
-Array<Sprite> g_sprite_buffer;
-void RenderBufferInit(MArena *a_dest, u32 max_quads = 2048) {
-    g_quad_buffer = InitArray<Quad>(a_dest, max_quads);
-}
-
-void RenderBufferPush(Quad quad) {
-    g_quad_buffer.Add(quad);
-}
-
-void RenderBufferBlitAndClear(HashMap *map_textures, ImageRGBA render_target) {
-    BlitQuads(g_quad_buffer, map_textures, render_target);
-    g_quad_buffer.len = 0;
-}
-
-*/
 
 
 #endif

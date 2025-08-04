@@ -7,6 +7,82 @@
 #define IMG_BUFF_MAX_HEIGHT 2160
 
 
+//
+//  Sprite render / control buffer API
+
+
+Array<Frame> g_sprite_buffer;
+
+
+void SpriteBufferInit(MArena *a_dest, u32 max_quads = 2048) {
+    g_sprite_buffer = InitArray<Frame>(a_dest, max_quads);
+}
+
+void SpriteBufferPush(Frame sprite) {
+    g_sprite_buffer.Add(sprite);
+}
+
+void SpriteBufferBlitAndClear(HashMap map_textures, s32 dest_width, s32 dest_height, u8 *dest_buffer) {
+
+    for (s32 i = 0; i < g_sprite_buffer.len; ++i) {
+        Frame s = g_sprite_buffer.arr[i];
+
+        Texture *texture = (Texture*) MapGet(&map_textures, s.tex_id);
+
+        if (texture->tpe == TT_8BIT) {
+            // blit 8B sprite in the given color
+            ImageB _texture = { texture->width, texture->height, texture->data };
+            ImageRGBA _dest = { texture->width, texture->height, (Color*) texture->data };
+
+            BlitGlyph2(s.w, s.h, s.x0, s.y0, s.u0, s.u1, s.v0, s.v1, s.color, _texture, _dest);
+        }
+
+    }
+
+    /*
+    void BlitQuads(Array<Quad> quads, HashMap *map_textues, ImageRGBA img) {
+        for (u32 i = 0; i < quads.len; ++i) {
+            Quad *q = quads.arr + i;
+
+            s32 q_w = round( q->GetWidth() );
+            s32 q_h = round( q->GetHeight() );
+            s32 q_x0 = round( q->GetX0() );
+            s32 q_y0 = round( q->GetY0() );
+            u64 q_texture = q->GetTextureId();
+            Color q_color = q->GetColor();
+
+            // TODO: impl. robust versions to be able to blit a larger quad into the "smaller" window
+            assert(img.height >= q_h);
+            assert(img.width >= q_w);
+
+            void *texture = (void*) MapGet(map_textues, q_texture);
+
+            // byte-texture / glyphs
+            if (q_texture != 0 && q_color.IsNonZero()) {
+                f32 q_scale_x = q->GetTextureScaleX(q_w);
+                f32 q_scale_y = q->GetTextureScaleY(q_h);
+                f32 q_u0 = q->GetTextureU0();
+                f32 q_v0 = q->GetTextureV0();
+
+                BlitGlyph(q_w, q_h, q_x0, q_y0, q_u0, q_v0, q_scale_x, q_scale_y, q_color, (ImageB*) texture, img);
+            }
+
+            // mono-color quads
+            else if (q_texture == 0 && q_color.IsNonZero()) {
+                BlitMonoColor(q_w, q_h, q_x0, q_y0, q_color, img);
+            }
+        }
+    }
+    */
+
+    g_sprite_buffer.len = 0;
+}
+
+
+//
+//  UI core state variables
+
+
 struct CbuiState {
     MContext *ctx;
     u64 frameno;
@@ -43,9 +119,8 @@ CbuiState *CbuiInit(const char *title, bool start_in_fullscreen) {
     cbui.t_framestart_prev = cbui.t_framestart;
 
     UI_Init(cbui.plf.width, cbui.plf.height, &cbui.frameno);
-
-    ImageRGBA render_target = { (s32) cbui.plf.width, (s32) cbui.plf.height, (Color*) cbui.image_buffer };
     QuadBufferInit(cbui.ctx->a_life);
+    SpriteBufferInit(cbui.ctx->a_life);
 
     cbui.map_fonts = InitMap(cbui.ctx->a_life, MAX_RESOURCE_CNT);
     g_font_map = &cbui.map_fonts;
@@ -124,6 +199,7 @@ void CbuiFrameEnd() {
     UI_FrameEnd(cbui.ctx->a_tmp, cbui.plf.width, cbui.plf.height, cbui.plf.cursorpos.x, cbui.plf.cursorpos.y, cbui.plf.left.ended_down, cbui.plf.left.pushed);
 
     QuadBufferBlitAndClear(&cbui.map_textures, InitImageRGBA(cbui.plf.width, cbui.plf.height, cbui.image_buffer));
+    SpriteBufferBlitAndClear(cbui.map_textures, cbui.plf.width, cbui.plf.height, cbui.image_buffer);
     PlafGlfwPushBuffer(&cbui.plf);
 
     cbui.running = cbui.running && !GetEscape() && !GetWindowShouldClose(&cbui.plf);

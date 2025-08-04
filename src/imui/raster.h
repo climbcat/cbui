@@ -312,5 +312,46 @@ void BlitGlyph(s32 q_w, s32 q_h, f32 q_x0, f32 q_y0, f32 q_u0, f32 q_v0, f32 q_s
     }
 }
 
+void BlitGlyph2(s32 w, s32 h, f32 x0, f32 y0, f32 u0, f32 u1, f32 v0, f32 v1, Color color, ImageB src, ImageRGBA img) {
+
+    f32 q_scale_x = 0;
+    f32 q_scale_y = 0;
+
+    // i,j          : target coords
+    // i_img, j_img : img coords
+
+    s32 stride_img = img.width;
+
+    for (s32 j = 0; j < h; ++j) {
+        s32 j_img = j + y0;
+        if (j_img < 0 || j_img > img.height) {
+            continue;
+        }
+
+        for (s32 i = 0; i < w; ++i) {
+            s32 i_img = x0 + i;
+            if (i_img < 0 || i_img > img.width) {
+                continue;
+            }
+            f32 x = u0 + i * q_scale_x;
+            f32 y = v0 + j * q_scale_y;
+            if (u8 alpha_byte = SampleTexture(&src, x, y)) {
+                // rudimentary alpha-blending
+                u32 idx = (u32) (j_img * stride_img + i_img);
+                Color color_background = img.img[idx];
+
+                f32 alpha = (1.0f * alpha_byte) / 255;
+                Color color_blended;
+                color_blended.r = (u8) (floor( alpha*color.r ) + floor( (1-alpha)*color_background.r ));
+                color_blended.g = (u8) (floor( alpha*color.g ) + floor( (1-alpha)*color_background.g ));
+                color_blended.b = (u8) (floor( alpha*color.b ) + floor( (1-alpha)*color_background.b ));
+                color_blended.a = 255;
+
+                img.img[idx] = color_blended;
+            }
+        }
+    }
+}
+
 
 #endif
