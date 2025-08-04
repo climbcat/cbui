@@ -13,33 +13,23 @@ void PanelPlot(f32 l, f32 t, f32 w, f32 h, f32 thic_border, Color col_border = {
         return;
     }
 
+    Frame border = {};
+    border.w = w;
+    border.h = h;
+    border.x0 = l;
+    border.y0 = t;
+    border.color = col_border;
 
-    if (true) {
+    SpriteBufferPush(border);
 
-        Frame s = {};
-        s.w = w;
-        s.h = h;
-        s.x0 = l;
-        s.y0 = t;
-        s.color = col_border;
+    Frame background = {};
+    background.w = w - 2*thic_border;
+    background.h = h - 2*thic_border;
+    background.x0 = l + thic_border;
+    background.y0 = t + thic_border;
+    background.color = col_pnl;
 
-        SpriteBufferPush(s);
-
-        Frame ss = {};
-        ss.w = w - 2*thic_border;
-        ss.h = h - 2*thic_border;
-        ss.x0 = l + thic_border;
-        ss.y0 = t + thic_border;
-        ss.color = col_pnl;
-
-        SpriteBufferPush(ss);
-    }
-
-    else {
-
-        QuadBufferPush(QuadSolid(w, h, l, t, col_border));
-        QuadBufferPush(QuadSolid(w - 2*thic_border, h - 2*thic_border, l + thic_border, t + thic_border, col_pnl));
-    }
+    SpriteBufferPush(background);
 }
 
 
