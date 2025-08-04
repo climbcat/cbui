@@ -393,11 +393,6 @@ void SpriteBufferBlitAndClear(HashMap map_textures, s32 dest_width, s32 dest_hei
 
             ImageB *_texture = (ImageB*) texture; // { texture->width, texture->height, texture->data };
 
-            //BlitGlyph2(s.w, s.h, s.x0, s.y0, s.u0, s.u1, s.v0, s.v1, s.color, *_texture, _dest);
-
-
-            //f32 scale_x = (s.u1 - s.u0) / dest_width;
-            //f32 scale_y = (s.v1 - s.v0) / dest_height;
             f32 scale_x = (s.u1 - s.u0) / s.w;
             f32 scale_y = (s.v1 - s.v0) / s.h;
             BlitGlyph(s.w, s.h, s.x0, s.y0, s.u0, s.v0, scale_x, scale_y, s.color, _texture, _dest);
@@ -413,42 +408,6 @@ void SpriteBufferBlitAndClear(HashMap map_textures, s32 dest_width, s32 dest_hei
         }
         */
     }
-
-    /*
-    void BlitQuads(Array<Quad> quads, HashMap *map_textues, ImageRGBA img) {
-        for (u32 i = 0; i < quads.len; ++i) {
-            Quad *q = quads.arr + i;
-
-            s32 q_w = round( q->GetWidth() );
-            s32 q_h = round( q->GetHeight() );
-            s32 q_x0 = round( q->GetX0() );
-            s32 q_y0 = round( q->GetY0() );
-            u64 q_texture = q->GetTextureId();
-            Color q_color = q->GetColor();
-
-            // TODO: impl. robust versions to be able to blit a larger quad into the "smaller" window
-            assert(img.height >= q_h);
-            assert(img.width >= q_w);
-
-            void *texture = (void*) MapGet(map_textues, q_texture);
-
-            // byte-texture / glyphs
-            if (q_texture != 0 && q_color.IsNonZero()) {
-                f32 q_scale_x = q->GetTextureScaleX(q_w);
-                f32 q_scale_y = q->GetTextureScaleY(q_h);
-                f32 q_u0 = q->GetTextureU0();
-                f32 q_v0 = q->GetTextureV0();
-
-                BlitGlyph(q_w, q_h, q_x0, q_y0, q_u0, q_v0, q_scale_x, q_scale_y, q_color, (ImageB*) texture, img);
-            }
-
-            // mono-color quads
-            else if (q_texture == 0 && q_color.IsNonZero()) {
-                BlitMonoColor(q_w, q_h, q_x0, q_y0, q_color, img);
-            }
-        }
-    }
-    */
 
     g_sprite_buffer.len = 0;
 }

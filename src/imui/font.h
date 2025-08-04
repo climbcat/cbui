@@ -22,7 +22,6 @@ struct FontAtlas {
     List<u8> advance_x;
     List<u8> x_lsb;
     List<s8> y_ascend;
-    List<Quad> cooked; // TODO: depricate and just have the sprites
 
     Sprite glyphs_mem[128];
     u8 advance_x_mem[128];
@@ -59,7 +58,6 @@ FontAtlas *FontAtlasLoadBinaryStream(u8 *base_ptr, u32 sz_data) {
     atlas->advance_x = { &atlas->advance_x_mem[0], 128 };
     atlas->x_lsb = { &atlas->x_lsb_mem[0], 128 };
     atlas->y_ascend = { &atlas->y_ascend_mem[0], 128 };
-    atlas->cooked = { &atlas->cooked_mem[0], 128 };
 
     return atlas;
 };
@@ -89,7 +87,6 @@ void FontAtlasSaveBinary128(MArena *a_tmp, char *filename, FontAtlas atlas) {
     atlas_inlined->x_lsb.lst = 0;
     atlas_inlined->y_ascend.lst = 0;
     atlas_inlined->texture.img = 0;
-    atlas_inlined->cooked.lst = 0;
 
     SaveFile(filename, (u8*) atlas_inlined, sz_base + sz_bitmap);
 }
@@ -358,55 +355,23 @@ void TextPlot(Str txt, s32 box_l, s32 box_t, s32 box_w, s32 box_h, s32 *sz_x, s3
             continue;
         }
 
-        if (true) {
-            Quad q = plt->cooked.lst[c];
-            Sprite s = plt->glyphs_mem[c];
+        Sprite s = plt->glyphs_mem[c];
 
-            Frame f = {};
-            f.w = q.GetWidth();
-            f.h = q.GetHeight();
-            f.u0 = q.GetTextureU0();
-            f.u1 = q.GetTextureU1();
-            f.v0 = q.GetTextureV0();
-            f.v1 = q.GetTextureV1();
+        Frame f = {};
+        f.w = s.w;
+        f.h = s.h;
+        f.u0 = s.u0;
+        f.u1 = s.u1;
+        f.v0 = s.v0;
+        f.v1 = s.v1;
+        f.x0 = s.x0 + pt_x;
+        f.y0 = s.y0 + pt_y;
 
-            // NOTE: the following three are equivalent !
-            //f.x0 = q.GetX0() + pt_x;
-            //f.y0 = q.GetY0() + pt_y;
-            //f.x0 = plt->x_lsb.lst[c] + pt_x;
-            //f.y0 = plt->y_ascend.lst[c] + pt_y;
-            f.x0 = s.x0 + pt_x;
-            f.y0 = s.y0 + pt_y;
+        f.color = color;
+        f.tex_id = plt_key;
 
-            f.color = color;
-            f.tex_id = plt_key;
-
-            pt_x += plt->advance_x.lst[c];
-            SpriteBufferPush(f);
-        }
-        else if (false) {
-            Sprite s = plt->glyphs_mem[c];
-
-            Frame f = {};
-            f.w = s.w;
-            f.h = s.h;
-            f.u0 = s.u0;
-            f.u1 = s.u1;
-            f.v0 = s.v0;
-            f.v1 = s.v1;
-            f.x0 = pt_x;
-            f.y0 = pt_y;
-            f.color = color;
-            f.tex_id = plt_key;
-
-            pt_x += plt->advance_x.lst[c];
-            SpriteBufferPush(f);
-        }
-        else {
-            Quad q = QuadOffset(plt->cooked.lst + c, pt_x, pt_y, color, plt_key);
-            pt_x += plt->advance_x.lst[c];
-            QuadBufferPush(q);
-        }
+        pt_x += plt->advance_x.lst[c];
+        SpriteBufferPush(f);
     }
 }
 

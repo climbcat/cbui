@@ -30,7 +30,6 @@ FontAtlas CreateCharAtlas(MArena *a_dest, u8 *font, s32 line_height) {
     atlas.advance_x = { &atlas.advance_x_mem[0], 128 };
     atlas.x_lsb = { &atlas.x_lsb_mem[0], 128 };
     atlas.y_ascend = { &atlas.y_ascend_mem[0], 128 };
-    atlas.cooked = { &atlas.cooked_mem[0], 128 };
 
     printf("\n");
     printf("line height, scale: %d %f\n", line_height, scale);
@@ -110,15 +109,6 @@ FontAtlas CreateCharAtlas(MArena *a_dest, u8 *font, s32 line_height) {
 
         ++aidx;
     }
-
-
-    // set up convenient helper data; cooked quads and advance_x list
-    for (u32 i = 0; i < 128; ++i) {
-        Sprite g = atlas.glyphs.lst[i];
-        Quad q = QuadTextured(g, atlas.x_lsb.lst[i], atlas.y_ascend.lst[i], 0);
-        atlas.cooked.lst[i] = q;
-    }
-
 
     stbi_write_png("fontatlas.png", atlas.texture.width, atlas.texture.height, 1, atlas.texture.img, atlas.texture.width);
     printf("\n");
