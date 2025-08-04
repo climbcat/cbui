@@ -47,18 +47,20 @@ FontAtlas CreateCharAtlas(MArena *a_dest, u8 *font, s32 line_height) {
         stbtt_GetCodepointBitmapBox(&info, c, scale, scale, &x0, &y0, &x1, &y1);
 
         s32 advance_x;
-    	s32 lsb;
-        stbtt_GetCodepointHMetrics(&info, c, &advance_x, &lsb);
+    	s32 left_side_bearing;
+        stbtt_GetCodepointHMetrics(&info, c, &advance_x, &left_side_bearing);
         advance_x = roundf(scale * advance_x);
-        lsb = roundf(scale * lsb);
+        left_side_bearing = roundf(scale * left_side_bearing);
 
         Sprite gl;
         gl.w = x1 - x0;
         gl.h = y1 - y0;
+        gl.x0 = left_side_bearing;
+        gl.y0 = y0;
         atlas.glyphs.Add(gl);
 
         atlas.advance_x.lst[c] = advance_x;
-        atlas.x_lsb.lst[c] = lsb;
+        atlas.x_lsb.lst[c] = left_side_bearing;
         atlas.y_ascend.lst[c] = y0;
 
         max_adv = MaxS32(advance_x, max_adv);
@@ -66,7 +68,7 @@ FontAtlas CreateCharAtlas(MArena *a_dest, u8 *font, s32 line_height) {
         max_descent = MaxS32(y1, max_descent);
 
         if (c >= 32) {
-            printf("%c: adv, lsb, x0, y0, x1, y1: %d %d %d %d %d %d\n", c, advance_x, lsb, x0, y0, x1, y1);
+            printf("%c: adv, lsb, x0, y0, x1, y1: %d %d %d %d %d %d\n", c, advance_x, left_side_bearing, x0, y0, x1, y1);
         }
         ++c;
     }

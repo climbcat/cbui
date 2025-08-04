@@ -360,6 +360,7 @@ void TextPlot(Str txt, s32 box_l, s32 box_t, s32 box_w, s32 box_h, s32 *sz_x, s3
 
         if (true) {
             Quad q = plt->cooked.lst[c];
+            Sprite s = plt->glyphs_mem[c];
 
             Frame f = {};
             f.w = q.GetWidth();
@@ -368,8 +369,15 @@ void TextPlot(Str txt, s32 box_l, s32 box_t, s32 box_w, s32 box_h, s32 *sz_x, s3
             f.u1 = q.GetTextureU1();
             f.v0 = q.GetTextureV0();
             f.v1 = q.GetTextureV1();
-            f.x0 = q.GetX0() + pt_x;
-            f.y0 = q.GetY0() + pt_y;
+
+            // NOTE: the following three are equivalent !
+            //f.x0 = q.GetX0() + pt_x;
+            //f.y0 = q.GetY0() + pt_y;
+            //f.x0 = plt->x_lsb.lst[c] + pt_x;
+            //f.y0 = plt->y_ascend.lst[c] + pt_y;
+            f.x0 = s.x0 + pt_x;
+            f.y0 = s.y0 + pt_y;
+
             f.color = color;
             f.tex_id = plt_key;
 

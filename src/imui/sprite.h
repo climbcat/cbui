@@ -244,6 +244,8 @@ struct Sprite {
     f32 u1;
     f32 v0;
     f32 v1;
+    f32 x0;
+    f32 y0;
 };
 
 
