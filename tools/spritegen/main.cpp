@@ -88,7 +88,7 @@ void RunProgram(bool start_in_fullscreen) {
 
         Texture img = {};
         img.tpe = TT_RGBA;
-        img.stride = 4;
+        img.px_sz = 4;
         img.data = cbui.plf.image_buffer;
         img.width = cbui.plf.width;
         img.height = cbui.plf.height;

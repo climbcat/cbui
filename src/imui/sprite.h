@@ -14,9 +14,8 @@ struct Texture {
     TextureType tpe;
     s32 width;
     s32 height;
-
+    s32 px_sz;
     u8 *data;
-    s32 stride;
 };
 
 struct Frame {
@@ -65,7 +64,7 @@ SpriteSheet *SS_Sheet(MArena *a_dest, HashMap *map_dest, HashMap *map_textures, 
 
     Texture *texture = (Texture*) ArenaAlloc(a_dest, sizeof(Texture));
     texture->tpe = TT_RGBA;
-    texture->stride = 4;
+    texture->px_sz = 4;
     texture->width = data_width;
     texture->height = data_height;
     texture->data = (u8*) LoadFileFSeek(a_dest, filename);

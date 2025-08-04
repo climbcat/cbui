@@ -11,7 +11,7 @@
 #define STB_TRUETYPE_IMPLEMENTATION 
 #include "stb_truetype.h"
 
-    
+
 FontAtlas CreateCharAtlas(MArena *a_dest, u8 *font, s32 line_height) {
     // prepare font
     stbtt_fontinfo info;
@@ -81,9 +81,11 @@ FontAtlas CreateCharAtlas(MArena *a_dest, u8 *font, s32 line_height) {
     atlas.ln_ascend = max_ascent;
     atlas.ln_descend = max_descent;
     atlas.ln_measured = - max_ascent + max_descent;
+    atlas.texture.tpe = TT_8BIT;
     atlas.texture.width = atlas.cell_width * 16;
     atlas.texture.height = atlas.ln_height * 6;
-    atlas.texture.img = (u8*) ArenaAlloc(a_dest, atlas.texture.width * atlas.texture.height * sizeof(u8), true);
+    atlas.texture.data = (u8*) ArenaAlloc(a_dest, atlas.texture.width * atlas.texture.height * sizeof(u8), true);
+    atlas.texture.px_sz = 1;
 
     f32 tex_scale_x = 1.0f / atlas.texture.width;
     f32 tex_scale_y = 1.0f / atlas.texture.height;
@@ -97,8 +99,8 @@ FontAtlas CreateCharAtlas(MArena *a_dest, u8 *font, s32 line_height) {
         x += atlas.x_lsb.lst[ascii];
         y += atlas.y_ascend.lst[ascii];
 
-        s32 offset = y * atlas.texture.width + x;
-        stbtt_MakeCodepointBitmap(&info, atlas.texture.img + offset, g->w, g->h, atlas.texture.width, scale, scale, ascii);
+        s32 offset = (y * atlas.texture.width + x) * atlas.texture.px_sz;
+        stbtt_MakeCodepointBitmap(&info, atlas.texture.data + offset, g->w, g->h, atlas.texture.width, scale, scale, ascii);
 
         // record texture coords
         g->u0 = (f32) x * tex_scale_x;
@@ -110,7 +112,7 @@ FontAtlas CreateCharAtlas(MArena *a_dest, u8 *font, s32 line_height) {
         ++aidx;
     }
 
-    stbi_write_png("fontatlas.png", atlas.texture.width, atlas.texture.height, 1, atlas.texture.img, atlas.texture.width);
+    stbi_write_png("fontatlas.png", atlas.texture.width, atlas.texture.height, atlas.texture.px_sz, atlas.texture.data, atlas.texture.width);
     printf("\n");
     printf("wrote atlas image to atlas.png\n");
     atlas.Print();
@@ -125,11 +127,11 @@ void CompileFontAndPushToStream(MArena *a_tmp, MArena *a_stream, ResourceStreamH
         s32 sz_px = line_sizes[i];
 
         FontAtlas atlas = CreateCharAtlas(a_tmp, font_data, sz_px);
-        sprintf(atlas.font_name, "%s", StrZ(font_name));
-        sprintf(atlas.key_name, "%s", atlas.font_name);
-        sprintf(atlas.key_name + strlen(atlas.key_name), "_%d", atlas.sz_px);
-        printf("font_name: %s\n", atlas.font_name);
-        printf("key_name: %s\n", atlas.key_name);
+        sprintf(atlas.name_font, "%s", StrZ(font_name));
+        sprintf(atlas.name_font_and_sz, "%s", atlas.name_font);
+        sprintf(atlas.name_font_and_sz + strlen(atlas.name_font_and_sz), "_%d", atlas.sz_px);
+        printf("font_name: %s\n", atlas.name_font);
+        printf("key_name: %s\n", atlas.name_font_and_sz);
 
         // mini test
         printf("\n");
@@ -164,8 +166,8 @@ void CompileFontAndPushToStream(MArena *a_tmp, MArena *a_stream, ResourceStreamH
         printf("\n");
 
         // push to stream
-        ResourceStreamPushData(a_stream, stream, RST_FONT, loaded->font_name, loaded->key_name, &atlas, sizeof(atlas));
-        ResourceStreamPushDataExtra(a_stream, stream, atlas.texture.img, atlas.texture.width * atlas.texture.height);
+        ResourceStreamPushData(a_stream, stream, RST_FONT, loaded->name_font, loaded->name_font_and_sz, &atlas, sizeof(atlas));
+        ResourceStreamPushDataExtra(a_stream, stream, atlas.texture.data, atlas.texture.width * atlas.texture.height * atlas.texture.px_sz);
     }
 }
 

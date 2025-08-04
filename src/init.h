@@ -65,8 +65,8 @@ CbuiState *CbuiInit(const char *title, bool start_in_fullscreen) {
             FontAtlas *font = FontAtlasLoadBinaryStream(res->GetInlinedData(), res->data_sz);
             if (false) { font->Print(); }
 
-            MapPut(&cbui.map_fonts, font->GetKey(), font);
-            MapPut(&cbui.map_textures, font->GetKey(), &font->texture);
+            MapPut(&cbui.map_fonts, font->hash, font);
+            MapPut(&cbui.map_textures, font->hash, &font->texture);
         }
 
 

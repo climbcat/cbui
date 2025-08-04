@@ -7,12 +7,13 @@
 
 
 struct FontAtlas {
-    ImageB texture;
+    Texture texture;
     u32 sz_px;
     u32 cell_width;
     List<Sprite> glyphs;
-    char font_name[32];
-    char key_name[32];
+    char name_font[32];
+    char name_font_and_sz[32];
+    u64 hash;
 
     // previously known as da GLYPH PLOTTA !
     s32 ln_height;
@@ -32,32 +33,28 @@ struct FontAtlas {
     s32 GetLineBaseOffset() {
         return ln_measured - ln_descend;
     }
-
-    // TODO: can we have a texture_id like everybody else?
-    u64 GetKey() {
-        return HashStringValue(key_name);
-    }
     Str GetFontName() {
-        return Str { this->font_name, (u32) strlen(this->font_name) };
+        return Str { this->name_font, (u32) strlen(this->name_font) };
     }
     void Print() {
-        printf("font_sz %u, bitmap_sz %u %u, cell_w %u, ln_height %u, ln_ascend %u, glyphs %u, data ptrs %p %p\n", sz_px, texture.width, texture.height, cell_width, ln_height, ln_ascend, glyphs.len, glyphs.lst, texture.img);
+        printf("font_sz %u, bitmap_sz %u %u, cell_w %u, ln_height %u, ln_ascend %u, glyphs %u, data ptrs %p %p\n", sz_px, texture.width, texture.height, cell_width, ln_height, ln_ascend, glyphs.len, glyphs.lst, texture.data);
     }
 };
 
 FontAtlas *FontAtlasLoadBinaryStream(u8 *base_ptr, u32 sz_data) {
     FontAtlas *atlas = (FontAtlas*) base_ptr;
     u32 sz_base = sizeof(FontAtlas);
-    u32 sz_bitmap = atlas->texture.width * atlas->texture.height;
+    u32 sz_bitmap = atlas->texture.width * atlas->texture.height * atlas->texture.px_sz;
 
     assert(sz_data == sz_base + sz_bitmap && "sanity check data size");
 
     // set pointers
     atlas->glyphs = { atlas->glyphs_mem, 128 };
-    atlas->texture.img = base_ptr + sz_base;
+    atlas->texture.data = base_ptr + sz_base;
     atlas->advance_x = { &atlas->advance_x_mem[0], 128 };
     atlas->x_lsb = { &atlas->x_lsb_mem[0], 128 };
     atlas->y_ascend = { &atlas->y_ascend_mem[0], 128 };
+    atlas->hash = HashStringValue(atlas->name_font_and_sz);
 
     return atlas;
 };
@@ -76,17 +73,17 @@ FontAtlas *FontAtlasLoadBinary128(MArena *a_dest, char *filename, u32 *sz = NULL
 
 void FontAtlasSaveBinary128(MArena *a_tmp, char *filename, FontAtlas atlas) {
     u32 sz_base = sizeof(FontAtlas);
-    u32 sz_bitmap = atlas.texture.width * atlas.texture.height;
+    u32 sz_bitmap = atlas.texture.width * atlas.texture.height * atlas.texture.px_sz;
 
     FontAtlas *atlas_inlined = (FontAtlas*) ArenaPush(a_tmp, &atlas, sz_base);
-    ArenaPush(a_tmp, atlas_inlined->texture.img, sz_bitmap);
+    ArenaPush(a_tmp, atlas_inlined->texture.data, sz_bitmap);
 
     // invalidate pointers
     atlas_inlined->glyphs.lst = 0;
     atlas_inlined->advance_x.lst = 0;
     atlas_inlined->x_lsb.lst = 0;
     atlas_inlined->y_ascend.lst = 0;
-    atlas_inlined->texture.img = 0;
+    atlas_inlined->texture.data = 0;
 
     SaveFile(filename, (u8*) atlas_inlined, sz_base + sz_bitmap);
 }
@@ -100,7 +97,8 @@ void GlyphPlotterPrint(FontAtlas *plt) {
     }
     printf("tex_w: %d\n", plt->texture.width);
     printf("tex_h: %d\n", plt->texture.height);
-    printf("tex_ptr: %lu\n", (u64) plt->texture.img);
+    printf("tex_px_sz: %d\n", plt->texture.px_sz);
+    printf("tex_ptr: %lu\n", (u64) plt->texture.data);
     printf("\n");
 }
 
@@ -154,6 +152,8 @@ FontSize FontSizeFromPx(u32 sz_px) {
 //
 //  Font related globals
 
+
+// TODO: move these things to imui.h where they are used for that API
 static HashMap *g_font_map;
 static FontAtlas *g_current_font;
 
@@ -342,7 +342,7 @@ void TextPlot(Str txt, s32 box_l, s32 box_t, s32 box_w, s32 box_h, s32 *sz_x, s3
     s32 pt_x = txt_l;
     s32 pt_y = txt_t + plt->GetLineBaseOffset();
     s32 w_space = plt->advance_x.lst[' '];
-    u64 plt_key = plt->GetKey();
+    u64 plt_key = plt->hash;
 
     for (u32 i = 0; i < txt.len; ++i) {
         char c = txt.str[i];

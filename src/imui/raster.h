@@ -391,11 +391,15 @@ void SpriteBufferBlitAndClear(HashMap map_textures, s32 dest_width, s32 dest_hei
             // NOTE: due to the current FontAtlas data structure, the texture pointer is actually an ImageB
             // TODO: transition to only using the Texture type everywhere: Then we switch by type 'tpe' and/or use the 'stride' member
 
-            ImageB *_texture = (ImageB*) texture; // { texture->width, texture->height, texture->data };
+            //ImageB *_texture = (ImageB*) texture; // { texture->width, texture->height, texture->data };
+            ImageB _tex = {};
+            _tex.img = texture->data;
+            _tex.width = texture->width;
+            _tex.height = texture->height;
 
             f32 scale_x = (s.u1 - s.u0) / s.w;
             f32 scale_y = (s.v1 - s.v0) / s.h;
-            BlitGlyph(s.w, s.h, s.x0, s.y0, s.u0, s.v0, scale_x, scale_y, s.color, _texture, _dest);
+            BlitGlyph(s.w, s.h, s.x0, s.y0, s.u0, s.v0, scale_x, scale_y, s.color, &_tex, _dest);
         }
 
         /*
