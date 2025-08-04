@@ -47,7 +47,6 @@ CbuiState *CbuiInit(const char *title, bool start_in_fullscreen) {
     cbui.t_framestart_prev = cbui.t_framestart;
 
     UI_Init(cbui.plf.width, cbui.plf.height, &cbui.frameno);
-    QuadBufferInit(cbui.ctx->a_life);
     SpriteBufferInit(cbui.ctx->a_life);
 
     cbui.map_fonts = InitMap(cbui.ctx->a_life, MAX_RESOURCE_CNT);
@@ -126,7 +125,6 @@ void CbuiFrameEnd() {
     PlafGlfwUpdate(&cbui.plf);
     UI_FrameEnd(cbui.ctx->a_tmp, cbui.plf.width, cbui.plf.height, cbui.plf.cursorpos.x, cbui.plf.cursorpos.y, cbui.plf.left.ended_down, cbui.plf.left.pushed);
 
-    QuadBufferBlitAndClear(&cbui.map_textures, InitImageRGBA(cbui.plf.width, cbui.plf.height, cbui.image_buffer));
     SpriteBufferBlitAndClear(cbui.map_textures, cbui.plf.width, cbui.plf.height, cbui.image_buffer);
     PlafGlfwPushBuffer(&cbui.plf);
 

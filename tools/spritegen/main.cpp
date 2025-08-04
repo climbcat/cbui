@@ -51,8 +51,9 @@ void RunProgram(bool start_in_fullscreen) {
     CbuiInit("projname", start_in_fullscreen);
 
     HashMap map_ssheets = InitMap(GetContext()->a_life);
-    HashMap map_textures = InitMap(GetContext()->a_life);
-    LoadInvaders(GetContext()->a_life, &map_ssheets, &map_textures);
+    //HashMap map_textures = InitMap(GetContext()->a_life);
+    //LoadInvaders(GetContext()->a_life, &map_ssheets, &map_textures);
+    LoadInvaders(GetContext()->a_life, &map_ssheets, &cbui.map_textures);
 
     // seems good now:
     MapIter iter = {};
@@ -95,9 +96,10 @@ void RunProgram(bool start_in_fullscreen) {
 
         f32 duration;
         Frame f = GetAnimationFrame(&map_ssheets, StrL("invaders_03"), animation_idx, frame_idx, &duration);
+        f.x0 = 100;
+        f.y0 = 200;
+        SpriteBufferPush(f);
 
-        Texture *tex = (Texture*) MapGet(&map_textures, f.tex_id);
-        BlitSprite(f.w, f.h, 100, 100, f.u0, f.u1, f.v0, f.v1, &img, tex);
         t_frame_elapsed += cbui.dt;
 
         if (duration < t_frame_elapsed) {

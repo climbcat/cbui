@@ -27,6 +27,7 @@ struct Frame {
     f32 v1;
     f32 x0;
     f32 y0;
+    f32 duration;
     Color color;
     u64 tex_id;
 };
@@ -164,15 +165,7 @@ void SS_Print(SpriteSheet *sheet) {
 }
 
 
-// TODO: data access API
-/*
-access:
-
-Frame GetAnimationFrame(u64 sheet_id, u64 animation_id, s32 frame_idx)
-*/
-
 static Frame frame_zero;
-
 Frame GetAnimationFrame(HashMap *map, Str sheet_name, s32 animation_idx, s32 frame_idx, f32 *frame_duration) {
     assert(frame_duration);
 
@@ -192,62 +185,11 @@ Frame GetAnimationFrame(HashMap *map, Str sheet_name, s32 animation_idx, s32 fra
 }
 
 
-// TODO: reference API
-/*
-reference:
-struct AnimatedEntity {
-    s32 animation_idx;
-    s32 frame_idx;
-    f32 t_frame_elapsed;
--køøkægüåk↓þþœ~};
-*/
-
-
-
-/*
-
- void Update(PlayerEntity entity) {
-    if (KeyIsPressed(SPACE)) {
-        entity.CurrentAnimationIndex = JUMP_ANIMATION_INDEX; // Hardcoded, but you can also replace with a lookup by name.
-        entity.CurrentAnimationFrameIndex = 0;
-        entity.CurrentAnimationFrameElapsedTime = 0;
-    }
-
-    Animation animation = entity.Animations[entity.CurrentAnimationIndex];
-    AnimationFrame frame = animation.Frames[entity.CurrentAnimationFrameIndex];
-    entity.CurrentAnimationFrameElapsedTime += deltaTime;
-
-    if (entity.CurrentAnimationFrameElapsedTime > frame.Duration) {
-
-        entity.CurrentAnimationFrameIndex++;
-        entity.CurrentAnimationFrameElapsedTime = 0;
-        if (entity.CurrentAnimationFrameIndex == animation.NumFrames) {
-            entity.CurrentAnimationFrameIndex = 0; // Animation ended, loop it from beginning, or do something else.   
-        }
-    }
-}
-
-*/
-
-
 //
 //  Legacy Sprite type
 
 
-//typedef Frame Sprite;
-
-struct Sprite {
-    s32 w;
-    s32 h;
-    f32 u0;
-    f32 u1;
-    f32 v0;
-    f32 v1;
-    f32 x0;
-    f32 y0;
-};
-
-
+typedef Frame Sprite;
 
 
 #endif
