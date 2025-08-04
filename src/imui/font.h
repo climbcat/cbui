@@ -22,7 +22,7 @@ struct FontAtlas {
     List<u8> advance_x;
     List<u8> x_lsb;
     List<s8> y_ascend;
-    List<Quad> cooked;
+    List<Quad> cooked; // TODO: depricate and just have the sprites
 
     Sprite glyphs_mem[128];
     u8 advance_x_mem[128];
@@ -33,6 +33,8 @@ struct FontAtlas {
     s32 GetLineBaseOffset() {
         return ln_measured - ln_descend;
     }
+
+    // TODO: can we have a texture_id like everybody else?
     u64 GetKey() {
         return HashStringValue(key_name);
     }
@@ -356,9 +358,47 @@ void TextPlot(Str txt, s32 box_l, s32 box_t, s32 box_w, s32 box_h, s32 *sz_x, s3
             continue;
         }
 
-        Quad q = QuadOffset(plt->cooked.lst + c, pt_x, pt_y, color, plt_key);
-        pt_x += plt->advance_x.lst[c];
-        QuadBufferPush(q);
+        if (true) {
+            Quad q = plt->cooked.lst[c];
+
+            Frame f = {};
+            f.w = q.GetWidth();
+            f.h = q.GetHeight();
+            f.u0 = q.GetTextureU0();
+            f.u1 = q.GetTextureU1();
+            f.v0 = q.GetTextureV0();
+            f.v1 = q.GetTextureV1();
+            f.x0 = q.GetX0() + pt_x;
+            f.y0 = q.GetY0() + pt_y;
+            f.color = color;
+            f.tex_id = plt_key;
+
+            pt_x += plt->advance_x.lst[c];
+            SpriteBufferPush(f);
+        }
+        else if (false) {
+            Sprite s = plt->glyphs_mem[c];
+
+            Frame f = {};
+            f.w = s.w;
+            f.h = s.h;
+            f.u0 = s.u0;
+            f.u1 = s.u1;
+            f.v0 = s.v0;
+            f.v1 = s.v1;
+            f.x0 = pt_x;
+            f.y0 = pt_y;
+            f.color = color;
+            f.tex_id = plt_key;
+
+            pt_x += plt->advance_x.lst[c];
+            SpriteBufferPush(f);
+        }
+        else {
+            Quad q = QuadOffset(plt->cooked.lst + c, pt_x, pt_y, color, plt_key);
+            pt_x += plt->advance_x.lst[c];
+            QuadBufferPush(q);
+        }
     }
 }
 

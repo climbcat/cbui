@@ -314,8 +314,11 @@ void BlitGlyph(s32 q_w, s32 q_h, f32 q_x0, f32 q_y0, f32 q_u0, f32 q_v0, f32 q_s
 
 void BlitGlyph2(s32 w, s32 h, f32 x0, f32 y0, f32 u0, f32 u1, f32 v0, f32 v1, Color color, ImageB src, ImageRGBA img) {
 
-    f32 q_scale_x = 0;
-    f32 q_scale_y = 0;
+
+    //f32 scale_x = (u1 - u0) / src.width;
+    //f32 scale_y = (v1 - v0) / src.height;
+    f32 scale_x = (u1 - u0) / img.width;
+    f32 scale_y = (v1 - v0) / img.height;
 
     // i,j          : target coords
     // i_img, j_img : img coords
@@ -333,8 +336,8 @@ void BlitGlyph2(s32 w, s32 h, f32 x0, f32 y0, f32 u0, f32 u1, f32 v0, f32 v1, Co
             if (i_img < 0 || i_img > img.width) {
                 continue;
             }
-            f32 x = u0 + i * q_scale_x;
-            f32 y = v0 + j * q_scale_y;
+            f32 x = u0 + i * scale_x;
+            f32 y = v0 + j * scale_y;
             if (u8 alpha_byte = SampleTexture(&src, x, y)) {
                 // rudimentary alpha-blending
                 u32 idx = (u32) (j_img * stride_img + i_img);
@@ -351,6 +354,103 @@ void BlitGlyph2(s32 w, s32 h, f32 x0, f32 y0, f32 u0, f32 u1, f32 v0, f32 v1, Co
             }
         }
     }
+}
+
+
+//
+//  Sprite render / control buffer API
+
+
+Array<Frame> g_sprite_buffer;
+
+
+void SpriteBufferInit(MArena *a_dest, u32 max_quads = 2048) {
+    g_sprite_buffer = InitArray<Frame>(a_dest, max_quads);
+}
+
+void SpriteBufferPush(Frame sprite) {
+    g_sprite_buffer.Add(sprite);
+}
+
+void SpriteBufferBlitAndClear(HashMap map_textures, s32 dest_width, s32 dest_height, u8 *dest_buffer) {
+
+    ImageRGBA _dest = { dest_width, dest_height, (Color*) dest_buffer };
+
+    for (s32 i = 0; i < g_sprite_buffer.len; ++i) {
+        Frame s = g_sprite_buffer.arr[i];
+
+        Texture *texture = (Texture*) MapGet(&map_textures, s.tex_id);
+
+        if (s.tex_id == 0) {
+
+
+            BlitMonoColor(s.w, s.h, s.x0, s.y0, s.color, _dest);
+        }
+
+        if (texture /* && texture->tpe == TT_8BIT */ ) {
+            // NOTE: due to the current FontAtlas data structure, the texture pointer is actually an ImageB
+            // TODO: transition to only using the Texture type everywhere: Then we switch by type 'tpe' and/or use the 'stride' member
+
+            ImageB *_texture = (ImageB*) texture; // { texture->width, texture->height, texture->data };
+
+            //BlitGlyph2(s.w, s.h, s.x0, s.y0, s.u0, s.u1, s.v0, s.v1, s.color, *_texture, _dest);
+
+
+            //f32 scale_x = (s.u1 - s.u0) / dest_width;
+            //f32 scale_y = (s.v1 - s.v0) / dest_height;
+            f32 scale_x = (s.u1 - s.u0) / s.w;
+            f32 scale_y = (s.v1 - s.v0) / s.h;
+            BlitGlyph(s.w, s.h, s.x0, s.y0, s.u0, s.v0, scale_x, scale_y, s.color, _texture, _dest);
+        }
+
+        /*
+        else if (texture && texture->tpe == TT_RGBA) {
+            // TODO: impl.
+        }
+
+        else {
+            printf("WARN: Attempt to blit unknown texture type\n");
+        }
+        */
+    }
+
+    /*
+    void BlitQuads(Array<Quad> quads, HashMap *map_textues, ImageRGBA img) {
+        for (u32 i = 0; i < quads.len; ++i) {
+            Quad *q = quads.arr + i;
+
+            s32 q_w = round( q->GetWidth() );
+            s32 q_h = round( q->GetHeight() );
+            s32 q_x0 = round( q->GetX0() );
+            s32 q_y0 = round( q->GetY0() );
+            u64 q_texture = q->GetTextureId();
+            Color q_color = q->GetColor();
+
+            // TODO: impl. robust versions to be able to blit a larger quad into the "smaller" window
+            assert(img.height >= q_h);
+            assert(img.width >= q_w);
+
+            void *texture = (void*) MapGet(map_textues, q_texture);
+
+            // byte-texture / glyphs
+            if (q_texture != 0 && q_color.IsNonZero()) {
+                f32 q_scale_x = q->GetTextureScaleX(q_w);
+                f32 q_scale_y = q->GetTextureScaleY(q_h);
+                f32 q_u0 = q->GetTextureU0();
+                f32 q_v0 = q->GetTextureV0();
+
+                BlitGlyph(q_w, q_h, q_x0, q_y0, q_u0, q_v0, q_scale_x, q_scale_y, q_color, (ImageB*) texture, img);
+            }
+
+            // mono-color quads
+            else if (q_texture == 0 && q_color.IsNonZero()) {
+                BlitMonoColor(q_w, q_h, q_x0, q_y0, q_color, img);
+            }
+        }
+    }
+    */
+
+    g_sprite_buffer.len = 0;
 }
 
 
