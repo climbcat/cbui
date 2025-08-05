@@ -39,8 +39,11 @@ void TestUILayoutFeatures() {
         case 1: {
             UI_Center();
 
-            UI_LayoutVertical(0);
-            UI_Label("Test: Align Left");
+            Widget *w = UI_LayoutVertical(0);
+            w->SetFlag(WF_DRAW_BACKGROUND_AND_BORDER);
+            w->col_bckgrnd = COLOR_BLUE;
+            Widget *l = UI_Label("Test: Align Left");
+            l->col_text = COLOR_GRAY_50;
             UI_Label("A couple");
             UI_Label("lines");
             UI_Label("of");

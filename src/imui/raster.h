@@ -169,32 +169,25 @@ void RenderLineSegment(u8 *image_buffer, Matrix4f view, Matrix4f proj, Vector3f 
 
 //
 //  Blitting
-//
 
 
 inline
-Color SampleTexture(Texture *tex, f32 x, f32 y, Color col_default) {
-    s32 i = (s32) round(tex->width * x);
-    s32 j = (s32) round(tex->height * y);
-    if (i < 0 || i >= tex->width || j < 0 || j >= tex->height) {
+Color SampleTexture(f32 x, f32 y, Color col_default, s32 src_width, s32 src_height, Color *src_buffer) {
+    s32 i = (s32) round(src_width * x);
+    s32 j = (s32) round(src_height * y);
+    if (i < 0 || i >= src_width || j < 0 || j >= src_height) {
         return col_default;
     }
-    u32 idx = tex->width * j + i;
-    Color *tex_colors = (Color*) tex->data;
-    Color b = tex_colors[idx];
+    u32 idx = src_width * j + i;
+    Color b = src_buffer[idx];
     return b;
 }
 
+inline
+void Blit32Bit(s32 width, s32 height, s32 left, s32 top, f32 u0, f32 u1, f32 v0, f32 v1, s32 src_width, s32 src_height, Color *src_buffer, s32 dest_width, s32 dest_height, Color *dest) {
 
-void BlitSprite(s32 width, s32 height, s32 left, s32 top, f32 u0, f32 u1, f32 v0, f32 v1, Texture *dest, Texture *src) {
-
-    assert(dest->height >= width);
-    assert(dest->width >= height);
-
-    Color *color_src = (Color*) src->data;
-    Color *color_dest = (Color*) dest->data;
-
-    u32 stride_img = dest->width;
+    assert(dest_height >= width);
+    assert(dest_width >= height);
 
     f32 q_scale_x = (u1 - u0) / width;
     f32 q_scale_y = (v1 - v0) / height;
@@ -204,25 +197,25 @@ void BlitSprite(s32 width, s32 height, s32 left, s32 top, f32 u0, f32 u1, f32 v0
 
     for (s32 j = 0; j < height; ++j) {
         s32 j_img = j + top;
-        if (j_img < 0 || j_img > dest->height) {
+        if (j_img < 0 || j_img > dest_height) {
             continue;
         }
 
         for (s32 i = 0; i < width; ++i) {
             s32 i_img = left + i;
-            if (i_img < 0 || i_img > dest->width) {
+            if (i_img < 0 || i_img > dest_width) {
                 continue;
             }
             f32 x = u0 + i * q_scale_x;
             f32 y = v0 + j * q_scale_y;
 
             // TODO: how do we regularize this code?
-            Color color_src = SampleTexture(src, x, y, Color { 0, 0, 0, 255 });
+            Color color_src = SampleTexture(x, y, Color { 0, 0, 0, 255 }, src_width, src_height, src_buffer);
 
             if (color_src.a != 0) {
                 // rudimentary alpha-blending
-                s32 idx = j_img * stride_img + i_img;
-                Color color_background = color_dest[idx];
+                s32 idx = j_img * dest_width + i_img;
+                Color color_background = dest[idx];
 
                 f32 alpha = (1.0f * color_src.a) / 255;
                 Color color_blended;
@@ -231,114 +224,72 @@ void BlitSprite(s32 width, s32 height, s32 left, s32 top, f32 u0, f32 u1, f32 v0
                 color_blended.b = (u8) (floor( alpha*color_src.b ) + floor( (1-alpha)*color_background.b ));
                 color_blended.a = 255;
 
-                color_dest[idx] = color_blended;
+                dest[idx] = color_blended;
             }
         }
     }
 }
 
-
-
-//
-//  NOTE: imported from the "quad" blitter
-
-
 inline
-u8 SampleTexture(ImageB *tex, f32 x, f32 y) {
-    u32 i = (s32) round(tex->width * x);
-    u32 j = (s32) round(tex->height * y);
-    u32 idx = tex->width * j + i;
-    u8 b = tex->img[idx];
-    return b;
-}
-
-void BlitMonoColor(s32 q_w, s32 q_h, f32 q_x0, f32 q_y0, Color q_color, ImageRGBA img) {
+void BlitFill(s32 q_w, s32 q_h, f32 q_x0, f32 q_y0, Color q_color, s32 dest_width, s32 dest_height, Color* dest) {
     s32 j_img;
     s32 i_img;
     u32 idx;
     for (s32 j = 0; j < q_h; ++j) {
         j_img = j + q_y0;
-        if (j_img < 0 || j_img > img.height) {
+        if (j_img < 0 || j_img > dest_height) {
             continue;
         }
 
         for (s32 i = 0; i < q_w; ++i) {
             i_img = q_x0 + i;
-            if (i_img < 0 || i_img > img.width) {
+            if (i_img < 0 || i_img > dest_width) {
                 continue;
             }
 
-            idx = j_img * img.width + i_img;
-            img.img[idx] = q_color;
+            idx = j_img * dest_width + i_img;
+            dest[idx] = q_color;
         }
     }
-
 }
 
-void BlitGlyph(s32 q_w, s32 q_h, f32 q_x0, f32 q_y0, f32 q_u0, f32 q_v0, f32 q_scale_x, f32 q_scale_y, Color q_color, ImageB *src, ImageRGBA dest) {
+
+inline
+u8 SampleTexture(f32 x, f32 y, s32 src_width, s32 src_height, u8 *src_buffer) {
+    u32 i = (s32) round(src_width * x);
+    u32 j = (s32) round(src_height * y);
+    u32 idx = src_width * j + i;
+    u8 b = src_buffer[idx];
+    return b;
+}
+
+inline
+void Blit8Bit(s32 width, s32 height, f32 x0, f32 y0, f32 q_u0, f32 v0, f32 u1, f32 v1, Color color, s32 src_width, s32 src_height, u8 *src_buffer, s32 dest_width, s32 dest_height, Color* dest_buffer) {
     // i,j          : target coords
     // i_img, j_img : img coords
 
-    s32 stride_dest = dest.width;
+    f32 q_scale_x = (u1 - q_u0) / width;
+    f32 q_scale_y = (v1 - v0) / height;
 
-    for (s32 j = 0; j < q_h; ++j) {
-        s32 j_dest = j + q_y0;
-        if (j_dest < 0 || j_dest > dest.height) {
+    s32 stride_dest = dest_width;
+
+    for (s32 j = 0; j < height; ++j) {
+        s32 j_dest = j + y0;
+        if (j_dest < 0 || j_dest > dest_height) {
             continue;
         }
 
-        for (s32 i = 0; i < q_w; ++i) {
-            s32 i_dest = q_x0 + i;
-            if (i_dest < 0 || i_dest > dest.width) {
+        for (s32 i = 0; i < width; ++i) {
+            s32 i_dest = x0 + i;
+            if (i_dest < 0 || i_dest > dest_width) {
                 continue;
             }
             f32 x = q_u0 + i * q_scale_x;
-            f32 y = q_v0 + j * q_scale_y;
-            if (u8 alpha_byte = SampleTexture(src, x, y)) {
+            f32 y = v0 + j * q_scale_y;
+            if (u8 alpha_byte = SampleTexture(x, y, src_width, src_height, src_buffer)) {
                 // rudimentary alpha-blending
-                u32 idx = (u32) (j_dest * stride_dest + i_dest);
-                Color color_background = dest.img[idx];
-
-                f32 alpha = (1.0f * alpha_byte) / 255;
-                Color color_blended;
-                color_blended.r = (u8) (floor( alpha*q_color.r ) + floor( (1-alpha)*color_background.r ));
-                color_blended.g = (u8) (floor( alpha*q_color.g ) + floor( (1-alpha)*color_background.g ));
-                color_blended.b = (u8) (floor( alpha*q_color.b ) + floor( (1-alpha)*color_background.b ));
-                color_blended.a = 255;
-
-                dest.img[idx] = color_blended;
-            }
-        }
-    }
-}
-
-void BlitGlyph2(s32 w, s32 h, f32 x0, f32 y0, f32 u0, f32 u1, f32 v0, f32 v1, Color color, ImageB src, ImageRGBA dest) {
-
-    f32 scale_x = (u1 - u0) / w;
-    f32 scale_y = (v1 - v0) / h;
-
-    // i,j          : target coords
-    // i_dest, j_dest : dest coords
-
-    s32 stride_dest = dest.width;
-
-    for (s32 j = 0; j < h; ++j) {
-        s32 j_dest = j + y0;
-        if (j_dest < 0 || j_dest > dest.height) {
-            continue;
-        }
-
-        for (s32 i = 0; i < w; ++i) {
-            s32 i_dest = x0 + i;
-            if (i_dest < 0 || i_dest > dest.width) {
-                continue;
-            }
-            f32 x = u0 + i * scale_x;
-            f32 y = v0 + j * scale_y;
-            if (u8 alpha_byte = SampleTexture(&src, x, y)) {
-                // rudimentary alpha-blending
-                u32 idx = (u32) (j_dest * stride_dest + i_dest);
-                Color color_background = dest.img[idx];
+                u32 idx = (u32) (j_dest * dest_width + i_dest);
+                Color color_background = dest_buffer[idx];
 
                 f32 alpha = (1.0f * alpha_byte) / 255;
                 Color color_blended;
@@ -347,7 +298,7 @@ void BlitGlyph2(s32 w, s32 h, f32 x0, f32 y0, f32 u0, f32 u1, f32 v0, f32 v1, Co
                 color_blended.b = (u8) (floor( alpha*color.b ) + floor( (1-alpha)*color_background.b ));
                 color_blended.a = 255;
 
-                dest.img[idx] = color_blended;
+                dest_buffer[idx] = color_blended;
             }
         }
     }
@@ -355,54 +306,40 @@ void BlitGlyph2(s32 w, s32 h, f32 x0, f32 y0, f32 u0, f32 u1, f32 v0, f32 v1, Co
 
 
 //
-//  Sprite render / control buffer API
+//  Render / control buffer API
 
 
-Array<Frame> g_sprite_buffer;
+Array<Sprite> g_sprite_buffer;
 
 
 void SpriteBufferInit(MArena *a_dest, u32 max_quads = 2048) {
-    g_sprite_buffer = InitArray<Frame>(a_dest, max_quads);
+    g_sprite_buffer = InitArray<Sprite>(a_dest, max_quads);
 }
 
-void SpriteBufferPush(Frame sprite) {
+void SpriteBufferPush(Sprite sprite) {
     g_sprite_buffer.Add(sprite);
 }
 
 void SpriteBufferBlitAndClear(HashMap map_textures, s32 dest_width, s32 dest_height, u8 *dest_buffer) {
 
-
-    // TODO: do code compression / cleanup here
-
-
     for (s32 i = 0; i < g_sprite_buffer.len; ++i) {
-        Frame s = g_sprite_buffer.arr[i];
 
-        Texture *texture = (Texture*) MapGet(&map_textures, s.tex_id);
+        Sprite s = g_sprite_buffer.arr[i];
+        Texture *s_texture = (Texture*) MapGet(&map_textures, s.tex_id);
 
-        if (texture == NULL) {
-            ImageRGBA _dest = { dest_width, dest_height, (Color*) dest_buffer };
+        if (s_texture == NULL) {
 
-            BlitMonoColor(s.w, s.h, s.x0, s.y0, s.color, _dest);
+            BlitFill(s.w, s.h, s.x0, s.y0, s.color, dest_width, dest_height, (Color*) dest_buffer);
         }
 
-        else if (texture && texture->tpe == TT_8BIT ) {
-            ImageRGBA _dest = { dest_width, dest_height, (Color*) dest_buffer };
+        else if (s_texture && s_texture->tpe == TT_8BIT ) {
 
-            ImageB _tex = {};
-            _tex.img = texture->data;
-            _tex.width = texture->width;
-            _tex.height = texture->height;
-
-            f32 scale_x = (s.u1 - s.u0) / s.w;
-            f32 scale_y = (s.v1 - s.v0) / s.h;
-            BlitGlyph(s.w, s.h, s.x0, s.y0, s.u0, s.v0, scale_x, scale_y, s.color, &_tex, _dest);
+            Blit8Bit(s.w, s.h, s.x0, s.y0, s.u0, s.v0, s.u1, s.v1, s.color, s_texture->width, s_texture->height, s_texture->data, dest_width, dest_height, (Color*) dest_buffer);
         }
 
-        else if (texture && texture->tpe == TT_RGBA) {
-            Texture _dest_tex = { TT_RGBA, dest_width, dest_height, 4, dest_buffer };
+        else if (s_texture && s_texture->tpe == TT_RGBA) {
 
-            BlitSprite(s.w, s.h, s.x0, s.y0, s.u0, s.u1, s.v0, s.v1, &_dest_tex, texture);
+            Blit32Bit(s.w, s.h, s.x0, s.y0, s.u0, s.u1, s.v0, s.v1, s_texture->width, s_texture->height, (Color*) s_texture->data, dest_width, dest_height, (Color*) dest_buffer);
         }
 
         else {
