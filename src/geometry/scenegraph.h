@@ -19,18 +19,18 @@ struct SGNode {
 
     inline
     SGNode *Next() {
-        return (SGNode *) PoolIdx2Ptr(&g_p_sgnodes, next);
+        return (SGNode*) PoolIdx2Ptr(&g_p_sgnodes, next);
     }
 
     inline
     SGNode *First() {
-        return (SGNode *) PoolIdx2Ptr(&g_p_sgnodes, first);
+        return (SGNode*) PoolIdx2Ptr(&g_p_sgnodes, first);
     }
 
     inline
     SGNode *Parent() {
         if (parent) {
-            return (SGNode *) PoolIdx2Ptr(&g_p_sgnodes, parent);
+            return (SGNode*) PoolIdx2Ptr(&g_p_sgnodes, parent);
         }
         else{
             return (SGNode*) g_sg_root_addr;
@@ -114,7 +114,7 @@ SGNode *SceneGraphAlloc(SGNode *parent = NULL) {
 }
 
 
-void SceneGraphFree(SGNode * t) {
+void SceneGraphFree(SGNode *t) {
     t->Parent()->RemoveChild(t);
 
     // relinquish child branches -> to root
@@ -129,6 +129,29 @@ void SceneGraphFree(SGNode * t) {
     }
 
     PoolFree(&g_p_sgnodes, t);
+}
+
+void SGUpdateRec(SGNode *t, SGNode *p) {
+    while (t) {
+        t->t_world = p->t_world * t->t_loc;
+
+        // iterate children
+        if (t->first) {
+            SGUpdateRec(t->First(), t);
+        }
+
+        // iterate siblings
+        t = t->Next();
+    }
+}
+
+void SceneGraphUpdate() {
+    SGNode *r = &g_sg_root;
+
+    r->t_world = r->t_loc;
+    if (r->first) {
+        SGUpdateRec(r->First(), r);
+    }
 }
 
 

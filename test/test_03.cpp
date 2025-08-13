@@ -264,32 +264,108 @@ void TestSceneGraph() {
     OrbitCamera cam = OrbitCameraInit(persp.aspect);
     Array<Wireframe> objs = InitArray<Wireframe>(cbui.ctx->a_pers, 100);
 
+    SceneGraphInit();
+    SGNode *t0 = SceneGraphAlloc();
+    SGNode *t1 = SceneGraphAlloc(t0);
+    SGNode *t2 = SceneGraphAlloc(t1);
+    SGNode *t3 = SceneGraphAlloc(t2);
+    SGNode *t4 = SceneGraphAlloc(t3);
+
     while (cbui.running) {
         CbuiFrameStart();
         OrbitCameraUpdate(&cam, cbui.plf.cursorpos.dx, cbui.plf.cursorpos.dy, cbui.plf.left.ended_down, cbui.plf.scroll.yoffset_acc);
         OrbitCameraPan(&cam, persp.fov, persp.aspect, cbui.plf.cursorpos.x_frac, cbui.plf.cursorpos.y_frac, MouseRight().pushed, MouseRight().released);
+        // start
 
-        objs.len = 0;
-        objs.Add(CreatePlane(10));
 
-        Wireframe box = CreateAABox( 0.5, 0.5, 0.5 );
-        box.transform = TransformBuildTranslation({ 0.7, 0.5, -0.7 });
-        box.color = COLOR_BLUE;
-        float theta = 30.0f;
-        float dtheta = 0.1f;
+        float dtheta = 0.5f;
 
-        Matrix4f rot_y = TransformBuildRotateY(theta * dtheta * cbui.frameno * deg2rad);
+        Matrix4f t_root = TransformBuildTranslation({ 0, 0.5, 0 });
+        Matrix4f t_arm = TransformBuildTranslation({ 3, 0, 0 });
+        Matrix4f t_hand = TransformBuildTranslation({ 1, 0, 0 });
+        Matrix4f t_finger = TransformBuildTranslation({ 0.2, 0, 0 });
+        Matrix4f rot_y = TransformBuildRotateY(dtheta * cbui.frameno * deg2rad);
         Matrix4f rot_y_inv = TransformGetInverse(rot_y);
-        Matrix4f rot_y2 = TransformBuildRotateY(theta * dtheta * 2.5f * cbui.frameno * deg2rad);
-        box.transform = rot_y * box.transform * rot_y2;
+        Matrix4f rot_y2 = TransformBuildRotateY(dtheta * 2.5f * cbui.frameno * deg2rad);
 
-        objs.Add(box);
+        if (true) {
+            t0->t_loc = t_root * rot_y;
+            t1->t_loc = t_arm;
+            t2->t_loc = rot_y;
+            t3->t_loc = t_hand * rot_y2;
+            t4->t_loc = t_finger;
 
-        Wireframe box2 = CreateAABox( 0.2, 0.2, 0.2 );
-        box2.transform = rot_y * TransformBuildTranslation({ 0.7f, 1.7f, -0.7f }) * rot_y_inv;
-        box2.color = COLOR_GREEN;
-        objs.Add(box2);
+            // assigns t_world to each node
+            SceneGraphUpdate();
 
+            // apply the calculated world transforms to our boxes
+            objs.len = 0;
+            objs.Add(CreatePlane(10));
+
+            Wireframe box_root = CreateAABox( 0.2, 0.2, 0.2 );
+            box_root.color = COLOR_BLACK;
+            box_root.transform = t0->t_world;
+            objs.Add(box_root);
+
+            // this gray box rotates with the center:
+            /*
+            Wireframe box1 = CreateAABox( 0.2, 0.2, 0.2 );
+            box1.color = COLOR_GRAY;
+            box1.transform = t1->t_world;
+            objs.Add(box1);
+            */
+
+            Wireframe box2 = CreateAABox( 0.2, 0.2, 0.2 );
+            box2.color = COLOR_BLUE;
+            box2.transform = t2->t_world;
+            objs.Add(box2);
+
+            Wireframe box3 = CreateAABox( 0.2, 0.2, 0.2 );
+            box3.color = COLOR_GREEN;
+            box3.transform = t3->t_world;
+            objs.Add(box3);
+
+            Wireframe box4 = CreateAABox( 0.2, 0.2, 0.2 );
+            box4.color = COLOR_RED;
+            box4.transform = t4->t_world;
+            objs.Add(box4);
+        }
+
+        else {
+            objs.len = 0;
+            objs.Add(CreatePlane(10));
+
+            Wireframe box_root = CreateAABox( 0.2, 0.2, 0.2 );
+            box_root.color = COLOR_BLACK;
+            box_root.transform = t_root * rot_y;
+            objs.Add(box_root);
+
+            // this gray box rotates with the center:
+            /*
+            Wireframe box1 = CreateAABox( 0.2, 0.2, 0.2 );
+            box1.color = COLOR_GRAY;
+            box1.transform = t_root * rot_y * t_arm;
+            objs.Add(box1);
+            */
+
+            Wireframe box2 = CreateAABox( 0.2, 0.2, 0.2 );
+            box2.color = COLOR_BLUE;
+            box2.transform = t_root * rot_y * t_arm * rot_y;
+            objs.Add(box2);
+
+            Wireframe box3 = CreateAABox( 0.2, 0.2, 0.2 );
+            box3.color = COLOR_GREEN;
+            box3.transform = t_root * rot_y * t_arm * rot_y * t_hand * rot_y2;
+            objs.Add(box3);
+
+            Wireframe box4 = CreateAABox( 0.2, 0.2, 0.2 );
+            box4.color = COLOR_RED;
+            box4.transform = t_root * rot_y * t_arm * rot_y * t_hand * rot_y2 * t_finger;
+            objs.Add(box4);
+        }
+
+
+        // end 
         Array<Vector3f> segments = WireframeLineSegments(cbui.ctx->a_tmp, objs);
         RenderLineSegmentList(cbui.image_buffer, cam.view, persp.proj, cbui.plf.width, cbui.plf.height, objs, segments);
 

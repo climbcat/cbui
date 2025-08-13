@@ -3,7 +3,7 @@
 
 
 //
-// Vector
+//  Vector 2 & 3
 
 
 struct Vector2_u16 {
@@ -247,9 +247,10 @@ Vector3f SphericalCoordsY(float theta, float phi, float radius) {
 
 
 //
-// Matrix
+//  Matrix4f
 
 
+inline
 Matrix4f Matrix4f_Zero() {
     Matrix4f m;
     for (int i = 0; i < 4; ++i) {
@@ -260,6 +261,7 @@ Matrix4f Matrix4f_Zero() {
     return m;
 }
 
+inline
 Matrix4f Matrix4f_One() {
     Matrix4f m;
     for (int i = 0; i < 4; ++i) {
@@ -270,6 +272,7 @@ Matrix4f Matrix4f_One() {
     return m;
 }
 
+inline
 Matrix4f Matrix4f_Identity() {
     Matrix4f m;
     for (int i = 0; i < 4; ++i) {
@@ -285,6 +288,7 @@ Matrix4f Matrix4f_Identity() {
     return m;
 }
 
+inline
 bool Matrix4f_IsIdentity(Matrix4f m) {
     bool is_zero =
         m.m[0][0] == 1 &&
@@ -309,6 +313,7 @@ bool Matrix4f_IsIdentity(Matrix4f m) {
     return is_zero;
 }
 
+inline
 Matrix4f Matrix4f_Diagonal(Vector4f d) {
     Matrix4f m = Matrix4f_Zero();
     m.m[0][0] = d.x;
@@ -318,6 +323,7 @@ Matrix4f Matrix4f_Diagonal(Vector4f d) {
     return m;
 }
 
+inline
 Matrix4f Matrix4f_Transpose(Matrix4f *m) {
     Matrix4f result;
     for (int i = 0; i < 4; ++i) {
@@ -328,6 +334,7 @@ Matrix4f Matrix4f_Transpose(Matrix4f *m) {
     return result;
 }
 
+inline
 Matrix4f Matrix4f_Transpose(Matrix4f m) {
     Matrix4f result;
     for (int i = 0; i < 4; ++i) {
@@ -338,11 +345,11 @@ Matrix4f Matrix4f_Transpose(Matrix4f m) {
     return result;
 }
 
+inline
 Matrix4f Matrix4f_Multiply(Matrix4f *a, Matrix4f *b) {
-    Matrix4f result;
+    Matrix4f result = {};
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
-            result.m[i][j] = 0;
             for (int k = 0; k < 4; ++k) {
                 result.m[i][j] += a->m[i][k]*b->m[k][j];
             }
@@ -351,6 +358,7 @@ Matrix4f Matrix4f_Multiply(Matrix4f *a, Matrix4f *b) {
     return result;
 }
 
+inline
 Vector4f Matrix4f_MultVector(Matrix4f *a, Vector4f *v) {
     Vector4f result;
     result.x = a->m[0][0]*v->x + a->m[0][1]*v->y + a->m[0][2]*v->z + a->m[0][3]*v->w;
@@ -360,6 +368,7 @@ Vector4f Matrix4f_MultVector(Matrix4f *a, Vector4f *v) {
     return result;
 }
 
+inline
 bool Matrix4f_Equals(Matrix4f *a, Matrix4f *b) {
     bool result = true;
     for (int i = 0; i < 4; ++i) {
