@@ -7,7 +7,6 @@
 #define IMG_BUFF_MAX_HEIGHT 2160
 
 
-
 //
 //  UI core state variables
 

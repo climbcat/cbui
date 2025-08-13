@@ -12,6 +12,7 @@
 
 
 void TestUILayoutFeatures() {
+    printf("TestUILayoutFeatures\n");
 
     CbuiInit("TestUILayoutFeatures", false);
     s32 TB_mode = 0;
@@ -255,7 +256,51 @@ void TestUILayoutFeatures() {
 }
 
 
+void TestSceneGraph() {
+    printf("TestSceneGraph\n");
+
+    CbuiInit("TestSceneGraph", false);
+    Perspective persp = ProjectionInit(cbui.plf.width, cbui.plf.height);
+    OrbitCamera cam = OrbitCameraInit(persp.aspect);
+    Array<Wireframe> objs = InitArray<Wireframe>(cbui.ctx->a_pers, 100);
+
+    while (cbui.running) {
+        CbuiFrameStart();
+        OrbitCameraUpdate(&cam, cbui.plf.cursorpos.dx, cbui.plf.cursorpos.dy, cbui.plf.left.ended_down, cbui.plf.scroll.yoffset_acc);
+        OrbitCameraPan(&cam, persp.fov, persp.aspect, cbui.plf.cursorpos.x_frac, cbui.plf.cursorpos.y_frac, MouseRight().pushed, MouseRight().released);
+
+        objs.len = 0;
+        objs.Add(CreatePlane(10));
+
+        Wireframe box = CreateAABox( 0.5, 0.5, 0.5 );
+        box.transform = TransformBuildTranslation({ 0.7, 0.5, -0.7 });
+        box.color = COLOR_BLUE;
+        float theta = 30.0f;
+        float dtheta = 0.1f;
+
+        Matrix4f rot_y = TransformBuildRotateY(theta * dtheta * cbui.frameno * deg2rad);
+        Matrix4f rot_y_inv = TransformGetInverse(rot_y);
+        Matrix4f rot_y2 = TransformBuildRotateY(theta * dtheta * 2.5f * cbui.frameno * deg2rad);
+        box.transform = rot_y * box.transform * rot_y2;
+
+        objs.Add(box);
+
+        Wireframe box2 = CreateAABox( 0.2, 0.2, 0.2 );
+        box2.transform = rot_y * TransformBuildTranslation({ 0.7f, 1.7f, -0.7f }) * rot_y_inv;
+        box2.color = COLOR_GREEN;
+        objs.Add(box2);
+
+        Array<Vector3f> segments = WireframeLineSegments(cbui.ctx->a_tmp, objs);
+        RenderLineSegmentList(cbui.image_buffer, cam.view, persp.proj, cbui.plf.width, cbui.plf.height, objs, segments);
+
+        CbuiFrameEnd();
+    }
+    CbuiExit();
+}
+
+
 void Test_03() {
 
-    TestUILayoutFeatures();
+    //TestUILayoutFeatures();
+    TestSceneGraph();
 }
