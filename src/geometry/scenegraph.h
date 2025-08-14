@@ -96,8 +96,9 @@ void SceneGraphInit(s32 cap = 256) {
     g_sg_root_addr = &g_sg_root;
 }
 
-
 Transform *SceneGraphAlloc(Transform *parent = NULL) {
+    assert(g_p_sgnodes.mem && "Initialize first");
+
     Transform *t = (Transform*) PoolAlloc(&g_p_sgnodes);
     t->index = (u16) PoolPtr2Idx(&g_p_sgnodes, t);
     t->t_loc = Matrix4f_Identity();
@@ -113,8 +114,9 @@ Transform *SceneGraphAlloc(Transform *parent = NULL) {
     return t;
 }
 
-
 void SceneGraphFree(Transform *t) {
+    assert(g_p_sgnodes.mem && "Initialize first");
+
     t->Parent()->RemoveChild(t);
 
     // relinquish child branches -> to root
@@ -146,9 +148,14 @@ void SGUpdateRec(Transform *t, Transform *p) {
 }
 
 void SceneGraphUpdate() {
+    assert(g_p_sgnodes.mem && "Initialize first");
+
     Transform *r = &g_sg_root;
 
+    // initialize the starting point
     r->t_world = r->t_loc;
+
+    // walk the tree
     if (r->first) {
         SGUpdateRec(r->First(), r);
     }
