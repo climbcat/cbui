@@ -2,14 +2,14 @@
 #define __SCENEGRAPH_H__
 
 
-struct SGNode;
+struct Transform;
 
 
 static MPool g_p_sgnodes;
 static void *g_sg_root_addr;
 
 
-struct SGNode {
+struct Transform {
     Matrix4f t_loc;
     Matrix4f t_world;
     u16 next;
@@ -18,31 +18,31 @@ struct SGNode {
     u16 index;
 
     inline
-    SGNode *Next() {
-        return (SGNode*) PoolIdx2Ptr(&g_p_sgnodes, next);
+    Transform *Next() {
+        return (Transform*) PoolIdx2Ptr(&g_p_sgnodes, next);
     }
 
     inline
-    SGNode *First() {
-        return (SGNode*) PoolIdx2Ptr(&g_p_sgnodes, first);
+    Transform *First() {
+        return (Transform*) PoolIdx2Ptr(&g_p_sgnodes, first);
     }
 
     inline
-    SGNode *Parent() {
+    Transform *Parent() {
         if (parent) {
-            return (SGNode*) PoolIdx2Ptr(&g_p_sgnodes, parent);
+            return (Transform*) PoolIdx2Ptr(&g_p_sgnodes, parent);
         }
         else{
-            return (SGNode*) g_sg_root_addr;
+            return (Transform*) g_sg_root_addr;
         }
     }
 
-    void AppendChild(SGNode *c) {
+    void AppendChild(Transform *c) {
         if (first == 0) {
             first = c->index;
         }
         else {
-            SGNode *n = First();
+            Transform *n = First();
             while (n->next) {
                 n = n->Next();
             }
@@ -51,14 +51,14 @@ struct SGNode {
         c->parent = index;
     }
 
-    void RemoveChild(SGNode *t) {
+    void RemoveChild(Transform *t) {
         if (first == t->index) {
             first = t->next;
         }
         else {
             // find prev
-            SGNode *prev = NULL;
-            SGNode *c = First();
+            Transform *prev = NULL;
+            Transform *c = First();
 
             while (c) {
                 if (c->index == t->index && prev) {
@@ -76,13 +76,13 @@ struct SGNode {
 };
 
 
-static SGNode g_sg_root;
+static Transform g_sg_root;
 
 
 void SceneGraphInit(s32 cap = 256) {
     assert(g_p_sgnodes.mem == NULL);
 
-    g_p_sgnodes = PoolCreate(sizeof(SGNode), cap + 1);
+    g_p_sgnodes = PoolCreate(sizeof(Transform), cap + 1);
     // lock index-0:
     PoolAlloc(&g_p_sgnodes);
 
@@ -97,8 +97,8 @@ void SceneGraphInit(s32 cap = 256) {
 }
 
 
-SGNode *SceneGraphAlloc(SGNode *parent = NULL) {
-    SGNode *t = (SGNode*) PoolAlloc(&g_p_sgnodes);
+Transform *SceneGraphAlloc(Transform *parent = NULL) {
+    Transform *t = (Transform*) PoolAlloc(&g_p_sgnodes);
     t->index = (u16) PoolPtr2Idx(&g_p_sgnodes, t);
     t->t_loc = Matrix4f_Identity();
     t->t_world = Matrix4f_Identity();
@@ -114,12 +114,12 @@ SGNode *SceneGraphAlloc(SGNode *parent = NULL) {
 }
 
 
-void SceneGraphFree(SGNode *t) {
+void SceneGraphFree(Transform *t) {
     t->Parent()->RemoveChild(t);
 
     // relinquish child branches -> to root
-    SGNode *c = t->First();
-    SGNode *nxt = c;
+    Transform *c = t->First();
+    Transform *nxt = c;
     while (nxt) {
         c = nxt;
         nxt = c->Next();
@@ -131,7 +131,7 @@ void SceneGraphFree(SGNode *t) {
     PoolFree(&g_p_sgnodes, t);
 }
 
-void SGUpdateRec(SGNode *t, SGNode *p) {
+void SGUpdateRec(Transform *t, Transform *p) {
     while (t) {
         t->t_world = p->t_world * t->t_loc;
 
@@ -146,7 +146,7 @@ void SGUpdateRec(SGNode *t, SGNode *p) {
 }
 
 void SceneGraphUpdate() {
-    SGNode *r = &g_sg_root;
+    Transform *r = &g_sg_root;
 
     r->t_world = r->t_loc;
     if (r->first) {

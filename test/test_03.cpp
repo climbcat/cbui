@@ -265,11 +265,11 @@ void TestSceneGraph() {
     Array<Wireframe> objs = InitArray<Wireframe>(cbui.ctx->a_pers, 100);
 
     SceneGraphInit();
-    SGNode *t0 = SceneGraphAlloc();
-    SGNode *t1 = SceneGraphAlloc(t0);
-    SGNode *t2 = SceneGraphAlloc(t1);
-    SGNode *t3 = SceneGraphAlloc(t2);
-    SGNode *t4 = SceneGraphAlloc(t3);
+    Transform *t0 = SceneGraphAlloc();
+    Transform *t1 = SceneGraphAlloc(t0);
+    Transform *t2 = SceneGraphAlloc(t1);
+    Transform *t3 = SceneGraphAlloc(t2);
+    Transform *t4 = SceneGraphAlloc(t3);
 
     while (cbui.running) {
         CbuiFrameStart();
@@ -281,9 +281,9 @@ void TestSceneGraph() {
         float dtheta = 0.5f;
 
         Matrix4f t_root = TransformBuildTranslation({ 0, 0.5, 0 });
-        Matrix4f t_arm = TransformBuildTranslation({ 3, 0, 0 });
-        Matrix4f t_hand = TransformBuildTranslation({ 1, 0, 0 });
-        Matrix4f t_finger = TransformBuildTranslation({ 0.2, 0, 0 });
+        Matrix4f t_arm = TransformBuildTranslation({ 2, 0, 0 });
+        Matrix4f t_hand = TransformBuildTranslation({ 0.8, 0, 0 });
+        Matrix4f t_finger = TransformBuildTranslation({ 0.3, 0, 0 });
         Matrix4f rot_y = TransformBuildRotateY(dtheta * cbui.frameno * deg2rad);
         Matrix4f rot_y_inv = TransformGetInverse(rot_y);
         Matrix4f rot_y2 = TransformBuildRotateY(dtheta * 2.5f * cbui.frameno * deg2rad);

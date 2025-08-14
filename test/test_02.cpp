@@ -137,29 +137,7 @@ Array<Ray> TestSLAB() {
 }
 
 
-void TestSceneGraph() {
-    printf("TestSceneGraph\n");
-
-    MArena *a_tmp = InitBaselayer()->a_tmp;
-
-    s32 cap = 256;
-    Array<SGNode*> node_handles = InitArray<SGNode*>(a_tmp, cap);
-
-    SceneGraphInit();
-    for (s32 i = 0; i < cap; ++i) {
-        SGNode *n = SceneGraphAlloc();
-        node_handles.Add(n);
-    }
-
-    for (s32 i = 0; i < cap; ++i) {
-        SGNode *n = node_handles.arr[i];
-        SceneGraphFree(n);
-    }
-}
-
-
 void Test_02() {
     //TestPlatformGlfw();
     //TestSLAB();
-    TestSceneGraph();
 }
