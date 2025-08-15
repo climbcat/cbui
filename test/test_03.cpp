@@ -271,12 +271,22 @@ void TestSceneGraph() {
     Transform *t3 = SceneGraphAlloc(t2);
     Transform *t4 = SceneGraphAlloc(t3);
 
+    u32 mode = 0;
+    u32 mode_cnt = 2;
+
     while (cbui.running) {
         CbuiFrameStart();
         OrbitCameraUpdate(&cam, cbui.plf.cursorpos.dx, cbui.plf.cursorpos.dy, cbui.plf.left.ended_down, cbui.plf.scroll.yoffset_acc);
         OrbitCameraPan(&cam, persp.fov, persp.aspect, cbui.plf.cursorpos.x_frac, cbui.plf.cursorpos.y_frac, MouseRight().pushed, MouseRight().released);
         // start
 
+
+        if (GetSpace()) {
+            mode++;
+            mode = mode % mode_cnt;
+
+            printf("switched to mode %d\n", mode);
+        }
 
         float dtheta = 0.5f;
 
@@ -288,7 +298,7 @@ void TestSceneGraph() {
         Matrix4f rot_y_inv = TransformGetInverse(rot_y);
         Matrix4f rot_y2 = TransformBuildRotateY(dtheta * 2.5f * cbui.frameno * deg2rad);
 
-        if (true) {
+        if (mode == 0) {
             t0->t_loc = t_root * rot_y;
             t1->t_loc = t_arm;
             t2->t_loc = rot_y;
@@ -331,7 +341,7 @@ void TestSceneGraph() {
             objs.Add(box4);
         }
 
-        else {
+        else if (mode == 1) {
             objs.len = 0;
             objs.Add(CreatePlane(10));
 
@@ -364,6 +374,75 @@ void TestSceneGraph() {
             objs.Add(box4);
         }
 
+        // end 
+        Array<Vector3f> segments = WireframeLineSegments(cbui.ctx->a_tmp, objs);
+        RenderLineSegmentList(cbui.image_buffer, cam.view, persp.proj, cbui.plf.width, cbui.plf.height, objs, segments);
+
+        CbuiFrameEnd();
+    }
+    CbuiExit();
+}
+
+
+void TestRotParentIsDifferent() {
+    printf("TestRotParentIsDifferent\n");
+
+    CbuiInit("TestSceneGraph", false);
+    Perspective persp = ProjectionInit(cbui.plf.width, cbui.plf.height);
+    OrbitCamera cam = OrbitCameraInit(persp.aspect);
+    Array<Wireframe> objs = InitArray<Wireframe>(cbui.ctx->a_pers, 100);
+
+    SceneGraphInit();
+    Transform *ta = SceneGraphAlloc();
+    Transform *tb = SceneGraphAlloc();
+    Transform *tc = SceneGraphAlloc(tb);
+    Transform *td = SceneGraphAlloc(tc);
+
+    while (cbui.running) {
+        CbuiFrameStart();
+        OrbitCameraUpdate(&cam, cbui.plf.cursorpos.dx, cbui.plf.cursorpos.dy, cbui.plf.left.ended_down, cbui.plf.scroll.yoffset_acc);
+        OrbitCameraPan(&cam, persp.fov, persp.aspect, cbui.plf.cursorpos.x_frac, cbui.plf.cursorpos.y_frac, MouseRight().pushed, MouseRight().released);
+        // start
+
+        float dtheta = 0.5f;
+        Matrix4f rot_y = TransformBuildRotateY(dtheta * cbui.frameno * deg2rad);
+        Wireframe box = CreateAABox(0.2f, 0.2f, 0.2f);
+
+        if (true) {
+            objs.len = 0;
+            objs.Add(CreatePlane(10));
+
+            ta->t_loc = TransformBuildTranslation( { 0, 0.5, -1 } ) * rot_y;
+            tb->t_loc = TransformBuildTranslation( { 0.5, 0.5, -1 } );
+            tc->t_loc = TransformBuildTranslation( { 0, 0, 1 } );
+            td->t_loc = TransformBuildTranslation( { 0, 0, 1 } );
+            SceneGraphUpdate();
+
+
+            // TODO: Imagine td has rot_rel with ta, the rotating cube.
+            //      We want td to stay in place, but also rotate with ta.
+
+
+            Wireframe box_a = box;
+            box_a.color = COLOR_BLACK;
+            box_a.transform = ta->t_world;
+            objs.Add(box_a);
+
+            Wireframe box_b = box;
+            box_b.color = COLOR_BLUE;
+            box_b.transform = tb->t_world;
+            objs.Add(box_b);
+
+            Wireframe box_c = box;
+            box_c.color = COLOR_GREEN;
+            box_c.transform = tc->t_world;
+            objs.Add(box_c);
+
+            Wireframe box_d = box;
+            box_d.color = COLOR_RED;
+            box_d.transform = td->t_world;
+            objs.Add(box_d);
+        }
 
         // end 
         Array<Vector3f> segments = WireframeLineSegments(cbui.ctx->a_tmp, objs);
@@ -378,5 +457,6 @@ void TestSceneGraph() {
 void Test_03() {
 
     //TestUILayoutFeatures();
-    TestSceneGraph();
+    //TestSceneGraph();
+    TestRotParentIsDifferent();
 }
