@@ -443,11 +443,13 @@ void TestRotParentIsDifferent() {
             // set this world matrix to see if things are working: 
             td->t_world = our_w;
 
-            /*
-            // now, recover our local matrix wrt. the shared parent (our customary AT-rel parent)
-            Matrix4f w_to_atparent = TransformGetInverse( bunker->transform->t_world );
-            guide4->transform->t_loc = w_to_atparent * guide4->transform->t_world;
-            */
+            // recover our local matrix wrt. the primary "at-rel" parent
+            Matrix4f w_to_atparent = TransformGetInverse( td->Parent()->t_world );
+            td->t_loc = w_to_atparent * td->t_world;
+
+            // re-create the world matrices from the loc's
+            SceneGraphUpdate();
+
 
             Wireframe box_a = box;
             box_a.color = COLOR_BLACK;
