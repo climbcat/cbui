@@ -412,44 +412,14 @@ void TestRotParentIsDifferent() {
             objs.len = 0;
             objs.Add(CreatePlane(10));
 
-            ta->t_loc = TransformBuildTranslation( { 0, 0.5, -1 } ) * rot_y;
-            tb->t_loc = TransformBuildTranslation( { 0.5, 0.5, -1 } );
-            tc->t_loc = TransformBuildTranslation( { 0, 0, 1 } );
-            td->t_loc = TransformBuildTranslation( { 0, 0, 1 } ) * TransformBuildRotateX(dtheta * 60 * deg2rad);
+            ta->t_loc = TransformBuildTranslation( { 0, 0.5, -1 } ) * rot_y; // has no parent
+            tb->t_loc = TransformBuildTranslation( { 0.5, 0.5, -1 } ); // has no parent
+            tc->t_loc = TransformBuildTranslation( { 0, 0, 1 } ); // tb for its parent
+            td->t_loc = TransformBuildTranslation( { 0, 0, 1 } ) * TransformBuildRotateX(30 * deg2rad); // tc for its parent
+            SceneGraphSetRotParent(td, ta);
+
+            // (re-) generate the world matrices
             SceneGraphUpdate();
-
-
-            // TODO: Imagine td has rot_rel with ta, the rotating cube.
-            //      We want td to stay in place, but also rotate with ta.
-
-
-            // our world translation matrix
-            Vector3f our_w_transl_v3 = TransformGetTranslation(td->t_world);
-            Matrix4f our_w_transl = TransformBuildTranslation(our_w_transl_v3);
-
-            // our local rotation matrix
-            Matrix4f our_l_rot = TransformBuildRotateX(dtheta * 60 * deg2rad);
-
-            // the parent's world rotation matrix: This is its world matrix with translation removed
-            Matrix4f rotparent_w_rot = ta->t_world;
-            rotparent_w_rot = TransformSetTranslation(rotparent_w_rot, {0, 0, 0} );
-
-            // our world rotation matrix
-            Matrix4f our_w_rot = rotparent_w_rot * our_l_rot;
-
-            // we can now set our world matrix, by combining our trans and rot matrices: 
-            Matrix4f our_w = our_w_transl * our_w_rot;
-
-            // set this world matrix to see if things are working: 
-            td->t_world = our_w;
-
-            // recover our local matrix wrt. the primary "at-rel" parent
-            Matrix4f w_to_atparent = TransformGetInverse( td->Parent()->t_world );
-            td->t_loc = w_to_atparent * td->t_world;
-
-            // re-create the world matrices from the loc's
-            SceneGraphUpdate();
-
 
             Wireframe box_a = box;
             box_a.color = COLOR_BLACK;

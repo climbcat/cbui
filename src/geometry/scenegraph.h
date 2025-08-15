@@ -162,4 +162,36 @@ void SceneGraphUpdate() {
 }
 
 
+void SceneGraphSetRotParent(Transform *t, Transform *p_rot) {
+    // p_rot is the rotational parent
+    // t's parent pointer is the proper parent, whose translation is to be applied
+
+    // we need the world matrices of p_rot and p:
+    // (Because p_rot has an accumulated rotation above it, which we need to bake into our local matrix)
+    // NOTE: Possibly, the rot-parent could be baked into the SceneGraphUpdate call, possibly.
+    SceneGraphUpdate();
+
+    // our world translation matrix
+    Vector3f our_w_transl_v3 = TransformGetTranslation(t->t_world);
+    Matrix4f our_w_transl = TransformBuildTranslation(our_w_transl_v3);
+
+    // our local rotation matrix
+    Matrix4f our_l_rot = TransformSetTranslation(t->t_loc, { 0, 0, 0 });
+
+    // the rotational parent's world (accumulated) rotation: Its world matrix with translation set to zero.
+    Matrix4f prot_w_rot = p_rot->t_world;
+    prot_w_rot = TransformSetTranslation(prot_w_rot, {0, 0, 0} );
+
+    // our world rotation matrix
+    Matrix4f our_w_rot = prot_w_rot * our_l_rot;
+
+    // our world matrix is found by combining our translation and rotation matrices: 
+    t->t_world = our_w_transl * our_w_rot;
+
+    // recover our local matrix wrt. the primary "at-rel" parent (p, not p_rot)
+    Matrix4f w_to_p = TransformGetInverse( t->Parent()->t_world );
+    t->t_loc = w_to_p * t->t_world;
+}
+
+
 #endif
