@@ -398,6 +398,8 @@ void TestRotParentIsDifferent() {
     Transform *tc = SceneGraphAlloc(tb);
     Transform *td = SceneGraphAlloc(tc);
 
+    bool set_rot_parent = true;
+
     while (cbui.running) {
         CbuiFrameStart();
         OrbitCameraUpdate(&cam, cbui.plf.cursorpos.dx, cbui.plf.cursorpos.dy, cbui.plf.left.ended_down, cbui.plf.scroll.yoffset_acc);
@@ -416,7 +418,14 @@ void TestRotParentIsDifferent() {
             tb->t_loc = TransformBuildTranslation( { 0.5, 0.5, -1 } ); // has no parent
             tc->t_loc = TransformBuildTranslation( { 0, 0, 1 } ) * TransformBuildRotateY( sin(cbui.frameno * 1.5f * deg2rad) * 20 * deg2rad ); // tb for its parent
             td->t_loc = TransformBuildTranslation( { 0, 0, 1 } ) * TransformBuildRotateX(30 * deg2rad); // tc for its parent
-            SceneGraphSetRotParent(td, ta);
+
+            if (set_rot_parent) {
+                SceneGraphSetRotParent(td, ta);
+            }
+            if (GetSpace()) {
+                set_rot_parent = ! set_rot_parent;
+                printf("call SceneGraphSetRotParent(): %d\n", set_rot_parent);
+            }
 
             // (re-) generate the world matrices
             SceneGraphUpdate();
