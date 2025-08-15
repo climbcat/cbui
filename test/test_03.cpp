@@ -404,7 +404,7 @@ void TestRotParentIsDifferent() {
         OrbitCameraPan(&cam, persp.fov, persp.aspect, cbui.plf.cursorpos.x_frac, cbui.plf.cursorpos.y_frac, MouseRight().pushed, MouseRight().released);
         // start
 
-        float dtheta = 0.5f;
+        float dtheta = 1.5f;
         Matrix4f rot_y = TransformBuildRotateY(dtheta * cbui.frameno * deg2rad);
         Wireframe box = CreateAABox(0.2f, 0.2f, 0.2f);
 
@@ -414,7 +414,7 @@ void TestRotParentIsDifferent() {
 
             ta->t_loc = TransformBuildTranslation( { 0, 0.5, -1 } ) * rot_y; // has no parent
             tb->t_loc = TransformBuildTranslation( { 0.5, 0.5, -1 } ); // has no parent
-            tc->t_loc = TransformBuildTranslation( { 0, 0, 1 } ); // tb for its parent
+            tc->t_loc = TransformBuildTranslation( { 0, 0, 1 } ) * TransformBuildRotateY( sin(cbui.frameno * 1.5f * deg2rad) * 20 * deg2rad ); // tb for its parent
             td->t_loc = TransformBuildTranslation( { 0, 0, 1 } ) * TransformBuildRotateX(30 * deg2rad); // tc for its parent
             SceneGraphSetRotParent(td, ta);
 
