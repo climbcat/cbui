@@ -479,11 +479,7 @@ Array<Vector3f> WireframeLineSegments(MArena *a_dest, Array<Wireframe> wireframe
         anchors = WireframeRawSegments(a_dest, wireframes.arr + i);
         anchors_all.len += anchors.len;
 
-        // deliver points in world space
-        Matrix4f m = wireframes.arr[i].transform;
-        for (u32 j = 0; j < anchors.len; ++j) {
-            anchors.arr[j] = TransformPerspective(m, anchors.arr[j]);
-        }
+        // points delivered in local coords
     }
 
     anchors_all.max = anchors_all.len;

@@ -9,7 +9,7 @@ int main (int argc, char **argv) {
     TimeProgram;
     BaselayerAssertVersion(0, 2, 4);
 
-    bool force_testing = true;
+    bool force_testing = false;
 
     if (CLAContainsArg("--help", argc, argv) || CLAContainsArg("-h", argc, argv)) {
         printf("--help:          display help (this text)\n");
