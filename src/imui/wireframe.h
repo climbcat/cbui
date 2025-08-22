@@ -13,6 +13,8 @@ enum WireFrameType {
     WFT_CYLINDER,
     WFT_SPHERE,
 
+    WFT_SEGMENTS,
+
     WFT_COUNT,
 };
 
@@ -27,17 +29,23 @@ struct Wireframe {
     WireFrameType type;
     WireFrameRenderStyle style;
     Color color;
-    u32 nsegments;
+    Array<Vector3f> segments;
     bool disabled;
 };
 
 
-Wireframe CreatePlane(f32 size) {
+Array<Vector3f> WireframeRawSegments(MArena *a_dest, Wireframe *wf);
+
+
+Wireframe CreatePlane(f32 size, MArena *a_segments_dest_optional = NULL) {
     Wireframe box = {};
     box.transform = Matrix4f_Identity();
     box.type = WFT_PLANE;
     box.dimensions = { size, 0.0f, size };
     box.color = COLOR_GRAY;
+    if (a_segments_dest_optional) {
+        WireframeRawSegments(a_segments_dest_optional, &box);
+    }
 
     return box;
 }
@@ -218,7 +226,12 @@ Array<Vector3f> WireframeRawSegments(MArena *a_dest, Wireframe *wf) {
     Array<Vector3f> anchors = {};
     Vector3f sz = wf->dimensions;
 
-    if (wf->type == WFT_AXIS) {
+    if (wf->type == WFT_SEGMENTS) {
+
+        // don't touch the wireframe
+    }
+
+    else if (wf->type == WFT_AXIS) {
 
         anchors = InitArray<Vector3f>(a_dest, 6);
 
@@ -234,7 +247,7 @@ Array<Vector3f> WireframeRawSegments(MArena *a_dest, Wireframe *wf) {
         anchors.Add(origo);
         anchors.Add(z);
 
-        wf->nsegments = anchors.len / 2;
+        wf->segments = anchors;
     }
 
     else if (wf->type == WFT_PLANE) {
@@ -278,7 +291,7 @@ Array<Vector3f> WireframeRawSegments(MArena *a_dest, Wireframe *wf) {
             anchors.Add(h2);
         }
 
-        wf->nsegments = anchors.len / 2;
+        wf->segments = anchors;
     }
 
     else if (wf->type == WFT_BOX) {
@@ -321,7 +334,7 @@ Array<Vector3f> WireframeRawSegments(MArena *a_dest, Wireframe *wf) {
         anchors.Add(pmp);
         anchors.Add(mmp);
 
-        wf->nsegments = anchors.len / 2;
+        wf->segments = anchors;
     }
 
     else if (wf->type == WFT_SPHERE) {
@@ -369,7 +382,7 @@ Array<Vector3f> WireframeRawSegments(MArena *a_dest, Wireframe *wf) {
             anchors.Add(south);
         }
 
-        wf->nsegments = anchors.len / 2;
+        wf->segments = anchors;
     }
 
     else if (wf->type == WFT_CYLINDER) {
@@ -413,7 +426,7 @@ Array<Vector3f> WireframeRawSegments(MArena *a_dest, Wireframe *wf) {
             lw_prev = lw;
         }
 
-        wf->nsegments = anchors.len / 2;
+        wf->segments = anchors;
     }
 
     else if (wf->type == WFT_EYE) {
@@ -447,7 +460,7 @@ Array<Vector3f> WireframeRawSegments(MArena *a_dest, Wireframe *wf) {
         anchors.Add(lrc);
         anchors.Add(point);
 
-        wf->nsegments = anchors.len / 2;
+        wf->segments = anchors;
     }
 
     else {
@@ -494,70 +507,60 @@ s32 _GetNextNonDisabledWireframeIndex(u32 idx_prev, Array<Wireframe> wireframes)
     }
     return idx_prev;
 }
-void RenderLineSegmentList(u8 *image_buffer, Matrix4f view, Matrix4f proj, u32 w, u32 h, Array<Wireframe> wireframes, Array<Vector3f> segments) {
+
+
+void RenderLineSegmentList(u8 *image_buffer, Matrix4f view, Matrix4f proj, u32 w, u32 h, Array<Wireframe> wireframes) {
     if (wireframes.len == 0) {
         return;
     }    
     Ray view_plane = { Vector3f { 0, 0, 0.1 }, Vector3f { 0, 0, 1 } };
+    Matrix4f view_inv = TransformGetInverse(view);
 
-    // set up wireframe properties
-    s32 wf_segs_idx = 0;
-    s32 wf_idx = -1;
-    wf_idx = _GetNextNonDisabledWireframeIndex(wf_idx, wireframes);
-    Color wf_color = wireframes.arr[wf_idx].color;
-    WireFrameRenderStyle wf_style = wireframes.arr[wf_idx].style;
-    u32 wf_nsegments = wireframes.arr[wf_idx].nsegments;
+    for (u32 j = 0; j < wireframes.len; ++j) {
+        Wireframe wf = wireframes.arr[j];
+        Matrix4f l2v = view_inv * wf.transform;
 
-    for (u32 i = 0; i < segments.len / 2; ++i) {
-        Vector3f p1_cam = TransformInversePoint(view, segments.arr[2*i]);
-        Vector3f p2_cam = TransformInversePoint(view, segments.arr[2*i + 1]);
+        for (u32 i = 0; i < wf.segments.len / 2; ++i) {
 
-        bool visible1 = PointSideOfPlane(p1_cam, view_plane);
-        bool visible2 = PointSideOfPlane(p2_cam, view_plane);
+            // line clipping starts
+            Vector3f p1_cam = TransformPoint(l2v, wf.segments.arr[2*i]);
+            Vector3f p2_cam = TransformPoint(l2v, wf.segments.arr[2*i + 1]);
 
-        if (visible1 == true || visible2 == true) {
-            if (visible1 == false && visible2 == true) {
-                Ray segment = { p2_cam, p1_cam - p2_cam };
-                f32 t = 0;
-                p1_cam = RayPlaneIntersect(segment, view_plane.pos, view_plane.dir, &t);
+            bool visible1 = PointSideOfPlane(p1_cam, view_plane);
+            bool visible2 = PointSideOfPlane(p2_cam, view_plane);
+
+            if (visible1 == true || visible2 == true) {
+                if (visible1 == false && visible2 == true) {
+                    Ray segment = { p2_cam, p1_cam - p2_cam };
+                    f32 t = 0;
+                    p1_cam = RayPlaneIntersect(segment, view_plane.pos, view_plane.dir, &t);
+                }
+                else if (visible1 == true && visible2 == false) {
+                    Ray segment = { p1_cam, p2_cam - p1_cam };
+                    f32 t = 0;
+                    p2_cam = RayPlaneIntersect(segment, view_plane.pos, view_plane.dir, &t);
+                }
+                // line clipping is done
+
+                Vector3f p1_ndc = TransformPerspective(proj, p1_cam);
+                Vector3f p2_ndc = TransformPerspective(proj, p2_cam);
+
+                Vector2f a = {};
+                a.x = (p1_ndc.x + 1) / 2 * w;
+                a.y = (p1_ndc.y + 1) / 2 * h;
+                Vector2f b = {};
+                b.x = (p2_ndc.x + 1) / 2 * w;
+                b.y = (p2_ndc.y + 1) / 2 * h;
+
+                if (wf.style == WFR_SLIM) {
+                    RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, wf.color);
+                }
+                else if (wf.style == WFR_FAT) {
+                    RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, wf.color);
+                    RenderLineRGBA(image_buffer, w, h, a.x+1, a.y, b.x+1, b.y, wf.color);
+                    RenderLineRGBA(image_buffer, w, h, a.x, a.y+1, b.x, b.y+1, wf.color);
+                }
             }
-            else if (visible1 == true && visible2 == false) {
-                Ray segment = { p1_cam, p2_cam - p1_cam };
-                f32 t = 0;
-                p2_cam = RayPlaneIntersect(segment, view_plane.pos, view_plane.dir, &t);
-            }
-            Vector3f p1_ndc = TransformPerspective(proj, p1_cam);
-            Vector3f p2_ndc = TransformPerspective(proj, p2_cam);
-
-            Vector2f a = {};
-            a.x = (p1_ndc.x + 1) / 2 * w;
-            a.y = (p1_ndc.y + 1) / 2 * h;
-            Vector2f b = {};
-            b.x = (p2_ndc.x + 1) / 2 * w;
-            b.y = (p2_ndc.y + 1) / 2 * h;
-
-            if (wf_style == WFR_SLIM) {
-                RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, wf_color);
-            }
-            else if (wf_style == WFR_FAT) {
-                RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, wf_color);
-                RenderLineRGBA(image_buffer, w, h, a.x+1, a.y, b.x+1, b.y, wf_color);
-                RenderLineRGBA(image_buffer, w, h, a.x, a.y+1, b.x, b.y+1, wf_color);
-            }
-        }
-
-        // update object-specific properties s.a. colour, style
-        wf_segs_idx++;
-        if (wf_segs_idx == wf_nsegments) {
-            wf_idx = _GetNextNonDisabledWireframeIndex(wf_idx, wireframes);
-            if (wf_idx == -1) {
-                continue;
-            }
-
-            wf_segs_idx = 0;
-            wf_nsegments = wireframes.arr[wf_idx].nsegments;
-            wf_color = wireframes.arr[wf_idx].color;
-            wf_style = wireframes.arr[wf_idx].style;
         }
     }
 }
