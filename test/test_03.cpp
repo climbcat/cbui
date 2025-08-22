@@ -376,7 +376,7 @@ void TestSceneGraph() {
 
         // end 
         Array<Vector3f> segments = WireframeLineSegments(cbui.ctx->a_tmp, objs);
-        RenderLineSegmentList(cbui.image_buffer, cam.view, persp.proj, cbui.plf.width, cbui.plf.height, objs, segments);
+        RenderLineSegmentList(cbui.image_buffer, cam.view, persp.proj, cbui.plf.width, cbui.plf.height, objs);
 
         CbuiFrameEnd();
     }
@@ -453,7 +453,7 @@ void TestRotParentIsDifferent() {
 
         // end 
         Array<Vector3f> segments = WireframeLineSegments(cbui.ctx->a_tmp, objs);
-        RenderLineSegmentList(cbui.image_buffer, cam.view, persp.proj, cbui.plf.width, cbui.plf.height, objs, segments);
+        RenderLineSegmentList(cbui.image_buffer, cam.view, persp.proj, cbui.plf.width, cbui.plf.height, objs);
 
         CbuiFrameEnd();
     }
