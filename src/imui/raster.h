@@ -248,7 +248,27 @@ void BlitFill(s32 q_w, s32 q_h, f32 q_x0, f32 q_y0, Color q_color, s32 dest_widt
             }
 
             idx = j_img * dest_width + i_img;
-            dest[idx] = q_color;
+            Color color_src = q_color;
+
+
+            if (q_color.a == 123) {
+                printf("her\n");
+            }
+
+            if (color_src.a != 0) {
+                // rudimentary alpha-blending
+                s32 idx = j_img * dest_width + i_img;
+                Color color_background = dest[idx];
+
+                f32 alpha = (1.0f * color_src.a) / 255;
+                Color color_blended;
+                color_blended.r = (u8) (floor( alpha*color_src.r ) + floor( (1-alpha)*color_background.r ));
+                color_blended.g = (u8) (floor( alpha*color_src.g ) + floor( (1-alpha)*color_background.g ));
+                color_blended.b = (u8) (floor( alpha*color_src.b ) + floor( (1-alpha)*color_background.b ));
+                color_blended.a = 255;
+
+                dest[idx] = color_blended;
+            }
         }
     }
 }

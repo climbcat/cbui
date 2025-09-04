@@ -20,7 +20,10 @@ void PanelPlot(f32 l, f32 t, f32 w, f32 h, f32 thic_border, Color col_border = {
     border.y0 = t;
     border.color = col_border;
 
-    SpriteBufferPush(border);
+    // TODO: make a proper border with a hole in the middle, we need panel opacity !
+    if (thic_border > 0.0f) {
+        SpriteBufferPush(border);
+    }
 
     Frame background = {};
     background.w = w - 2*thic_border;
