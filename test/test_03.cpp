@@ -461,9 +461,23 @@ void TestRotParentIsDifferent() {
 }
 
 
+void TestColormaps() {
+    RandInit();
+
+    for (s32 i = 0; i < 1000; ++i) {
+        f32 interp_val = Rand01_f32();
+        Color color = ColorMapGet(interp_val, colormap_paletted_autumn);
+
+        PrintColorInline(color);
+        printf("\n");
+    }
+}
+
+
 void Test_03() {
 
     //TestUILayoutFeatures();
     //TestSceneGraph();
-    TestRotParentIsDifferent();
+    //TestRotParentIsDifferent();
+    TestColormaps();
 }
