@@ -2,6 +2,9 @@
 #define __WIREFRAME_H__
 
 
+#include "math.h"
+
+
 enum WireFrameType {
     // do not collide
     WFT_AXIS,
@@ -34,20 +37,28 @@ struct Wireframe {
 };
 
 
-Array<Vector3f> WireframeRawSegments(MArena *a_dest, Wireframe *wf);
 
-
-Wireframe CreatePlane(f32 size, MArena *a_segments_dest_optional = NULL) {
+Wireframe CreatePlaneDetailed(f32 size_x, f32 size_z, s32 nbeams_x) {
     Wireframe box = {};
+
     box.transform = Matrix4f_Identity();
     box.type = WFT_PLANE;
-    box.dimensions = { size, 0.0f, size };
+    box.dimensions = { size_x, (f32) nbeams_x, size_z };
     box.color = COLOR_GRAY;
-    if (a_segments_dest_optional) {
-        WireframeRawSegments(a_segments_dest_optional, &box);
-    }
 
     return box;
+}
+
+Wireframe CreatePlane(f32 size) {
+    /*
+    s32 size_x = 10;
+    s32 size_z = 15;
+    s32 nbeams_x = 11;
+
+    return CreatePlaneDetailed(size_x, size_z, nbeams_x);
+    */
+
+    return CreatePlaneDetailed(size, size, 6);
 }
 
 Wireframe CreateCylinder(f32 radius, f32 height) {
@@ -219,7 +230,6 @@ bool WireFrameCollide(Ray global, Wireframe wf, Vector3f *hit_in = NULL, Vector3
     }
 }
 
-
 Array<Vector3f> WireframeRawSegments(MArena *a_dest, Wireframe *wf) {
     TimeFunction;
 
@@ -254,42 +264,31 @@ Array<Vector3f> WireframeRawSegments(MArena *a_dest, Wireframe *wf) {
 
         // local coordinates is the x-z plane at y == 0 with nbeams internal cross-lines x and z
         f32 rx = 0.5f * sz.x;
-        f32 rz = 0.5f * sz.z;
-        s32 nbeams = 4;
+        s32 nbeams_x = sz.y;
+        f32 cell_sz = sz.x / (nbeams_x - 1);
+        s32 nbeams_z = floor(sz.z / cell_sz + 1);
+        f32 rz = 0.5f * (nbeams_z - 1) * cell_sz;
 
-        anchors = InitArray<Vector3f>(a_dest, (nbeams + 1) * 4 + 8);
-
-        Vector3f urc = { rx, 0, rz };
         Vector3f ulc = { -rx, 0, rz };
         Vector3f lrc = { rx, 0, -rz };
         Vector3f llc = { -rx, 0, -rz };
 
-        // the outer square
-        anchors.Add(urc);
-        anchors.Add(ulc);
-        anchors.Add(ulc);
-        anchors.Add(llc);
-        anchors.Add(llc);
-        anchors.Add(lrc);
-        anchors.Add(lrc);
-        anchors.Add(urc);
-
         // insider beams
-        Vector3f xhat = 1.0f / (nbeams + 1) * (urc - ulc);
-        Vector3f zhat = 1.0f / (nbeams + 1) * (llc - ulc);
+        Vector3f xhat = { cell_sz, 0, 0 };
+        Vector3f zhat = { 0, 0, cell_sz };
 
-        for (u32 i = 0; i < nbeams + 1; ++i) {
-            Vector3f v1 = ulc + i* xhat;
-            Vector3f v2 = llc + i* xhat;
+        s32 nanchors = (nbeams_x + nbeams_z) * 2; // num_beams * num_dimensions * anchs_per_point
+        anchors = InitArray<Vector3f>(a_dest, nanchors);
 
-            Vector3f h1 = ulc + i* zhat;
-            Vector3f h2 = urc + i* zhat;
-
-            anchors.Add(v1);
-            anchors.Add(v2);
-            anchors.Add(h1);
-            anchors.Add(h2);
+        for (s32 i = 0; i < nbeams_x; ++i) {
+            anchors.Add(ulc + i* xhat);
+            anchors.Add(llc + i* xhat);
         }
+        for (s32 i = 0; i < nbeams_z; ++i) {
+            anchors.Add(llc + i * zhat);
+            anchors.Add(lrc + i * zhat);
+        }
+        assert(anchors.len == nanchors);
 
         wf->segments = anchors;
     }
