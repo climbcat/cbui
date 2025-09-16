@@ -130,13 +130,59 @@ void RenderFatPoint3x3(u8 *image_buffer, Matrix4f view, Matrix4f proj, Vector3f 
     }
 }
 
+
+bool PlaneBooleanOnLineSegment(Vector3f plane_origo, Vector3f plane_normal, Vector3f *p1, Vector3f *p2) {
+    Vector3f segment_dir = *p2 - *p1;
+    segment_dir.Normalize();
+    Ray segment_ray = { *p1, segment_dir };
+
+    bool p1_behind = (*p1 - plane_origo).Dot(plane_normal) < 0;
+    bool p2_behind = (*p2 - plane_origo).Dot(plane_normal) < 0;
+
+    if (p1_behind && p2_behind) {
+        return false;
+    }
+    else if (p1_behind) {
+        // intersect p1
+
+        *p1 = RayPlaneIntersect(segment_ray, plane_origo, plane_normal);
+    }
+    else if (p2_behind) {
+        // intersect p2
+
+        *p2 = RayPlaneIntersect(segment_ray, plane_origo, plane_normal);
+    }
+    return true;
+}
+
+
 inline
 void RenderLineSegment(u8 *image_buffer, Matrix4f view, Matrix4f proj, Vector3f p1, Vector3f p2, u32 w, u32 h, Color color) {
+
+    // line clipping starts
     Vector3f p1_cam = TransformInversePoint(view, p1);
     Vector3f p2_cam = TransformInversePoint(view, p2);
 
-    Ray view_plane = { Vector3f { 0, 0, 0.1 }, Vector3f { 0, 0, 1 } };
 
+    Ray view_plane = { Vector3f { 0, 0, 0.1 }, Vector3f { 0, 0, 1 } };
+    bool is_visible = PlaneBooleanOnLineSegment({ 0, 0, 0.1 }, { 0, 0, 1 }, &p1_cam, &p2_cam);
+
+    if (is_visible) {
+
+        Vector3f p1_ndc = TransformPerspective(proj, p1_cam);
+        Vector3f p2_ndc = TransformPerspective(proj, p2_cam);
+
+        Vector2f a = {};
+        a.x = (p1_ndc.x + 1) / 2 * w;
+        a.y = (p1_ndc.y + 1) / 2 * h;
+        Vector2f b = {};
+        b.x = (p2_ndc.x + 1) / 2 * w;
+        b.y = (p2_ndc.y + 1) / 2 * h;
+
+        RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, color);
+    }
+
+    /*
     bool visible1 = PointSideOfPlane(p1_cam, view_plane);
     bool visible2 = PointSideOfPlane(p2_cam, view_plane);
 
@@ -151,6 +197,7 @@ void RenderLineSegment(u8 *image_buffer, Matrix4f view, Matrix4f proj, Vector3f 
             f32 t = 0;
             p2_cam = RayPlaneIntersect(segment, view_plane.pos, view_plane.dir, &t);
         }
+        // line clipping is done
 
         Vector3f p1_ndc = TransformPerspective(proj, p1_cam);
         Vector3f p2_ndc = TransformPerspective(proj, p2_cam);
@@ -164,6 +211,7 @@ void RenderLineSegment(u8 *image_buffer, Matrix4f view, Matrix4f proj, Vector3f 
 
         RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, color);
     }
+    */
 }
 
 

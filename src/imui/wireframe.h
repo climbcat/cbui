@@ -511,43 +511,52 @@ void RenderWireframe(u8 *image_buffer, Matrix4f view, Matrix4f proj, u32 w, u32 
 
     for (u32 i = 0; i < wf.segments.len / 2; ++i) {
 
-        // line clipping starts
-        Vector3f p1_cam = TransformPoint(l2v, wf.segments.arr[2*i]);
-        Vector3f p2_cam = TransformPoint(l2v, wf.segments.arr[2*i + 1]);
+        if (true) {
+            Vector3f a = wf.segments.arr[2*i];
+            Vector3f b = wf.segments.arr[2*i + 1];
 
-        bool visible1 = PointSideOfPlane(p1_cam, view_plane);
-        bool visible2 = PointSideOfPlane(p2_cam, view_plane);
+            RenderLineSegment(image_buffer, view, proj, a, b, w, h, COLOR_BLACK);
+        }
 
-        if (visible1 == true || visible2 == true) {
-            if (visible1 == false && visible2 == true) {
-                Ray segment = { p2_cam, p1_cam - p2_cam };
-                f32 t = 0;
-                p1_cam = RayPlaneIntersect(segment, view_plane.pos, view_plane.dir, &t);
-            }
-            else if (visible1 == true && visible2 == false) {
-                Ray segment = { p1_cam, p2_cam - p1_cam };
-                f32 t = 0;
-                p2_cam = RayPlaneIntersect(segment, view_plane.pos, view_plane.dir, &t);
-            }
-            // line clipping is done
+        else {
+            // line clipping starts
+            Vector3f p1_cam = TransformPoint(l2v, wf.segments.arr[2*i]);
+            Vector3f p2_cam = TransformPoint(l2v, wf.segments.arr[2*i + 1]);
 
-            Vector3f p1_ndc = TransformPerspective(proj, p1_cam);
-            Vector3f p2_ndc = TransformPerspective(proj, p2_cam);
+            bool visible1 = PointSideOfPlane(p1_cam, view_plane);
+            bool visible2 = PointSideOfPlane(p2_cam, view_plane);
 
-            Vector2f a = {};
-            a.x = (p1_ndc.x + 1) / 2 * w;
-            a.y = (p1_ndc.y + 1) / 2 * h;
-            Vector2f b = {};
-            b.x = (p2_ndc.x + 1) / 2 * w;
-            b.y = (p2_ndc.y + 1) / 2 * h;
+            if (visible1 == true || visible2 == true) {
+                if (visible1 == false && visible2 == true) {
+                    Ray segment = { p2_cam, p1_cam - p2_cam };
+                    f32 t = 0;
+                    p1_cam = RayPlaneIntersect(segment, view_plane.pos, view_plane.dir, &t);
+                }
+                else if (visible1 == true && visible2 == false) {
+                    Ray segment = { p1_cam, p2_cam - p1_cam };
+                    f32 t = 0;
+                    p2_cam = RayPlaneIntersect(segment, view_plane.pos, view_plane.dir, &t);
+                }
+                // line clipping is done
 
-            if (wf.style == WFR_SLIM) {
-                RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, wf.color);
-            }
-            else if (wf.style == WFR_FAT) {
-                RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, wf.color);
-                RenderLineRGBA(image_buffer, w, h, a.x+1, a.y, b.x+1, b.y, wf.color);
-                RenderLineRGBA(image_buffer, w, h, a.x, a.y+1, b.x, b.y+1, wf.color);
+                Vector3f p1_ndc = TransformPerspective(proj, p1_cam);
+                Vector3f p2_ndc = TransformPerspective(proj, p2_cam);
+
+                Vector2f a = {};
+                a.x = (p1_ndc.x + 1) / 2 * w;
+                a.y = (p1_ndc.y + 1) / 2 * h;
+                Vector2f b = {};
+                b.x = (p2_ndc.x + 1) / 2 * w;
+                b.y = (p2_ndc.y + 1) / 2 * h;
+
+                if (wf.style == WFR_SLIM) {
+                    RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, wf.color);
+                }
+                else if (wf.style == WFR_FAT) {
+                    RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, wf.color);
+                    RenderLineRGBA(image_buffer, w, h, a.x+1, a.y, b.x+1, b.y, wf.color);
+                    RenderLineRGBA(image_buffer, w, h, a.x, a.y+1, b.x, b.y+1, wf.color);
+                }
             }
         }
     }
