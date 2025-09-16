@@ -131,13 +131,13 @@ void RenderFatPoint3x3(u8 *image_buffer, Matrix4f view, Matrix4f proj, Vector3f 
 }
 
 
-bool PlaneBooleanOnLineSegment(Vector3f plane_origo, Vector3f plane_normal, Vector3f *p1, Vector3f *p2) {
+bool PlaneBooleanOnLineSegment(Ray plane, Vector3f *p1, Vector3f *p2) {
     Vector3f segment_dir = *p2 - *p1;
     segment_dir.Normalize();
     Ray segment_ray = { *p1, segment_dir };
 
-    bool p1_behind = (*p1 - plane_origo).Dot(plane_normal) < 0;
-    bool p2_behind = (*p2 - plane_origo).Dot(plane_normal) < 0;
+    bool p1_behind = (*p1 - plane.pos).Dot(plane.dir) < 0;
+    bool p2_behind = (*p2 - plane.pos).Dot(plane.dir) < 0;
 
     if (p1_behind && p2_behind) {
         return false;
@@ -145,62 +145,33 @@ bool PlaneBooleanOnLineSegment(Vector3f plane_origo, Vector3f plane_normal, Vect
     else if (p1_behind) {
         // intersect p1
 
-        *p1 = RayPlaneIntersect(segment_ray, plane_origo, plane_normal);
+        *p1 = RayPlaneIntersect(segment_ray, plane.pos, plane.dir);
     }
     else if (p2_behind) {
         // intersect p2
 
-        *p2 = RayPlaneIntersect(segment_ray, plane_origo, plane_normal);
+        *p2 = RayPlaneIntersect(segment_ray, plane.pos, plane.dir);
     }
     return true;
 }
 
 
 inline
-void RenderLineSegment(u8 *image_buffer, Matrix4f view, Matrix4f proj, Vector3f p1, Vector3f p2, u32 w, u32 h, Color color) {
+void RenderLineSegment(u8 *image_buffer, Matrix4f view, Perspective persp, Vector3f p1, Vector3f p2, u32 w, u32 h, Color color) {
 
-    // line clipping starts
-    Vector3f p1_cam = TransformInversePoint(view, p1);
-    Vector3f p2_cam = TransformInversePoint(view, p2);
+    Vector3f p1_cam = TransformPoint(view, p1);
+    Vector3f p2_cam = TransformPoint(view, p2);
 
-
-    Ray view_plane = { Vector3f { 0, 0, 0.1 }, Vector3f { 0, 0, 1 } };
-    bool is_visible = PlaneBooleanOnLineSegment({ 0, 0, 0.1 }, { 0, 0, 1 }, &p1_cam, &p2_cam);
+    bool is_visible_n = PlaneBooleanOnLineSegment(persp.PlaneNear(), &p1_cam, &p2_cam);
+    bool is_visible_l = PlaneBooleanOnLineSegment(persp.PlaneLeft(), &p1_cam, &p2_cam);
+    bool is_visible_r = PlaneBooleanOnLineSegment(persp.PlaneRight(), &p1_cam, &p2_cam);
+    bool is_visible_t = PlaneBooleanOnLineSegment(persp.PlaneTop(), &p1_cam, &p2_cam);
+    bool is_visible_b = PlaneBooleanOnLineSegment(persp.PlaneBottom(), &p1_cam, &p2_cam);
+    bool is_visible = is_visible_n && is_visible_l && is_visible_r && is_visible_t && is_visible_b;
 
     if (is_visible) {
-
-        Vector3f p1_ndc = TransformPerspective(proj, p1_cam);
-        Vector3f p2_ndc = TransformPerspective(proj, p2_cam);
-
-        Vector2f a = {};
-        a.x = (p1_ndc.x + 1) / 2 * w;
-        a.y = (p1_ndc.y + 1) / 2 * h;
-        Vector2f b = {};
-        b.x = (p2_ndc.x + 1) / 2 * w;
-        b.y = (p2_ndc.y + 1) / 2 * h;
-
-        RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, color);
-    }
-
-    /*
-    bool visible1 = PointSideOfPlane(p1_cam, view_plane);
-    bool visible2 = PointSideOfPlane(p2_cam, view_plane);
-
-    if (visible1 == true || visible2 == true) {
-        if (visible1 == false && visible2 == true) {
-            Ray segment = { p2_cam, p1_cam - p2_cam };
-            f32 t = 0;
-            p1_cam = RayPlaneIntersect(segment, view_plane.pos, view_plane.dir, &t);
-        }
-        else if (visible1 == true && visible2 == false) {
-            Ray segment = { p1_cam, p2_cam - p1_cam };
-            f32 t = 0;
-            p2_cam = RayPlaneIntersect(segment, view_plane.pos, view_plane.dir, &t);
-        }
-        // line clipping is done
-
-        Vector3f p1_ndc = TransformPerspective(proj, p1_cam);
-        Vector3f p2_ndc = TransformPerspective(proj, p2_cam);
+        Vector3f p1_ndc = TransformPerspective(persp.proj, p1_cam);
+        Vector3f p2_ndc = TransformPerspective(persp.proj, p2_cam);
 
         Vector2f a = {};
         a.x = (p1_ndc.x + 1) / 2 * w;
@@ -211,7 +182,6 @@ void RenderLineSegment(u8 *image_buffer, Matrix4f view, Matrix4f proj, Vector3f 
 
         RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, color);
     }
-    */
 }
 
 

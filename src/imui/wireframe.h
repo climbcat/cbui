@@ -504,7 +504,7 @@ s32 _GetNextNonDisabledWireframeIndex(u32 idx_prev, Array<Wireframe> wireframes)
 }
 
 
-void RenderWireframe(u8 *image_buffer, Matrix4f view, Matrix4f proj, u32 w, u32 h, Wireframe wf) {
+void RenderWireframe(u8 *image_buffer, Matrix4f view, Perspective persp, u32 w, u32 h, Wireframe wf) {
     Ray view_plane = { Vector3f { 0, 0, 0.1 }, Vector3f { 0, 0, 1 } };
     Matrix4f view_inv = TransformGetInverse(view);
     Matrix4f l2v = view_inv * wf.transform;
@@ -515,7 +515,7 @@ void RenderWireframe(u8 *image_buffer, Matrix4f view, Matrix4f proj, u32 w, u32 
             Vector3f a = wf.segments.arr[2*i];
             Vector3f b = wf.segments.arr[2*i + 1];
 
-            RenderLineSegment(image_buffer, view, proj, a, b, w, h, COLOR_BLACK);
+            RenderLineSegment(image_buffer, l2v, persp, a, b, w, h, wf.color);
         }
 
         else {
@@ -539,8 +539,8 @@ void RenderWireframe(u8 *image_buffer, Matrix4f view, Matrix4f proj, u32 w, u32 
                 }
                 // line clipping is done
 
-                Vector3f p1_ndc = TransformPerspective(proj, p1_cam);
-                Vector3f p2_ndc = TransformPerspective(proj, p2_cam);
+                Vector3f p1_ndc = TransformPerspective(persp.proj, p1_cam);
+                Vector3f p2_ndc = TransformPerspective(persp.proj, p2_cam);
 
                 Vector2f a = {};
                 a.x = (p1_ndc.x + 1) / 2 * w;

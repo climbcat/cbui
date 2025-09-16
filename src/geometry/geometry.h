@@ -795,24 +795,37 @@ Quat Slerp(Quat q1, Quat q2, float t) {
 
 
 //
-//  Projection & camera model
+//  Typical transformation builders
 
 
-struct LensParams {
-    float fL; // focal length, typically 24 - 200 [mm]
-    float N; // f-number, 1.4 to 60 dimensionless []
-    float c; // circle of confusion (diameter), 0.03 [mm]
-    float w; // sensor width, 35.9 [mm]
-    float h; // sensor height, 24 [mm]
-};
+inline
+Matrix4f TransformBuildMVP(Matrix4f model, Matrix4f view, Matrix4f proj) {
+    Matrix4f mvp = proj * TransformGetInverse( view ) * model;
+    return mvp;
+}
 
-struct Perspective {
-    float fov; // [degs] (horizontal field of view)
-    float aspect; // [1] (width divided by height)
-    float dist_near; // [m]
-    float dist_far; // [m]
-    Matrix4f proj;
-};
+inline
+Matrix4f TransformBuildMVP(Matrix4f model, Matrix4f vp) {
+    Matrix4f mvp = vp * model;
+    return mvp;
+}
+
+inline
+Matrix4f TransformBuildViewProj(Matrix4f view, Matrix4f proj) {
+    Matrix4f mvp = proj * TransformGetInverse( view );
+    return mvp;
+}
+
+inline
+Matrix4f TransformBuildOrbitCam(Vector3f center, float theta_degs, float phi_degs, float radius, Vector3f *campos_out) {
+    Vector3f campos = center + SphericalCoordsY(theta_degs*deg2rad, phi_degs*deg2rad, radius);
+    Matrix4f view = TransformBuildTranslationOnly(campos) * TransformBuildLookRotationYUp(center, campos);
+
+    if (campos_out) {
+        *campos_out = campos;
+    }
+    return view;
+}
 
 Matrix4f PerspectiveMatrixOpenGL(f32 farr, f32 nearr, f32 fov, f32 aspect, bool flip_x = true, bool flip_y = false, bool flip_z = true) {
     // gather values
@@ -851,56 +864,6 @@ Matrix4f PerspectiveMatrixOpenGL(f32 farr, f32 nearr, f32 fov, f32 aspect, bool 
     return m;
 }
 
-void PerspectiveSetAspectAndP(Perspective *proj, u32 width = 0, u32 height = 0) {
-    if (width != 0 && height != 0) {
-        f32 aspect_new = width / (f32) height;
-
-        if (aspect_new != proj->aspect) {
-            proj->aspect = aspect_new;
-            proj->proj = PerspectiveMatrixOpenGL(proj->dist_near, proj->dist_far, proj->fov, proj->aspect, false, true, false);
-        }
-    }
-}
-
-Perspective ProjectionInit(u32 width, u32 height) {
-    Perspective proj = {};
-    proj.fov = 90;
-    proj.dist_near = 0.01f;
-    proj.dist_far = 10.0f;
-    PerspectiveSetAspectAndP(&proj, width, height);
-
-    return proj;
-}
-
-inline
-Matrix4f TransformBuildMVP(Matrix4f model, Matrix4f view, Matrix4f proj) {
-    Matrix4f mvp = proj * TransformGetInverse( view ) * model;
-    return mvp;
-}
-
-inline
-Matrix4f TransformBuildMVP(Matrix4f model, Matrix4f vp) {
-    Matrix4f mvp = vp * model;
-    return mvp;
-}
-
-inline
-Matrix4f TransformBuildViewProj(Matrix4f view, Matrix4f proj) {
-    Matrix4f mvp = proj * TransformGetInverse( view );
-    return mvp;
-}
-
-inline
-Matrix4f TransformBuildOrbitCam(Vector3f center, float theta_degs, float phi_degs, float radius, Vector3f *campos_out) {
-    Vector3f campos = center + SphericalCoordsY(theta_degs*deg2rad, phi_degs*deg2rad, radius);
-    Matrix4f view = TransformBuildTranslationOnly(campos) * TransformBuildLookRotationYUp(center, campos);
-
-    if (campos_out) {
-        *campos_out = campos;
-    }
-    return view;
-}
-
 inline
 Vector3f TransformPerspective(Matrix4f p, Vector3f v) {
     Vector4f v_hom { v.x, v.y, v.z, 1 }; // homogeneous coordinates
@@ -936,6 +899,87 @@ Ray TransformRay(Matrix4f a, Ray r) {
 inline
 Ray TransformInverseRay(Matrix4f a, Ray r) {
     return Ray { TransformInversePoint(a, r.pos), TransformInverseDirection(a, r.dir) };
+}
+
+
+//
+//  Projection & camera model
+
+
+struct LensParams {
+    float fL; // focal length, typically 24 - 200 [mm]
+    float N; // f-number, 1.4 to 60 dimensionless []
+    float c; // circle of confusion (diameter), 0.03 [mm]
+    float w; // sensor width, 35.9 [mm]
+    float h; // sensor height, 24 [mm]
+};
+
+struct Perspective {
+    float fov; // [degs] (horizontal field of view)
+    float aspect; // [1] (width divided by height)
+    float dist_near; // [m]
+    float dist_far; // [m]
+    Matrix4f proj;
+
+    Ray PlaneGetLRTB(f32 fov_aspect, f32 sign) {
+        Ray plane = {};
+        plane.dir = { dist_far, 0, dist_far * sin(fov_aspect / 2 * deg2rad)};
+        plane.dir.Normalize();
+        plane.dir.x *= sign;
+        return plane;
+    }
+
+    Ray PlaneRight() {
+        return PlaneGetLRTB(fov * aspect, 1);
+    }
+
+    Ray PlaneLeft() {
+        return PlaneGetLRTB(fov * aspect, -1);
+    }
+
+    Ray PlaneTop() {
+        return PlaneGetLRTB(fov, 1);
+    }
+
+    Ray PlaneBottom() {
+        return PlaneGetLRTB(fov, -1);
+    }
+
+    Ray PlaneNear() {
+        Ray plane = {};
+        plane.pos.z = dist_near;
+        plane.dir.z = 1;
+        return plane;
+    }
+
+    Ray PlaneFar() {
+        Ray plane = {};
+        plane.pos.z = dist_far;
+        plane.dir.z = -1;
+        return plane;
+    }
+};
+
+
+void PerspectiveSetAspectAndP(Perspective *proj, u32 width = 0, u32 height = 0) {
+    if (width != 0 && height != 0) {
+        f32 aspect_new = width / (f32) height;
+
+        if (aspect_new != proj->aspect) {
+            proj->aspect = aspect_new;
+            proj->proj = PerspectiveMatrixOpenGL(proj->dist_near, proj->dist_far, proj->fov, proj->aspect, false, true, false);
+        }
+    }
+}
+
+Perspective ProjectionInit(u32 width, u32 height) {
+    Perspective proj = {};
+    proj.fov = 90;
+    proj.dist_near = 0.01f;
+    proj.dist_far = 10.0f;
+    PerspectiveSetAspectAndP(&proj, width, height);
+
+    return proj;
 }
 
 
