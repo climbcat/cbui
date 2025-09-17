@@ -264,19 +264,19 @@ void TestSceneGraph() {
     OrbitCamera cam = OrbitCameraInit(persp.aspect);
     Array<Wireframe> objs = InitArray<Wireframe>(cbui.ctx->a_pers, 100);
 
-    SceneGraphInit();
-    Transform *t0 = SceneGraphAlloc();
-    Transform *t1 = SceneGraphAlloc(t0);
-    Transform *t2 = SceneGraphAlloc(t1);
-    Transform *t3 = SceneGraphAlloc(t2);
-    Transform *t4 = SceneGraphAlloc(t3);
+    SceneGraphHandle sg = SceneGraphInit(cbui.ctx->a_pers);
+    Transform *t0 = SceneGraphAlloc(&sg);
+    Transform *t1 = SceneGraphAlloc(&sg, t0);
+    Transform *t2 = SceneGraphAlloc(&sg, t1);
+    Transform *t3 = SceneGraphAlloc(&sg, t2);
+    Transform *t4 = SceneGraphAlloc(&sg, t3);
 
     u32 mode = 0;
     u32 mode_cnt = 2;
 
     while (cbui.running) {
         CbuiFrameStart();
-        OrbitCameraUpdate(&cam, cbui.plf.cursorpos.dx, cbui.plf.cursorpos.dy, cbui.plf.left.ended_down, cbui.plf.scroll.yoffset_acc);
+        OrbitCameraRotateZoom(&cam, cbui.plf.cursorpos.dx, cbui.plf.cursorpos.dy, cbui.plf.left.ended_down, cbui.plf.scroll.yoffset_acc);
         OrbitCameraPan(&cam, persp.fov, persp.aspect, cbui.plf.cursorpos.x_frac, cbui.plf.cursorpos.y_frac, MouseRight().pushed, MouseRight().released);
         // start
 
@@ -306,7 +306,7 @@ void TestSceneGraph() {
             t4->t_loc = t_finger;
 
             // assigns t_world to each node
-            SceneGraphUpdate();
+            SceneGraphUpdate(&sg);
 
             // apply the calculated world transforms to our boxes
             objs.len = 0;
@@ -374,9 +374,11 @@ void TestSceneGraph() {
             objs.Add(box4);
         }
 
-        // end 
-        Array<Vector3f> segments = WireframeLineSegments(cbui.ctx->a_tmp, objs);
-        RenderLineSegmentList(cbui.image_buffer, cam.view, persp.proj, cbui.plf.width, cbui.plf.height, objs);
+        // end
+        WireframeLineSegments(cbui.ctx->a_tmp, objs);
+        for (s32 i = 0; i < objs.len; ++i) {
+            RenderWireframe(cbui.image_buffer, cam.view, persp, cbui.plf.width, cbui.plf.height, objs.arr[i]);
+        }
 
         CbuiFrameEnd();
     }
@@ -392,17 +394,17 @@ void TestRotParentIsDifferent() {
     OrbitCamera cam = OrbitCameraInit(persp.aspect);
     Array<Wireframe> objs = InitArray<Wireframe>(cbui.ctx->a_pers, 100);
 
-    SceneGraphInit();
-    Transform *ta = SceneGraphAlloc();
-    Transform *tb = SceneGraphAlloc();
-    Transform *tc = SceneGraphAlloc(tb);
-    Transform *td = SceneGraphAlloc(tc);
+    SceneGraphHandle sg = SceneGraphInit(cbui.ctx->a_pers);
+    Transform *ta = SceneGraphAlloc(&sg);
+    Transform *tb = SceneGraphAlloc(&sg);
+    Transform *tc = SceneGraphAlloc(&sg, tb);
+    Transform *td = SceneGraphAlloc(&sg, tc);
 
     bool set_rot_parent = true;
 
     while (cbui.running) {
         CbuiFrameStart();
-        OrbitCameraUpdate(&cam, cbui.plf.cursorpos.dx, cbui.plf.cursorpos.dy, cbui.plf.left.ended_down, cbui.plf.scroll.yoffset_acc);
+        OrbitCameraRotateZoom(&cam, cbui.plf.cursorpos.dx, cbui.plf.cursorpos.dy, cbui.plf.left.ended_down, cbui.plf.scroll.yoffset_acc);
         OrbitCameraPan(&cam, persp.fov, persp.aspect, cbui.plf.cursorpos.x_frac, cbui.plf.cursorpos.y_frac, MouseRight().pushed, MouseRight().released);
         // start
 
@@ -420,7 +422,7 @@ void TestRotParentIsDifferent() {
             td->t_loc = TransformBuildTranslation( { 0, 0, 1 } ) * TransformBuildRotateX(30 * deg2rad); // tc for its parent
 
             if (set_rot_parent) {
-                SceneGraphSetRotParent(td, ta);
+                SceneGraphSetRotParent(&sg, td, ta);
             }
             if (GetSpace()) {
                 set_rot_parent = ! set_rot_parent;
@@ -428,7 +430,7 @@ void TestRotParentIsDifferent() {
             }
 
             // (re-) generate the world matrices
-            SceneGraphUpdate();
+            SceneGraphUpdate(&sg);
 
             Wireframe box_a = box;
             box_a.color = COLOR_BLACK;
@@ -452,8 +454,10 @@ void TestRotParentIsDifferent() {
         }
 
         // end 
-        Array<Vector3f> segments = WireframeLineSegments(cbui.ctx->a_tmp, objs);
-        RenderLineSegmentList(cbui.image_buffer, cam.view, persp.proj, cbui.plf.width, cbui.plf.height, objs);
+        WireframeLineSegments(cbui.ctx->a_tmp, objs);
+        for (s32 i = 0; i < objs.len; ++i) {
+            RenderWireframe(cbui.image_buffer, cam.view, persp, cbui.plf.width, cbui.plf.height, objs.arr[i]);
+        }
 
         CbuiFrameEnd();
     }
@@ -477,7 +481,7 @@ void TestColormaps() {
 void Test_03() {
 
     //TestUILayoutFeatures();
-    //TestSceneGraph();
+    TestSceneGraph();
     //TestRotParentIsDifferent();
-    TestColormaps();
+    //TestColormaps();
 }
