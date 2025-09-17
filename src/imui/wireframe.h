@@ -32,8 +32,29 @@ struct Wireframe {
     WireFrameType type;
     WireFrameRenderStyle style;
     Color color;
+    Vector3f aabox_min;
+    Vector3f aabox_max;
     Array<Vector3f> segments;
     bool disabled;
+
+    void CalculateAABox() {
+        for (s32 i = 0; i < segments.len; ++i) {
+            Vector3f p = segments.arr[i];
+            if (i == 0) {
+                aabox_min = p;
+                aabox_max = p;
+            }
+            aabox_min.x = MinF32(p.x, aabox_min.x);
+            aabox_min.y = MinF32(p.y, aabox_min.y);
+            aabox_min.z = MinF32(p.z, aabox_min.z);
+            aabox_max.x = MaxF32(p.x, aabox_max.x);
+            aabox_max.y = MaxF32(p.y, aabox_max.y);
+            aabox_max.z = MaxF32(p.z, aabox_max.z);
+        }
+
+        printf("%.2f %.2f %.2f\n", aabox_min.x, aabox_min.y, aabox_min.z);
+        printf("%.2f %.2f %.2f\n", aabox_max.x, aabox_max.y, aabox_max.z);
+    }
 };
 
 
