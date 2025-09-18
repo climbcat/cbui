@@ -170,7 +170,7 @@ bool PlaneBooleanOnLineSegment(Ray plane, Vector3f *p1, Vector3f *p2) {
 
 
 inline
-void RenderLineSegment(u8 *image_buffer, Matrix4f view, Perspective persp, Vector3f p1, Vector3f p2, u32 w, u32 h, Color color) {
+void RenderLineSegment(u8 *image_buffer, Matrix4f view, Perspective persp, Vector3f p1, Vector3f p2, u32 w, u32 h, Color color, bool do_fat_style = false) {
 
     Vector3f p1_cam = TransformPoint(view, p1);
     Vector3f p2_cam = TransformPoint(view, p2);
@@ -194,6 +194,17 @@ void RenderLineSegment(u8 *image_buffer, Matrix4f view, Perspective persp, Vecto
         b.y = (p2_ndc.y + 1) / 2 * h;
 
         RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, color);
+
+
+
+        if (do_fat_style == false) {
+            RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, color);
+        }
+        else {
+            RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, color);
+            RenderLineRGBA(image_buffer, w, h, a.x+1, a.y, b.x+1, b.y, color);
+            RenderLineRGBA(image_buffer, w, h, a.x, a.y+1, b.x, b.y+1, color);
+        }
     }
 }
 

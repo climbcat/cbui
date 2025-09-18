@@ -56,6 +56,14 @@ struct Wireframe {
             aabox_max.z = MaxF32(p.z, aabox_max.z);
         }
     }
+    Vector3f Center() {
+        Vector3f center = TransformGetTranslation(transform);
+        return center;
+    }
+    f32 SizeBallpark() {
+        f32 largest_radius = MaxF32( MaxF32(dimensions.x, dimensions.y), dimensions.z);
+        return largest_radius * 2;
+    }
 };
 
 Wireframe CreatePlaneDetailed(f32 size_x, f32 size_z, s32 nbeams_x) {
@@ -551,55 +559,10 @@ void RenderWireframe(u8 *image_buffer, Matrix4f view, Perspective persp, u32 w, 
     Matrix4f l2v = view_inv * wf.transform;
 
     for (u32 i = 0; i < wf.segments.len / 2; ++i) {
+        Vector3f a = wf.segments.arr[2*i];
+        Vector3f b = wf.segments.arr[2*i + 1];
 
-        if (true) {
-            Vector3f a = wf.segments.arr[2*i];
-            Vector3f b = wf.segments.arr[2*i + 1];
-
-            RenderLineSegment(image_buffer, l2v, persp, a, b, w, h, wf.color);
-        }
-
-        else {
-            // line clipping starts
-            Vector3f p1_cam = TransformPoint(l2v, wf.segments.arr[2*i]);
-            Vector3f p2_cam = TransformPoint(l2v, wf.segments.arr[2*i + 1]);
-
-            bool visible1 = PointSideOfPlane(p1_cam, view_plane);
-            bool visible2 = PointSideOfPlane(p2_cam, view_plane);
-
-            if (visible1 == true || visible2 == true) {
-                if (visible1 == false && visible2 == true) {
-                    Ray segment = { p2_cam, p1_cam - p2_cam };
-                    f32 t = 0;
-                    p1_cam = RayPlaneIntersect(segment, view_plane.pos, view_plane.dir, &t);
-                }
-                else if (visible1 == true && visible2 == false) {
-                    Ray segment = { p1_cam, p2_cam - p1_cam };
-                    f32 t = 0;
-                    p2_cam = RayPlaneIntersect(segment, view_plane.pos, view_plane.dir, &t);
-                }
-                // line clipping is done
-
-                Vector3f p1_ndc = TransformPerspective(persp.proj, p1_cam);
-                Vector3f p2_ndc = TransformPerspective(persp.proj, p2_cam);
-
-                Vector2f a = {};
-                a.x = (p1_ndc.x + 1) / 2 * w;
-                a.y = (p1_ndc.y + 1) / 2 * h;
-                Vector2f b = {};
-                b.x = (p2_ndc.x + 1) / 2 * w;
-                b.y = (p2_ndc.y + 1) / 2 * h;
-
-                if (wf.style == WFR_SLIM) {
-                    RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, wf.color);
-                }
-                else if (wf.style == WFR_FAT) {
-                    RenderLineRGBA(image_buffer, w, h, a.x, a.y, b.x, b.y, wf.color);
-                    RenderLineRGBA(image_buffer, w, h, a.x+1, a.y, b.x+1, b.y, wf.color);
-                    RenderLineRGBA(image_buffer, w, h, a.x, a.y+1, b.x, b.y+1, wf.color);
-                }
-            }
-        }
+        RenderLineSegment(image_buffer, l2v, persp, a, b, w, h, wf.color, wf.style == WFR_FAT);
     }
 }
 
