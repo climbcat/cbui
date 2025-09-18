@@ -14,6 +14,24 @@ bool _CullScreenCoords(u32 pos_x, u32 pos_y, u32 w, u32 h) {
     return !not_result;
 }
 
+
+Color SampleTexture(f32 x, f32 y, Color col_default, s32 src_width, s32 src_height, Color *src_buffer);
+
+
+inline
+Color BlendColors(Color background, Color color) {
+    Color color_blended = {};
+    if (color.a != 0) {
+        f32 alpha = (1.0f * color.a) / 255;
+        color_blended.r = (u8) (floor( alpha*color.r ) + floor( (1-alpha)*background.r ));
+        color_blended.g = (u8) (floor( alpha*color.g ) + floor( (1-alpha)*background.g ));
+        color_blended.b = (u8) (floor( alpha*color.b ) + floor( (1-alpha)*background.b ));
+        color_blended.a = 255;
+    }
+    return color_blended;
+}
+
+
 void RenderLineRGBA(u8* image_buffer, u16 w, u16 h, s16 ax, s16 ay, s16 bx, s16 by, Color color) {
 
     // initially working from a to b
@@ -24,6 +42,7 @@ void RenderLineRGBA(u8* image_buffer, u16 w, u16 h, s16 ax, s16 ay, s16 bx, s16 
     // 4: slope > 1, ay > by 
 
     f32 slope_ab = (f32) (by - ay) / (bx - ax);
+    Color *buff = (Color*) image_buffer;
 
     if (abs(slope_ab) <= 1) {
         // draw by x
@@ -48,13 +67,10 @@ void RenderLineRGBA(u8* image_buffer, u16 w, u16 h, s16 ax, s16 ay, s16 bx, s16 
 
             if (_CullScreenCoords(x, y, w, h)) {
                 continue;
-            }
+            }            
 
             pix_idx = x + y*w;
-            image_buffer[4 * pix_idx + 0] = color.r;
-            image_buffer[4 * pix_idx + 1] = color.g;
-            image_buffer[4 * pix_idx + 2] = color.b;
-            image_buffer[4 * pix_idx + 3] = color.a;
+            buff[pix_idx] = BlendColors(buff[pix_idx], color);
         }
     }
     else {
@@ -83,10 +99,7 @@ void RenderLineRGBA(u8* image_buffer, u16 w, u16 h, s16 ax, s16 ay, s16 bx, s16 
             }
 
             pix_idx = x + y*w;
-            image_buffer[4 * pix_idx + 0] = color.r;
-            image_buffer[4 * pix_idx + 1] = color.g;
-            image_buffer[4 * pix_idx + 2] = color.b;
-            image_buffer[4 * pix_idx + 3] = color.a;
+            buff[pix_idx] = BlendColors(buff[pix_idx], color);
         }
     }
 }
