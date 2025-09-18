@@ -102,6 +102,19 @@ CbuiState *CbuiInit(const char *title, bool start_in_fullscreen) {
 
 #define FR_RUNNING_AVG_COUNT 4
 void CbuiFrameStart() {
+    // frame end
+    XSleep(1);
+
+    PlafGlfwUpdate(&cbui.plf);
+    UI_FrameEnd(cbui.ctx->a_tmp, cbui.plf.width, cbui.plf.height, cbui.plf.cursorpos.x, cbui.plf.cursorpos.y, cbui.plf.left.ended_down, cbui.plf.left.pushed);
+
+    SpriteBufferBlitAndClear(cbui.map_textures, cbui.plf.width, cbui.plf.height, cbui.image_buffer);
+    PlafGlfwPushBuffer(&cbui.plf);
+
+    cbui.running = cbui.running && !GetEscape() && !GetWindowShouldClose(&cbui.plf);
+
+
+    // frame start
     ArenaClear(cbui.ctx->a_tmp);
     memset(cbui.image_buffer, 255, IMG_BUFF_CHANNELS * cbui.plf.width * cbui.plf.height);
 
@@ -119,15 +132,7 @@ void CbuiFrameStart() {
 }
 
 void CbuiFrameEnd() {
-    XSleep(1);
-
-    PlafGlfwUpdate(&cbui.plf);
-    UI_FrameEnd(cbui.ctx->a_tmp, cbui.plf.width, cbui.plf.height, cbui.plf.cursorpos.x, cbui.plf.cursorpos.y, cbui.plf.left.ended_down, cbui.plf.left.pushed);
-
-    SpriteBufferBlitAndClear(cbui.map_textures, cbui.plf.width, cbui.plf.height, cbui.image_buffer);
-    PlafGlfwPushBuffer(&cbui.plf);
-
-    cbui.running = cbui.running && !GetEscape() && !GetWindowShouldClose(&cbui.plf);
+    // TODO: depricate
 }
 
 void CbuiExit() {

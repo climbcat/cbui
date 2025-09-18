@@ -5,6 +5,10 @@
 #include "math.h"
 
 
+struct Wireframe;
+Array<Vector3f> WireframeRawSegments(MArena *a_dest, Wireframe *wf);
+
+
 enum WireFrameType {
     // do not collide
     WFT_AXIS,
@@ -51,13 +55,8 @@ struct Wireframe {
             aabox_max.y = MaxF32(p.y, aabox_max.y);
             aabox_max.z = MaxF32(p.z, aabox_max.z);
         }
-
-        printf("%.2f %.2f %.2f\n", aabox_min.x, aabox_min.y, aabox_min.z);
-        printf("%.2f %.2f %.2f\n", aabox_max.x, aabox_max.y, aabox_max.z);
     }
 };
-
-
 
 Wireframe CreatePlaneDetailed(f32 size_x, f32 size_z, s32 nbeams_x) {
     Wireframe box = {};
@@ -71,14 +70,6 @@ Wireframe CreatePlaneDetailed(f32 size_x, f32 size_z, s32 nbeams_x) {
 }
 
 Wireframe CreatePlane(f32 size) {
-    /*
-    s32 size_x = 10;
-    s32 size_z = 15;
-    s32 nbeams_x = 11;
-
-    return CreatePlaneDetailed(size_x, size_z, nbeams_x);
-    */
-
     return CreatePlaneDetailed(size, size, 6);
 }
 
@@ -131,6 +122,32 @@ Wireframe CreateAAAxes(f32 len = 1.0f) {
     axis.color = COLOR_GRAY;
 
     return axis;
+}
+
+Wireframe CreateAABoundingBox(MArena *a_dest, Wireframe obj) {
+    if (obj.segments.len == 0) {
+        printf("WARN: no line segments available for bounding box\n");
+        return {};
+    }
+
+    obj.CalculateAABox();
+
+    f32 width = obj.aabox_max.x - obj.aabox_min.x;
+    f32 height = obj.aabox_max.y - obj.aabox_min.y;
+    f32 depth = obj.aabox_max.z - obj.aabox_min.z;
+
+    Vector3f center = {};
+    center.x = obj.aabox_min.x + width / 2;
+    center.y = obj.aabox_min.y + height / 2;
+    center.z = obj.aabox_min.z + depth / 2;
+
+    Wireframe aabox = CreateAABox(width, height, depth);
+    WireframeRawSegments(a_dest, &aabox);
+    aabox.color = obj.color;
+    aabox.style = obj.style;
+    aabox.transform = TransformBuildTranslation(center) * obj.transform;
+
+    return aabox;
 }
 
 
