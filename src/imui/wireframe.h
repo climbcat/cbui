@@ -124,22 +124,25 @@ Wireframe CreateAAAxes(f32 len = 1.0f) {
     return axis;
 }
 
-Wireframe CreateAABoundingBox(MArena *a_dest, Wireframe obj) {
+Wireframe CreateAABoundingBox(MArena *a_dest, Wireframe obj, f32 add_margin = 0) {
     if (obj.segments.len == 0) {
         printf("WARN: no line segments available for bounding box\n");
         return {};
     }
 
     obj.CalculateAABox();
+    Vector3f margin = { add_margin, add_margin, add_margin };
+    Vector3f min = obj.aabox_min - margin;
+    Vector3f max = obj.aabox_max + margin;
 
-    f32 width = obj.aabox_max.x - obj.aabox_min.x;
-    f32 height = obj.aabox_max.y - obj.aabox_min.y;
-    f32 depth = obj.aabox_max.z - obj.aabox_min.z;
+    f32 width = max.x - min.x;
+    f32 height = max.y - min.y;
+    f32 depth = max.z - min.z;
 
     Vector3f center = {};
-    center.x = obj.aabox_min.x + width / 2;
-    center.y = obj.aabox_min.y + height / 2;
-    center.z = obj.aabox_min.z + depth / 2;
+    center.x = min.x + width / 2;
+    center.y = min.y + height / 2;
+    center.z = min.z + depth / 2;
 
     Wireframe aabox = CreateAABox(width, height, depth);
     WireframeRawSegments(a_dest, &aabox);
