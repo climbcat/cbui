@@ -145,7 +145,7 @@ Wireframe CreateAABoundingBox(MArena *a_dest, Wireframe obj) {
     WireframeRawSegments(a_dest, &aabox);
     aabox.color = obj.color;
     aabox.style = obj.style;
-    aabox.transform = TransformBuildTranslation(center) * obj.transform;
+    aabox.transform = obj.transform * TransformBuildTranslation(center);
 
     return aabox;
 }
