@@ -34,19 +34,26 @@ Vector3f CameraGetPointAtDepth(Matrix4f view, f32 fov, f32 aspect, Vector3f at_d
 struct OrbitCamera {
     Vector3f center;
     Vector3f position;
-    Vector3f position_world;
     f32 theta;
     f32 phi;
     f32 radius;
     f32 mouse2rot = 0.4f;
     f32 mouse2pan = 0.01f;
     Matrix4f view;
+    Matrix4f parent;
 
     // pan
     Vector3f drag_anchor;
     Vector3f center_anchor;
     Matrix4f view_anchor;
     bool drag;
+
+    void SetRelativeTo(Matrix4f transform, Vector3f center) {
+        // TODO: re-think the orbitcam to support a parent transform
+
+        //center = TransformGetTranslation(transform);
+        //parent = TransformGetInverse(transform);
+    }
 };
 
 OrbitCamera OrbitCameraInit(f32 aspect) {
@@ -57,6 +64,7 @@ OrbitCamera OrbitCameraInit(f32 aspect) {
     cam.phi = 35;
     cam.radius = 4;
     cam.view = Matrix4f_Identity();
+    cam.parent = Matrix4f_Identity();
 
     return cam;
 }
@@ -93,7 +101,6 @@ void OrbitCameraRotateZoom(OrbitCamera *cam, f32 dx, f32 dy, bool do_rotate, f32
     // build orbit transform
 
     cam->view = TransformBuildOrbitCam(cam->center, cam->theta, cam->phi, cam->radius, &cam->position);
-    cam->position_world = TransformPoint(cam->view, {});
 }
 
 void OrbitCameraPan(OrbitCamera *cam, f32 fov, f32 aspect, f32 cursor_x_frac, f32 cursor_y_frac, bool enable, bool disable) {
