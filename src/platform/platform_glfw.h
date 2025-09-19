@@ -172,10 +172,22 @@ struct MousePosition {
 };
 
 struct Button {
+    u64 t_pushed; // used for calculating "click" timeout @ release
+    u64 t_pushed_prev; // used for calculating "double-click" timeout @ release
+    u32 pushes;
+    bool dblclicked;
+    bool clicked;
     bool pushed;
     bool released;
     bool ended_down;
-    u32 pushes;
+
+    void FrameReset() {
+        u64 t_pushed_cpy = t_pushed;
+        u64 t_pushed_prev_cpy = t_pushed_prev;
+        *this = {};
+        t_pushed = t_pushed_cpy;
+        t_pushed_prev = t_pushed_prev_cpy;
+    }
 };
 
 struct Scroll {
@@ -261,6 +273,9 @@ inline PlafGlfw *_GlfwWindowToUserPtr(GLFWwindow* window) {
     return plaf;
 }
 
+
+#define T_CLICK_TIMEOUT_MYS 500000 // 500 ms
+#define T_DBLCLICK_TIMEOUT_MYS 500000 // 500 ms
 void MouseButtonCallBack(GLFWwindow* window, int button, int action, int mods) {
     PlafGlfw *plaf = _GlfwWindowToUserPtr(window);
 
@@ -277,10 +292,31 @@ void MouseButtonCallBack(GLFWwindow* window, int button, int action, int mods) {
     if (action == GLFW_PRESS) {
         btn->pushed = true;
         btn->ended_down = true;
+
+        // double-click @ mouse-down
+        btn->t_pushed_prev = btn->t_pushed;
+        btn->t_pushed = ReadSystemTimerMySec();
+        u64 t_since_last_mdown = btn->t_pushed - btn->t_pushed_prev;
+        assert(btn->t_pushed_prev == 0 || (btn->t_pushed_prev < btn->t_pushed));
+
+        if (btn->t_pushed_prev && (t_since_last_mdown < T_DBLCLICK_TIMEOUT_MYS)) {
+            btn->dblclicked = true;
+            btn->t_pushed = 0;
+            btn->t_pushed_prev = 0;
+        }
     }
     else if (action == GLFW_RELEASE) {
         btn->released = true;
         btn->pushes++;
+
+        // click @ mouse-up
+        u64 t_released = ReadSystemTimerMySec();
+        u64 t_since_last_mdown = t_released - btn->t_pushed;
+        assert(btn->t_pushed_prev == 0 || (btn->t_pushed_prev < btn->t_pushed));
+
+        if (btn->t_pushed && (t_since_last_mdown < T_CLICK_TIMEOUT_MYS)) {
+            btn->clicked = true;
+        }
     }
 }
 
@@ -477,8 +513,8 @@ void PlafGlfwUpdate(PlafGlfw* plf) {
         PlafGlfwToggleFullscreen(plf);
     }
 
-    plf->left = {};
-    plf->right = {};
+    plf->left.FrameReset();
+    plf->right.FrameReset();
     plf->scroll = {};
     plf->keys = {};
     plf->akeys.ResetButKeepMods();
