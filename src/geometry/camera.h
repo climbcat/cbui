@@ -32,8 +32,6 @@ Vector3f CameraGetPointAtDepth(Matrix4f view, f32 fov, f32 aspect, Vector3f at_d
 }
 
 struct OrbitCamera {
-    Vector3f center;
-    Vector3f position;
     f32 theta;
     f32 phi;
     f32 radius;
@@ -41,6 +39,7 @@ struct OrbitCamera {
     f32 mouse2pan = 0.01f;
     Matrix4f view;
     Matrix4f parent;
+    bool is_parented;
 
     // pan
     Vector3f drag_anchor;
@@ -48,24 +47,43 @@ struct OrbitCamera {
     Matrix4f view_anchor;
     bool drag;
 
-    void SetRelativeTo(Matrix4f transform, Vector3f center) {
-        // TODO: re-think the orbitcam to support a parent transform
+    void SetRelativeTo(Matrix4f transform) {
+        parent = transform;
+        is_parented = true;
+    }
 
-        //center = TransformGetTranslation(transform);
-        //parent = TransformGetInverse(transform);
+    void SetRelativeWorld() {
+        is_parented = false;
+    }
+
+    Vector3f Center() {
+        Vector3f position = TransformGetTranslation(view);
+        Vector3f cam_forward_w = TransformDirection(view, z_hat);
+        Vector3f center = position + radius * cam_forward_w;
+        return center;
+    }
+
+    void Update(Vector3f center) {
+
+        Vector3f campos_relative = SphericalCoordsY(theta*deg2rad, phi*deg2rad, radius);
+        view = TransformBuildTranslationOnly(center + campos_relative) * TransformBuildLookRotationYUp(center, center + campos_relative);
+
+        if (is_parented) {
+            view = TransformSetTranslation(view, campos_relative);
+            view =  parent * view;
+        }
     }
 };
 
-OrbitCamera OrbitCameraInit(f32 aspect) {
+OrbitCamera OrbitCameraInit() {
     OrbitCamera cam = {};
 
-    cam.center = Vector3f_Zero();
     cam.theta = 60;
     cam.phi = 35;
     cam.radius = 4;
-    cam.view = Matrix4f_Identity();
-    cam.parent = Matrix4f_Identity();
 
+    cam.parent = Matrix4f_Identity();
+    cam.view = TransformBuildOrbitCam(Vector3f_Zero(), cam.theta, cam.phi, cam.radius);
     return cam;
 }
 
@@ -78,6 +96,13 @@ inline f32 _ScrollMult(f32 value) {
     }
 }
 
+Vector3f CameraGetPointInPlane(Matrix4f view, f32 fov, f32 aspect, Vector3f plane_origo_w, Vector3f plane_normal_w, f32 x_frac = 0, f32 y_frac = 0) {
+    Ray m_w = CameraGetRayWorld(view, fov, aspect, x_frac, y_frac);
+    Vector3f hit_w = RayPlaneIntersect(m_w, plane_origo_w, plane_normal_w);
+
+    return hit_w;
+}
+
 static f32 _ClampTheta(f32 theta_degs, f32 min = 0.0001f, f32 max = 180 - 0.0001f) {
     f32 clamp_up = MinF32(theta_degs, max);
     f32 result = MaxF32(clamp_up, min);
@@ -85,6 +110,7 @@ static f32 _ClampTheta(f32 theta_degs, f32 min = 0.0001f, f32 max = 180 - 0.0001
 }
 
 void OrbitCameraRotateZoom(OrbitCamera *cam, f32 dx, f32 dy, bool do_rotate, f32 scroll_y_offset) {
+    Vector3f initial_center = cam->Center();
     if (do_rotate) {
         cam->theta = _ClampTheta(cam->theta - dy * cam->mouse2rot);
         cam->phi += - dx * cam->mouse2rot;
@@ -97,39 +123,8 @@ void OrbitCameraRotateZoom(OrbitCamera *cam, f32 dx, f32 dy, bool do_rotate, f32
         f32 mult = _ScrollMult(scroll_y_offset);
         cam->radius /= 1.1f * mult;
     }
-
-    // build orbit transform
-
-    cam->view = TransformBuildOrbitCam(cam->center, cam->theta, cam->phi, cam->radius, &cam->position);
+    cam->Update(initial_center);
 }
-
-void OrbitCameraPan(OrbitCamera *cam, f32 fov, f32 aspect, f32 cursor_x_frac, f32 cursor_y_frac, bool enable, bool disable) {
-    if (disable) {
-        cam->view_anchor = {};
-        cam->drag_anchor = {};
-        cam->center_anchor = {};
-        cam->drag = false;
-    }
-    else if (enable) {
-        cam->view_anchor = cam->view;
-        cam->drag_anchor = CameraGetPointAtDepth(cam->view_anchor, fov, aspect, Vector3f_Zero(), cursor_x_frac, cursor_y_frac);
-        cam->center_anchor = cam->center;
-        cam->drag = true;
-    }
-    else if (cam->drag == true) {
-        Vector3f cam_drag = CameraGetPointAtDepth(cam->view_anchor, fov, aspect, Vector3f_Zero(), cursor_x_frac, cursor_y_frac);
-        cam->center = cam->center_anchor - (cam_drag - cam->drag_anchor);
-    }
-}
-
-
-Vector3f CameraGetPointInPlane(Matrix4f view, f32 fov, f32 aspect, Vector3f plane_origo_w, Vector3f plane_normal_w, f32 x_frac = 0, f32 y_frac = 0) {
-    Ray m_w = CameraGetRayWorld(view, fov, aspect, x_frac, y_frac);
-    Vector3f hit_w = RayPlaneIntersect(m_w, plane_origo_w, plane_normal_w);
-
-    return hit_w;
-}
-
 
 void OrbitCameraPanInPlane(OrbitCamera *cam, f32 fov, f32 aspect, f32 cursor_x_frac, f32 cursor_y_frac, bool enable, bool disable) {
     Vector3f plane_origo_w = { 0, 0, 0 };
@@ -143,17 +138,45 @@ void OrbitCameraPanInPlane(OrbitCamera *cam, f32 fov, f32 aspect, f32 cursor_x_f
     }
     else if (enable) {
         cam->view_anchor = cam->view;
-        cam->center_anchor = cam->center;
+        cam->center_anchor = cam->Center();
         cam->drag_anchor = CameraGetPointInPlane(cam->view_anchor, fov, aspect, plane_origo_w, plane_normal_w, cursor_x_frac, cursor_y_frac);
         cam->drag = true;
     }
     else if (cam->drag == true) {
         Vector3f cam_drag = CameraGetPointInPlane(cam->view_anchor, fov, aspect, plane_origo_w, plane_normal_w, cursor_x_frac, cursor_y_frac);
-        cam->center = cam->center_anchor - (cam_drag - cam->drag_anchor);
+        Vector3f new_center = cam->center_anchor - (cam_drag - cam->drag_anchor);
+        cam->Update(new_center);
     }
+    cam->Update(cam->Center());
 }
 
+/*
+void OrbitCameraPan(OrbitCamera *cam, f32 fov, f32 aspect, f32 cursor_x_frac, f32 cursor_y_frac, bool enable, bool disable) {
+    if (disable) {
+        cam->view_anchor = {};
+        cam->drag_anchor = {};
+        cam->center_anchor = {};
+        cam->drag = false;
+    }
+    else if (enable) {
+        cam->view_anchor = cam->view;
+        cam->drag_anchor = CameraGetPointAtDepth(cam->view_anchor, fov, aspect, Vector3f_Zero(), cursor_x_frac, cursor_y_frac);
+        //cam->center_anchor = cam->center;
+        cam->center_anchor = cam->Center();
+        cam->drag = true;
+    }
+    else if (cam->drag == true) {
+        Vector3f cam_drag = CameraGetPointAtDepth(cam->view_anchor, fov, aspect, Vector3f_Zero(), cursor_x_frac, cursor_y_frac);
+        //cam->center = cam->center_anchor - (cam_drag - cam->drag_anchor);
+        cam->SetCenterTranslation(cam->center_anchor - (cam_drag - cam->drag_anchor));
+    }
 
+    cam->UpdateMatrices();
+}
+*/
+
+
+/*
 void OrbitCameraPanAlongZ(OrbitCamera *cam, f32 fov, f32 aspect, f32 cursor_x_frac, f32 cursor_y_frac, bool enable, bool disable) {
     Vector3f plane_origo_w = { 0, 0, 0 };
     Vector3f plane_normal_w = { 0, 1, 0 };
@@ -166,15 +189,19 @@ void OrbitCameraPanAlongZ(OrbitCamera *cam, f32 fov, f32 aspect, f32 cursor_x_fr
     }
     else if (enable) {
         cam->view_anchor = cam->view;
-        cam->center_anchor = cam->center;
+        //cam->center_anchor = cam->center;
+        cam->center_anchor = cam->Center();
         cam->drag_anchor = CameraGetPointInPlane(cam->view_anchor, fov, aspect, plane_origo_w, plane_normal_w, cursor_x_frac, cursor_y_frac);
         cam->drag = true;
     }
     else if (cam->drag == true) {
         Vector3f cam_drag = CameraGetPointInPlane(cam->view_anchor, fov, aspect, plane_origo_w, plane_normal_w, cursor_x_frac, cursor_y_frac);
-        cam->center = cam->center_anchor - (cam_drag - cam->drag_anchor).z * z_hat;
+        //cam->center = cam->center_anchor - (cam_drag - cam->drag_anchor).z * z_hat;
+        cam->SetCenterTranslation(cam->center_anchor - (cam_drag - cam->drag_anchor).z * z_hat);
     }
-}
 
+    cam->UpdateMatrices();
+}
+*/
 
 #endif
