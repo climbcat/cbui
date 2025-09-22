@@ -5,9 +5,6 @@
 Ray CameraGetRayWorld(Matrix4f view, f32 fov, f32 aspect, f32 x_frac = 0, f32 y_frac = 0) {
     // get the shoot-ray from the camera in world coordinates
 
-    // TODO: we shouldn't need to have a factor -1 here, in front of the x component.
-    //      Check the signs of the projection and all this, comparing to the OGL convention
-
     f32 fov2 = sin(deg2rad * fov * 0.5f);
     Vector3f dir = {};
     dir.x = - 2.0f * fov2 * x_frac;
@@ -34,12 +31,11 @@ Vector3f CameraGetPointAtDepth(Matrix4f view, f32 fov, f32 aspect, Vector3f at_d
 struct OrbitCamera {
     f32 theta;
     f32 phi;
+    f32 phi_loc;
     f32 radius;
     f32 mouse2rot = 0.4f;
     f32 mouse2pan = 0.01f;
     Matrix4f view;
-    Matrix4f parent;
-    bool is_parented;
 
     // pan
     Vector3f drag_anchor;
@@ -47,13 +43,19 @@ struct OrbitCamera {
     Matrix4f view_anchor;
     bool drag;
 
-    void SetRelativeTo(Matrix4f transform) {
-        parent = transform;
-        is_parented = true;
-    }
+    void SetRelativeTo(Matrix4f transform, f32 radius) {
+        this->radius = radius;
+        Update( TransformGetTranslation(transform) );
 
-    void SetRelativeWorld() {
-        is_parented = false;
+        Vector3f x_rot = TransformDirection(transform, x_hat);
+        x_rot.y = 0;
+        x_rot.Normalize();
+
+        f32 phi_loc_new = acos(x_rot.x) * rad2deg;
+        f32 phi_delpha = -1 * (phi_loc_new - phi_loc);
+
+        phi += phi_delpha;
+        phi_loc = phi_loc_new;
     }
 
     Vector3f Center() {
@@ -64,14 +66,8 @@ struct OrbitCamera {
     }
 
     void Update(Vector3f center) {
-
         Vector3f campos_relative = SphericalCoordsY(theta*deg2rad, phi*deg2rad, radius);
         view = TransformBuildTranslationOnly(center + campos_relative) * TransformBuildLookRotationYUp(center, center + campos_relative);
-
-        if (is_parented) {
-            view = TransformSetTranslation(view, campos_relative);
-            view =  parent * view;
-        }
     }
 };
 
@@ -82,7 +78,6 @@ OrbitCamera OrbitCameraInit() {
     cam.phi = 35;
     cam.radius = 4;
 
-    cam.parent = Matrix4f_Identity();
     cam.view = TransformBuildOrbitCam(Vector3f_Zero(), cam.theta, cam.phi, cam.radius);
     return cam;
 }
@@ -149,58 +144,5 @@ void OrbitCameraPanInPlane(OrbitCamera *cam, f32 fov, f32 aspect, f32 cursor_x_f
     }
 }
 
-/*
-void OrbitCameraPan(OrbitCamera *cam, f32 fov, f32 aspect, f32 cursor_x_frac, f32 cursor_y_frac, bool enable, bool disable) {
-    if (disable) {
-        cam->view_anchor = {};
-        cam->drag_anchor = {};
-        cam->center_anchor = {};
-        cam->drag = false;
-    }
-    else if (enable) {
-        cam->view_anchor = cam->view;
-        cam->drag_anchor = CameraGetPointAtDepth(cam->view_anchor, fov, aspect, Vector3f_Zero(), cursor_x_frac, cursor_y_frac);
-        //cam->center_anchor = cam->center;
-        cam->center_anchor = cam->Center();
-        cam->drag = true;
-    }
-    else if (cam->drag == true) {
-        Vector3f cam_drag = CameraGetPointAtDepth(cam->view_anchor, fov, aspect, Vector3f_Zero(), cursor_x_frac, cursor_y_frac);
-        //cam->center = cam->center_anchor - (cam_drag - cam->drag_anchor);
-        cam->SetCenterTranslation(cam->center_anchor - (cam_drag - cam->drag_anchor));
-    }
-
-    cam->UpdateMatrices();
-}
-*/
-
-
-/*
-void OrbitCameraPanAlongZ(OrbitCamera *cam, f32 fov, f32 aspect, f32 cursor_x_frac, f32 cursor_y_frac, bool enable, bool disable) {
-    Vector3f plane_origo_w = { 0, 0, 0 };
-    Vector3f plane_normal_w = { 0, 1, 0 };
-
-    if (disable) {
-        cam->view_anchor = {};
-        cam->drag_anchor = {};
-        cam->center_anchor = {};
-        cam->drag = false;
-    }
-    else if (enable) {
-        cam->view_anchor = cam->view;
-        //cam->center_anchor = cam->center;
-        cam->center_anchor = cam->Center();
-        cam->drag_anchor = CameraGetPointInPlane(cam->view_anchor, fov, aspect, plane_origo_w, plane_normal_w, cursor_x_frac, cursor_y_frac);
-        cam->drag = true;
-    }
-    else if (cam->drag == true) {
-        Vector3f cam_drag = CameraGetPointInPlane(cam->view_anchor, fov, aspect, plane_origo_w, plane_normal_w, cursor_x_frac, cursor_y_frac);
-        //cam->center = cam->center_anchor - (cam_drag - cam->drag_anchor).z * z_hat;
-        cam->SetCenterTranslation(cam->center_anchor - (cam_drag - cam->drag_anchor).z * z_hat);
-    }
-
-    cam->UpdateMatrices();
-}
-*/
 
 #endif
