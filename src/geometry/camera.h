@@ -147,7 +147,6 @@ void OrbitCameraPanInPlane(OrbitCamera *cam, f32 fov, f32 aspect, f32 cursor_x_f
         Vector3f new_center = cam->center_anchor - (cam_drag - cam->drag_anchor);
         cam->Update(new_center);
     }
-    cam->Update(cam->Center());
 }
 
 /*
