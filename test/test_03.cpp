@@ -261,7 +261,7 @@ void TestSceneGraph() {
 
     CbuiInit("TestSceneGraph", false);
     Perspective persp = ProjectionInit(cbui.plf.width, cbui.plf.height);
-    OrbitCamera cam = OrbitCameraInit(persp.aspect);
+    OrbitCamera cam = OrbitCameraInit();
     Array<Wireframe> objs = InitArray<Wireframe>(cbui.ctx->a_pers, 100);
 
     SceneGraphHandle sg = SceneGraphInit(cbui.ctx->a_pers);
@@ -277,7 +277,7 @@ void TestSceneGraph() {
     while (cbui.running) {
         CbuiFrameStart();
         OrbitCameraRotateZoom(&cam, cbui.plf.cursorpos.dx, cbui.plf.cursorpos.dy, cbui.plf.left.ended_down, cbui.plf.scroll.yoffset_acc);
-        OrbitCameraPan(&cam, persp.fov, persp.aspect, cbui.plf.cursorpos.x_frac, cbui.plf.cursorpos.y_frac, MouseRight().pushed, MouseRight().released);
+        OrbitCameraPanInPlane(&cam, persp.fov, persp.aspect, cbui.plf.cursorpos.x_frac, cbui.plf.cursorpos.y_frac, MouseRight().pushed, MouseRight().released);
         // start
 
 
@@ -391,7 +391,7 @@ void TestRotParentIsDifferent() {
 
     CbuiInit("TestSceneGraph", false);
     Perspective persp = ProjectionInit(cbui.plf.width, cbui.plf.height);
-    OrbitCamera cam = OrbitCameraInit(persp.aspect);
+    OrbitCamera cam = OrbitCameraInit();
     Array<Wireframe> objs = InitArray<Wireframe>(cbui.ctx->a_pers, 100);
 
     SceneGraphHandle sg = SceneGraphInit(cbui.ctx->a_pers);
@@ -405,7 +405,7 @@ void TestRotParentIsDifferent() {
     while (cbui.running) {
         CbuiFrameStart();
         OrbitCameraRotateZoom(&cam, cbui.plf.cursorpos.dx, cbui.plf.cursorpos.dy, cbui.plf.left.ended_down, cbui.plf.scroll.yoffset_acc);
-        OrbitCameraPan(&cam, persp.fov, persp.aspect, cbui.plf.cursorpos.x_frac, cbui.plf.cursorpos.y_frac, MouseRight().pushed, MouseRight().released);
+        OrbitCameraPanInPlane(&cam, persp.fov, persp.aspect, cbui.plf.cursorpos.x_frac, cbui.plf.cursorpos.y_frac, MouseRight().pushed, MouseRight().released);
         // start
 
         float dtheta = 1.5f;
@@ -480,8 +480,8 @@ void TestColormaps() {
 
 void Test_03() {
 
-    //TestUILayoutFeatures();
-    TestSceneGraph();
+    TestUILayoutFeatures();
+    //TestSceneGraph();
     //TestRotParentIsDifferent();
     //TestColormaps();
 }
