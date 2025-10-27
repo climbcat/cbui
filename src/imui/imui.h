@@ -128,6 +128,11 @@ struct Widget {
     f32 w_max;
     f32 h_max;
 
+    f32 w_child_sum;
+    f32 w_child_max;
+    f32 h_child_sum;
+    f32 h_child_max;
+
     u32 features_flg;
     u32 alignment_flg;
 
@@ -311,30 +316,40 @@ void WidgetTreeSizeWrap_Rec(Widget *w, f32 *w_sum, f32 *h_sum, f32 *w_max, f32 *
 
         WidgetTreeSizeWrap_Rec(ch, &w_sum_ch, &h_sum_ch, &w_max_ch, &h_max_ch);
 
-        *w_sum += ch->w;
-        *h_sum += ch->h;
-        *w_max = MaxS32(*w_max, ch->w);
-        *h_max = MaxS32(*h_max, ch->h);
+        if (ch->features_flg & WF_ABSREL_POSITION) {
+            // do not count siblings with ABSREL
+        }
+        else {
+            *w_sum += ch->w;
+            *h_sum += ch->h;
+            *w_max = MaxS32(*w_max, ch->w);
+            *h_max = MaxS32(*h_max, ch->h);
+        }
 
         ch = ch->next;
     }
 
 
-    // TODO: what about clipping
-
-
     // Ascent: Assign actual size to current widget
     if (w->features_flg & WF_LAYOUT_CENTER) {
-        if (w->w == 0) { w->w = *w_max + 2*w->padding; }
-        if (w->h == 0) { w->h = *h_max + 2*w->padding; }
+        if (w->w == 0 && !(w->features_flg & WF_EXPAND_HORIZONTAL)) { w->w = *w_max + 2*w->padding; }
+        if (w->h == 0 && !(w->features_flg & WF_EXPAND_VERTICAL)) { w->h = *h_max + 2*w->padding; }
     }
     else if (w->features_flg & WF_LAYOUT_VERTICAL) {
-        w->w = MaxF32(w->w, *w_max) + 2*w->padding;
-        if (w->h == 0) { w->h = *h_sum + 2*w->padding; }
+        if (w->w == 0 && !(w->features_flg & WF_EXPAND_HORIZONTAL)) {
+            w->w = MaxF32(w->w, *w_max) + 2*w->padding;
+        }
+        if (w->h == 0 && !(w->features_flg & WF_EXPAND_VERTICAL)) {
+            w->h = *h_sum + 2*w->padding;
+        }
     }
     else if (w->features_flg & WF_LAYOUT_HORIZONTAL) {
-        if (w->w == 0) { w->w = *w_sum + 2*w->padding; }
-        w->h = MaxF32(w->h, *h_max) + 2*w->padding;
+        if (w->w == 0 && !(w->features_flg & WF_EXPAND_HORIZONTAL)) {
+            w->w = *w_sum + 2*w->padding;
+        }
+        if (w->h == 0 && !(w->features_flg & WF_EXPAND_VERTICAL)) {
+            w->h = MaxF32(w->h, *h_max) + 2*w->padding;
+        }
     }
 
     // or keep pre-sets
@@ -344,6 +359,11 @@ void WidgetTreeSizeWrap_Rec(Widget *w, f32 *w_sum, f32 *h_sum, f32 *w_max, f32 *
         *w_max = w->w;
         *h_max = w->h;
     }
+
+    w->w_child_sum = *w_sum;
+    w->w_child_max = *w_max;
+    w->h_child_sum = *h_sum;
+    w->h_child_max = *h_max;
 }
 
 
@@ -359,6 +379,8 @@ void WidgetTreeExpanders_Rec(Widget *w) {
     f32 widths_sum = 0;
     f32 heights_sum = 0;
 
+
+    /*
     while (ch) {
         if (ch->features_flg & WF_EXPAND_VERTICAL) {
             assert(ev == NULL && "only one expander supported currently");
@@ -379,18 +401,38 @@ void WidgetTreeExpanders_Rec(Widget *w) {
         ch = ch->next;
     }
 
-
     // TODO: multiple expanders sharing the available space
     // TODO: expanders using % space
-
 
     if (ev) {
         ev->h = w->h - heights_sum - 2*w->padding;
     }
-
     if (eh) {
         eh->w = w->w - widths_sum - 2*w->padding;
     }
+    */
+
+    while (ch) {
+        if (ch->features_flg & WF_EXPAND_VERTICAL) {
+            if (ch->features_flg & WF_LAYOUT_VERTICAL) {
+                ch->h = w->h - w->h_child_sum - 2*w->padding;
+            }
+            else {
+                ch->h = w->h - w->h_child_max - 2*w->padding;
+            }
+        }
+        if (ch->features_flg & WF_EXPAND_HORIZONTAL) {
+            if (ch->features_flg & WF_LAYOUT_HORIZONTAL) {
+                ch->w = w->w - w->w_child_sum - 2*w->padding;
+            }
+            else {
+                ch->w = w->w - w->w_child_max - 2*w->padding;
+            }
+        }
+
+        ch = ch->next;
+    }
+
 
     // descend
     ch = w->first;
