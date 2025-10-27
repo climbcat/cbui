@@ -455,7 +455,6 @@ void PlafGlfwInit(PlafGlfw *plf, const char *title, u32 window_width, u32 window
     plf->cursorpos.y_frac = ((f32) mouse_y - (plf->height * 0.5f)) / plf->height;
 
     g_plaf_glfw = plf;
-
 }
 
 void PlafGlfwTerminate(PlafGlfw* plf) {
@@ -546,6 +545,7 @@ inline Button MouseLeft() { return g_plaf_glfw->left; }
 inline Button MouseRight() { return g_plaf_glfw->right; }
 inline Scroll MouseScroll() { return g_plaf_glfw->scroll; }
 inline Vector2f MouseFrac() { return { g_plaf_glfw->cursorpos.x_frac, g_plaf_glfw->cursorpos.y_frac }; }
+inline Vector2f CurserPos() { return { g_plaf_glfw->cursorpos.x, g_plaf_glfw->cursorpos.y }; }
 inline Vector2f MouseFracDelta() { return { (f32) g_plaf_glfw->cursorpos.dx / g_plaf_glfw->width, (f32) g_plaf_glfw->cursorpos.dy / g_plaf_glfw->height }; }
 inline char GetChar() { return g_plaf_glfw->keys.Get(); }
 inline bool GetEscape() { return g_plaf_glfw->akeys.esc; }

@@ -138,6 +138,7 @@ struct Widget {
     Color col_bckgrnd;
     Color col_text;
     Color col_border;
+    u32 padding;
 
     // cursor interaction
     Color col_hot;
@@ -302,7 +303,7 @@ void WidgetTreeSizeWrap_Rec(Widget *w, f32 *w_sum, f32 *h_sum, f32 *w_max, f32 *
     *h_max = 0;
 
     Widget *ch = w->first;
-    while (ch != NULL) { // iterate child widgets
+    while (ch != NULL) {
         f32 w_sum_ch;
         f32 h_sum_ch;
         f32 w_max_ch;
@@ -319,21 +320,21 @@ void WidgetTreeSizeWrap_Rec(Widget *w, f32 *w_sum, f32 *h_sum, f32 *w_max, f32 *
     }
 
 
-    // TODO: modify layout panel sizing procedure whenever clipping is introduced
+    // TODO: what about clipping
 
 
     // Ascent: Assign actual size to current widget
     if (w->features_flg & WF_LAYOUT_CENTER) {
-        if (w->w == 0) w->w = *w_max;
-        if (w->h == 0) w->h = *h_max;
+        if (w->w == 0) { w->w = *w_max + 2*w->padding; }
+        if (w->h == 0) { w->h = *h_max + 2*w->padding; }
     }
     else if (w->features_flg & WF_LAYOUT_VERTICAL) {
-        w->w = MaxF32(w->w, *w_max);
-        if (w->h == 0) w->h = *h_sum;
+        w->w = MaxF32(w->w, *w_max) + 2*w->padding;
+        if (w->h == 0) { w->h = *h_sum + 2*w->padding; }
     }
     else if (w->features_flg & WF_LAYOUT_HORIZONTAL) {
-        if (w->w == 0) w->w = *w_sum;
-        w->h = MaxF32(w->h, *h_max);
+        if (w->w == 0) { w->w = *w_sum + 2*w->padding; }
+        w->h = MaxF32(w->h, *h_max) + 2*w->padding;
     }
 
     // or keep pre-sets
@@ -379,16 +380,16 @@ void WidgetTreeExpanders_Rec(Widget *w) {
     }
 
 
-    // TODO: multiple epanders, sharing available space
+    // TODO: multiple expanders sharing the available space
     // TODO: expanders using % space
 
 
     if (ev) {
-        ev->h = w->h - heights_sum;
+        ev->h = w->h - heights_sum - 2*w->padding;
     }
 
     if (eh) {
-        eh->w = w->w - widths_sum;
+        eh->w = w->w - widths_sum - 2*w->padding;
     }
 
     // descend
@@ -418,8 +419,8 @@ List<Widget*> WidgetTreePositioning(MArena *a_tmp, Widget *w_root) {
             // set child position - if not absolutely positioned
             if ((ch->features_flg & WF_ABSREL_POSITION) == false) {
 
-                ch->x0 = w->x0;
-                ch->y0 = w->y0;
+                ch->x0 = w->x0 + w->padding;
+                ch->y0 = w->y0 + w->padding;
 
                 if (w->features_flg & WF_LAYOUT_CENTER) {
                     ch->y0 = w->y0 + (w->h - ch->h) / 2;
@@ -427,26 +428,26 @@ List<Widget*> WidgetTreePositioning(MArena *a_tmp, Widget *w_root) {
                 }
 
                 else if (w->features_flg & WF_LAYOUT_HORIZONTAL) {
-                    ch->x0 = w->x0 + pt_x;
+                    ch->x0 = w->x0 + w->padding + pt_x ;
                     pt_x += ch->w;
 
                     if (w->features_flg & WF_ALIGN_CENTER) {
                         ch->y0 = w->y0 + (w->h - ch->h) / 2;
                     }
                     else if (w->features_flg & WF_ALIGN_RIGHT_OR_BOTTOM) {
-                        ch->y0 = w->y0 + (w->h - ch->h);
+                        ch->y0 = w->y0 + (w->h - w->padding - ch->h);
                     }
                 }
 
                 else if (w->features_flg & WF_LAYOUT_VERTICAL) {
-                    ch->y0 = w->y0 + pt_y;
+                    ch->y0 = w->y0 + w->padding + pt_y;
                     pt_y += ch->h;
 
                     if (w->features_flg & WF_ALIGN_CENTER) {
                         ch->x0 = w->x0 + (w->w - ch->w) / 2;
                     }
                     else if (w->features_flg & WF_ALIGN_RIGHT_OR_BOTTOM) {
-                        ch->x0 = w->x0 + (w->w - ch->w);
+                        ch->x0 = w->x0 + (w->w - w->padding - ch->w);
                     }
                 }
             }
@@ -454,8 +455,8 @@ List<Widget*> WidgetTreePositioning(MArena *a_tmp, Widget *w_root) {
             if (ch->features_flg & WF_ABSREL_POSITION) {
                 // basic offset wrt. parent
                 if (ch->alignment_flg == 0) {
-                    ch->x0 += w->x0;
-                    ch->y0 += w->y0;
+                    ch->x0 += w->x0 + w->padding;
+                    ch->y0 += w->y0 + w->padding;
                 }
 
                 // alignment also specified

@@ -43,8 +43,11 @@ struct OrbitCamera {
     Matrix4f view_anchor;
     bool drag;
 
-    void SetRelativeTo(Matrix4f transform, f32 radius) {
-        this->radius = radius;
+    void SetRelativeTo(Matrix4f transform, f32 radius = 0) {
+        if (radius > 0) {
+            this->radius = radius;
+        }
+
         Update( TransformGetTranslation(transform) );
 
         Vector3f x_rot = TransformDirection(transform, x_hat);
