@@ -373,71 +373,42 @@ void WidgetTreeExpanders_Rec(Widget *w) {
         return;
     }
 
-    // extract info
-    Widget *ev = NULL;
-    Widget *eh = NULL;
-    f32 widths_sum = 0;
-    f32 heights_sum = 0;
 
+    // WARN: We can't use w->child_sum, because w might be a vertical layout !
 
-    /*
-    while (ch) {
-        if (ch->features_flg & WF_EXPAND_VERTICAL) {
-            assert(ev == NULL && "only one expander supported currently");
-            ev = ch;
-        }
-        else if (w->features_flg & WF_LAYOUT_VERTICAL) {
-            heights_sum += ch->h;
-        }
-
-        if (ch->features_flg & WF_EXPAND_HORIZONTAL) {
-            assert(eh == NULL && "only one expander supported currently");
-            eh = ch;
-        }
-        else if (w->features_flg & WF_LAYOUT_HORIZONTAL) {
-            widths_sum += ch->w;
-        }
-
-        ch = ch->next;
-    }
-
-    // TODO: multiple expanders sharing the available space
-    // TODO: expanders using % space
-
-    if (ev) {
-        ev->h = w->h - heights_sum - 2*w->padding;
-    }
-    if (eh) {
-        eh->w = w->w - widths_sum - 2*w->padding;
-    }
-    */
 
     while (ch) {
         if (ch->features_flg & WF_EXPAND_VERTICAL) {
             if (ch->features_flg & WF_LAYOUT_VERTICAL) {
-                ch->h = w->h - w->h_child_sum - 2*w->padding;
+                if (w->features_flg & WF_LAYOUT_VERTICAL) {
+                    ch->h = w->h - w->h_child_sum - 2*w->padding;
+
+                }
+                else {
+                    ch->h = w->h - 2*w->padding;
+                }
             }
             else {
                 ch->h = w->h - w->h_child_max - 2*w->padding;
             }
         }
+
         if (ch->features_flg & WF_EXPAND_HORIZONTAL) {
             if (ch->features_flg & WF_LAYOUT_HORIZONTAL) {
-                ch->w = w->w - w->w_child_sum - 2*w->padding;
+                if (w->features_flg & WF_LAYOUT_HORIZONTAL) {
+                    ch->w = w->w - w->w_child_sum - 2*w->padding;
+                }
+                else {
+                    ch->w = w->w - 2*w->padding;
+                }
             }
             else {
                 ch->w = w->w - w->w_child_max - 2*w->padding;
             }
         }
 
-        ch = ch->next;
-    }
-
-
-    // descend
-    ch = w->first;
-    while (ch) {
         WidgetTreeExpanders_Rec(ch);
+
         ch = ch->next;
     }
 }
