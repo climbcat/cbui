@@ -10,12 +10,11 @@
 #include "../src/init.h"
 
 
-
 void TestUILayoutFeatures() {
     printf("TestUILayoutFeatures\n");
 
     CbuiInit("TestUILayoutFeatures", false);
-    s32 TB_mode = 0;
+    s32 TB_mode = 10;
 
     f32 time = 0;
     UI_SetFontSize(FS_24);
@@ -229,7 +228,6 @@ void TestUILayoutFeatures() {
             Widget *exp = UI_ExpanderH();
             exp->features_flg |= WF_EXPAND_VERTICAL;
             exp->DBG_tag = StrL("exp");
-            exp->h = 50;
 
             Widget *s1 = UI_Sibling();
             s1->DBG_tag = StrL("s1");

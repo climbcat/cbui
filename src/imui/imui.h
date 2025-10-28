@@ -383,7 +383,7 @@ void WidgetTreeExpanders_Rec(Widget *w) {
                 ch->h = w->h - 2*w->padding;
             }
             else {
-                ch->h = w->h - w->h_child_max - 2*w->padding;
+                ch->h = w->h - w->h_child_sum - 2*w->padding;
             }
         }
 
