@@ -379,14 +379,8 @@ void WidgetTreeExpanders_Rec(Widget *w) {
 
     while (ch) {
         if (ch->features_flg & WF_EXPAND_VERTICAL) {
-            if (ch->features_flg & WF_LAYOUT_VERTICAL) {
-                if (w->features_flg & WF_LAYOUT_VERTICAL) {
-                    ch->h = w->h - w->h_child_sum - 2*w->padding;
-
-                }
-                else {
-                    ch->h = w->h - 2*w->padding;
-                }
+            if ((ch->features_flg & WF_LAYOUT_VERTICAL) && !(w->features_flg & WF_LAYOUT_VERTICAL)) {
+                ch->h = w->h - 2*w->padding;
             }
             else {
                 ch->h = w->h - w->h_child_max - 2*w->padding;
@@ -394,16 +388,11 @@ void WidgetTreeExpanders_Rec(Widget *w) {
         }
 
         if (ch->features_flg & WF_EXPAND_HORIZONTAL) {
-            if (ch->features_flg & WF_LAYOUT_HORIZONTAL) {
-                if (w->features_flg & WF_LAYOUT_HORIZONTAL) {
-                    ch->w = w->w - w->w_child_sum - 2*w->padding;
-                }
-                else {
-                    ch->w = w->w - 2*w->padding;
-                }
+            if ((ch->features_flg & WF_LAYOUT_HORIZONTAL) && !(w->features_flg & WF_LAYOUT_HORIZONTAL)) {
+                ch->w = w->w - 2*w->padding;
             }
             else {
-                ch->w = w->w - w->w_child_max - 2*w->padding;
+                ch->w = w->w - w->w_child_sum - 2*w->padding;
             }
         }
 
