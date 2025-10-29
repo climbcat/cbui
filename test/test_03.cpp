@@ -254,6 +254,56 @@ void TestUILayoutFeatures() {
 }
 
 
+void TestUIButtons() {
+    printf("TestUIButtons\n");
+
+    CbuiInit("TestUIButtons", false);
+    s32 TB_mode = 10;
+
+    f32 time = 0;
+    UI_SetFontSize(FS_24);
+    //UI_DebugMode(true);
+    UI_DebugNames(true);
+
+    while (cbui.running) {
+        CbuiFrameStart();
+
+        UI_Center();
+
+        UI_LayoutVertical();
+        UI_Label("Test: Align Left");
+        UI_Label("A couple");
+        UI_Label("lines");
+        UI_Label("of");
+        UI_Label("text");
+
+        Widget *l = UI_LayoutHorizontal(0);
+        l->SetFlag(WF_EXPAND_HORIZONTAL);
+        l->DBG_tag = StrL("B");
+
+
+        if (GetSpace()) {
+            printf("her\n");
+        }
+
+
+        if (UI_Button("Press")) { printf("Press\n"); };
+        if (UI_Button("Me")) { printf("Me\n"); };
+
+        if (GetSpace()) {
+            //TB_mode = (TB_mode + 1) % 11;
+        }
+        if (GetFKey(2)) {
+            UI_DebugMode(!g_ui_debugmode);
+        }
+        if (GetFKey(3)) {
+            UI_DebugNames(!g_ui_debugnames);
+        }
+    }
+    CbuiExit();
+}
+
+
 void TestSceneGraph() {
     printf("TestSceneGraph\n");
 
@@ -478,7 +528,8 @@ void TestColormaps() {
 
 void Test_03() {
 
-    TestUILayoutFeatures();
+    //TestUILayoutFeatures();
+    TestUIButtons();
     //TestSceneGraph();
     //TestRotParentIsDifferent();
     //TestColormaps();

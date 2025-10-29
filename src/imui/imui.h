@@ -517,7 +517,7 @@ List<Widget*> WidgetTreePositioning(MArena *a_tmp, Widget *w_root) {
                             ch->active = true;
                         }
                     }
-                    else {
+                    else if (g_w_active != ch) {
                         // disable active mode
                         ch->active = false;
                     }
@@ -528,7 +528,7 @@ List<Widget*> WidgetTreePositioning(MArena *a_tmp, Widget *w_root) {
 
                 if (g_mouse_down == false) {
                     ch->active = false;
-                    g_w_active = NULL;
+                    g_w_active = NULL; // this should be set in a more global place, and not in every iteration
                 }
 
                 if (g_mouse_pushed && ch->active) {
