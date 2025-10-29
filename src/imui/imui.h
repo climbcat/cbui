@@ -767,6 +767,44 @@ bool UI_ToggleButton(const char *text, bool *state, Widget **w_out = NULL) {
 }
 
 
+bool UI_ToggleButton2(const char *text, bool *state, Widget **w_out = NULL) {
+    Widget *w  = WidgetGetCached(text);
+    w->features_flg |= WF_DRAW_TEXT;
+    w->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
+    w->features_flg |= WF_CAN_COLLIDE;
+
+    w->col_text = ColorBlack();
+    w->col_border = ColorBlack();
+    w->sz_font = UI_GetFontSize();
+    w->w = TextLineWidth(g_current_font, w->text) + 2;
+    w->h = g_current_font->ln_measured + 4;
+
+    if (w->clicked) {
+        *state = !(*state);
+    }
+
+    if (*state == true) {
+        w->sz_border = 1;
+        w->col_bckgrnd = COLOR_WHITE;
+    }
+    else if (w->hot) {
+        w->sz_border = 1;
+        w->col_bckgrnd = COLOR_GRAY_75;
+    }
+    else {
+        w->sz_border = 1;
+        w->col_bckgrnd = COLOR_GRAY_80;
+    }
+
+    WidgetTreeSibling(w);
+
+    if (w_out != NULL) {
+        *w_out = w;
+    }
+    return w->clicked;
+}
+
+
 Widget *UI_CoolPanel(s32 width, s32 height, bool center_h = true) {
     Widget *w = WidgetGetNew();
     w->features_flg |= WF_DRAW_BACKGROUND_AND_BORDER;
